@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "ai-daily-summary"
+version = "0.1.0"
+description = ""
+authors = ["Alexis Balayre <60859013+AlexisBal@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-dotenv = "^1.0.1"
+google-api-python-client = "^2.159.0"
+google-auth-httplib2 = "^0.2.0"
+google-auth-oauthlib = "^1.2.1"
+openai = "^1.60.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
