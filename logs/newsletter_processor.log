@@ -1,0 +1,635 @@
+2025-02-15 16:56:55,703 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 16:56:55,835 - root - INFO - Starting to process email backlog...
+2025-02-15 16:57:06,474 - root - INFO - Found 48 unprocessed emails
+2025-02-15 16:57:06,475 - root - ERROR - Error in main execution: name 'save_individual_email' is not defined
+Traceback (most recent call last):
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/client.py", line 526, in main
+    save_individual_email(email)
+    ^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'save_individual_email' is not defined
+2025-02-15 16:58:49,178 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 16:58:49,204 - root - INFO - Starting to process email backlog...
+2025-02-15 16:58:53,454 - root - INFO - No unprocessed emails found
+2025-02-15 17:02:10,219 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 17:02:10,250 - root - INFO - Starting to process email backlog...
+2025-02-15 17:02:17,193 - root - INFO - Found 48 unprocessed emails
+2025-02-15 17:02:17,194 - root - INFO - Email saved successfully: data/emails/raw/20250214__OpenAI_Revises_AI_Behavior_Rules_Less_Bias_Improv.json
+2025-02-15 17:02:17,195 - root - INFO - Email saved successfully: data/emails/raw/20250214_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 17:02:17,195 - root - INFO - Email saved successfully: data/emails/raw/20250214_Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 17:02:17,195 - root - INFO - Email saved successfully: data/emails/raw/20250214__Anthropics_next_AI_model_is_coming.json
+2025-02-15 17:02:17,196 - root - INFO - Email saved successfully: data/emails/raw/20250214__GPT-5s_dirty_secret.json
+2025-02-15 17:02:17,196 - root - INFO - Email saved successfully: data/emails/raw/20250213__OpenAI_Reveals_GPT-5_Roadmap_Dynamic_Intelligence.json
+2025-02-15 17:02:17,196 - root - INFO - Email saved successfully: data/emails/raw/20250213_Harvey_raises_300M_OpenAI_GPT-5_Roadmap_Apple_Huma.json
+2025-02-15 17:02:17,197 - root - INFO - Email saved successfully: data/emails/raw/20250213_BB_Digest_OpenAIs_plan_for_2025.json
+2025-02-15 17:02:17,197 - root - INFO - Email saved successfully: data/emails/raw/20250213_Apple_humanoid_robots_OpenAIs_GPT-5_roadmap_foundi.json
+2025-02-15 17:02:17,197 - root - INFO - Email saved successfully: data/emails/raw/20250213__GPT-5_changes_EVERYTHING.json
+2025-02-15 17:02:17,198 - root - INFO - Email saved successfully: data/emails/raw/20250213__OpenAIs_new_GPT-5_roadmap.json
+2025-02-15 17:02:17,198 - root - INFO - Email saved successfully: data/emails/raw/20250212_Elon_Musk_offers_to_buy_OpenAI_Sam_Altman_offers_t.json
+2025-02-15 17:02:17,198 - root - INFO - Email saved successfully: data/emails/raw/20250212_Google_Pixel_leaks_YouTubes_TV_growth_2025s_top_st.json
+2025-02-15 17:02:17,199 - root - INFO - Email saved successfully: data/emails/raw/20250212__Global_tensions_rise_at_AI_summit.json
+2025-02-15 17:02:17,199 - root - INFO - Email saved successfully: data/emails/raw/20250212__Your_coworkers_AI_exposed.json
+2025-02-15 17:02:17,199 - root - INFO - Email saved successfully: data/emails/raw/20250211_OpenAI_Intelligence_Age_Frances_112B_AI_Investment.json
+2025-02-15 17:02:17,200 - root - INFO - Email saved successfully: data/emails/raw/20250211_BB_Digest_AIs_fast_cat.json
+2025-02-15 17:02:17,200 - root - INFO - Email saved successfully: data/emails/raw/20250211_Elons_97B_OpenAI_bid_Sam_Altmans_AI_observations_T.json
+2025-02-15 17:02:17,200 - root - INFO - Email saved successfully: data/emails/raw/20250211__Sam_vs_Elon_Round_2.json
+2025-02-15 17:02:17,201 - root - INFO - Email saved successfully: data/emails/raw/20250211__Elons_97B_OpenAI_offer.json
+2025-02-15 17:02:17,201 - root - INFO - Email saved successfully: data/emails/raw/20250210__Sam_Altman_Reveals_AI_Costs_Drop_10x_Every_Year.json
+2025-02-15 17:02:17,201 - root - INFO - Email saved successfully: data/emails/raw/20250210_Mistral_le_Chat_Pika_Video_Editing_Googles_AI_Poli.json
+2025-02-15 17:02:17,202 - root - INFO - Email saved successfully: data/emails/raw/20250210_Inside_OpenAIs_Stargate_deal_Apples_camera_AirPods.json
+2025-02-15 17:02:17,202 - root - INFO - Email saved successfully: data/emails/raw/20250210__DeepMinds_AI_math_genius.json
+2025-02-15 17:02:17,203 - root - INFO - Email saved successfully: data/emails/raw/20250210__Sam_drops_2035_AI_bombshell.json
+2025-02-15 17:02:17,203 - root - INFO - Email saved successfully: data/emails/raw/20250209__Stanfords_50_AI_shock.json
+2025-02-15 17:02:17,203 - root - INFO - Email saved successfully: data/emails/raw/20250207_Mistral_AI_updates_Chatbot_Faster_than_ChatGPT_Cla.json
+2025-02-15 17:02:17,204 - root - INFO - Email saved successfully: data/emails/raw/20250207_Lyft_Anthropic_partnership_DeepSeek_VL2_2_OpenAI_c.json
+2025-02-15 17:02:17,204 - root - INFO - Email saved successfully: data/emails/raw/20250207_Apples_robot_lamp_Google_AI_Mode_TikToks_dev_exodu.json
+2025-02-15 17:02:17,204 - root - INFO - Email saved successfully: data/emails/raw/20250207__Mistrals_speedy_new_AI_assistant.json
+2025-02-15 17:02:17,205 - root - INFO - Email saved successfully: data/emails/raw/20250207__AI_basics_in_13_bites.json
+2025-02-15 17:02:17,205 - root - INFO - Email saved successfully: data/emails/raw/20250206__Google_Unveils_Gemini_20_Models_with_its_Most_Cos.json
+2025-02-15 17:02:17,205 - root - INFO - Email saved successfully: data/emails/raw/20250206_OpenAI_Robotics_Hardware_DeepSeek_Safety_Krutrim_L.json
+2025-02-15 17:02:17,205 - root - INFO - Email saved successfully: data/emails/raw/20250206_BB_Digest_Gemini_20_thinks_for_free.json
+2025-02-15 17:02:17,206 - root - INFO - Email saved successfully: data/emails/raw/20250206_Gemini_20_Alexa_with_Claude_underwater_settlements.json
+2025-02-15 17:02:17,206 - root - INFO - Email saved successfully: data/emails/raw/20250206__Googles_Gemini_20_goes_Pro.json
+2025-02-15 17:02:17,206 - root - INFO - Email saved successfully: data/emails/raw/20250206__Goodbye_Google_search.json
+2025-02-15 17:02:17,206 - root - INFO - Email saved successfully: data/emails/raw/20250205_Google_CEO_on_DeepSeek_Hugging_Face_replicates_Ope.json
+2025-02-15 17:02:17,207 - root - INFO - Email saved successfully: data/emails/raw/20250205_Apple_Invites_OpenAIs_rebrand_Beejs_guide_to_git_.json
+2025-02-15 17:02:17,207 - root - INFO - Email saved successfully: data/emails/raw/20250205__TikTok_owner_unveils_OmniHuman.json
+2025-02-15 17:02:17,208 - root - INFO - Email saved successfully: data/emails/raw/20250205__Deepfakes_just_leveled_UP.json
+2025-02-15 17:02:17,208 - root - INFO - Email saved successfully: data/emails/raw/20250204_OpenAIs_Deep_Research_Anthropic_Constitutional_Cla.json
+2025-02-15 17:02:17,208 - root - INFO - Email saved successfully: data/emails/raw/20250204_BB_Digest_ChatGPT_vs_Consultants.json
+2025-02-15 17:02:17,208 - root - INFO - Email saved successfully: data/emails/raw/20250204_Apple_Confetti_Metas_leaked_metaverse_memo_post-AI.json
+2025-02-15 17:02:17,209 - root - INFO - Email saved successfully: data/emails/raw/20250204__SoftBank_and_OpenAI_announce_Japan_AI_partnership.json
+2025-02-15 17:02:17,209 - root - INFO - Email saved successfully: data/emails/raw/20250204__GPT_vs_Gemini_SHOWDOWN.json
+2025-02-15 17:02:17,210 - root - INFO - Email saved successfully: data/emails/raw/20250203__OpenAI_Unveils_o3-mini_24_Faster_Reasoning_Model.json
+2025-02-15 17:02:17,210 - root - INFO - Email saved successfully: data/emails/raw/20250203_OpenAI_o3_variants_3_Stanfords_Virtual_Lab_LLMs_Gu.json
+2025-02-15 17:02:35,410 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:03:05,494 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:03:41,761 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:04:07,900 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:04:08,099 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:04:20,980 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:04:20,984 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:04:34,394 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:04:59,074 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:05:13,409 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:05:13,412 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:05:36,874 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:05:49,045 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:05:49,047 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:06:10,342 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:06:10,453 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:06:48,130 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:07:08,302 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:07:41,649 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:07:41,650 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:07:56,431 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:07:56,436 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:08:22,833 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:08:37,083 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:08:37,086 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:09:06,828 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:09:13,731 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:09:13,742 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:11:18,011 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 17:11:18,043 - root - INFO - Starting to process email backlog...
+2025-02-15 17:11:24,903 - root - INFO - Found 48 unprocessed emails
+2025-02-15 17:11:24,903 - root - ERROR - Error in main execution: save_individual_email() got an unexpected keyword argument 'processed'
+Traceback (most recent call last):
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/client.py", line 584, in main
+    save_individual_email(email, processed=False)
+TypeError: save_individual_email() got an unexpected keyword argument 'processed'
+2025-02-15 17:12:18,280 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 17:12:18,317 - root - INFO - Starting to process email backlog...
+2025-02-15 17:12:22,021 - root - INFO - No unprocessed emails found
+2025-02-15 17:12:37,781 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 17:12:37,810 - root - INFO - Starting to process email backlog...
+2025-02-15 17:12:44,459 - root - INFO - Found 48 unprocessed emails
+2025-02-15 17:12:44,460 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAI_Revises_AI_Behavior_Rules_Less_Bias_Improv.json
+2025-02-15 17:12:44,461 - root - INFO - Email saved successfully: data/emails/raw/20250215_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 17:12:44,461 - root - INFO - Email saved successfully: data/emails/raw/20250215_Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 17:12:44,461 - root - INFO - Email saved successfully: data/emails/raw/20250215__Anthropics_next_AI_model_is_coming.json
+2025-02-15 17:12:44,462 - root - INFO - Email saved successfully: data/emails/raw/20250215__GPT-5s_dirty_secret.json
+2025-02-15 17:12:44,462 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAI_Reveals_GPT-5_Roadmap_Dynamic_Intelligence.json
+2025-02-15 17:12:44,462 - root - INFO - Email saved successfully: data/emails/raw/20250215_Harvey_raises_300M_OpenAI_GPT-5_Roadmap_Apple_Huma.json
+2025-02-15 17:12:44,462 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_OpenAIs_plan_for_2025.json
+2025-02-15 17:12:44,463 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apple_humanoid_robots_OpenAIs_GPT-5_roadmap_foundi.json
+2025-02-15 17:12:44,463 - root - INFO - Email saved successfully: data/emails/raw/20250215__GPT-5_changes_EVERYTHING.json
+2025-02-15 17:12:44,463 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAIs_new_GPT-5_roadmap.json
+2025-02-15 17:12:44,463 - root - INFO - Email saved successfully: data/emails/raw/20250215_Elon_Musk_offers_to_buy_OpenAI_Sam_Altman_offers_t.json
+2025-02-15 17:12:44,464 - root - INFO - Email saved successfully: data/emails/raw/20250215_Google_Pixel_leaks_YouTubes_TV_growth_2025s_top_st.json
+2025-02-15 17:12:44,464 - root - INFO - Email saved successfully: data/emails/raw/20250215__Global_tensions_rise_at_AI_summit.json
+2025-02-15 17:12:44,464 - root - INFO - Email saved successfully: data/emails/raw/20250215__Your_coworkers_AI_exposed.json
+2025-02-15 17:12:44,464 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAI_Intelligence_Age_Frances_112B_AI_Investment.json
+2025-02-15 17:12:44,465 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_AIs_fast_cat.json
+2025-02-15 17:12:44,465 - root - INFO - Email saved successfully: data/emails/raw/20250215_Elons_97B_OpenAI_bid_Sam_Altmans_AI_observations_T.json
+2025-02-15 17:12:44,465 - root - INFO - Email saved successfully: data/emails/raw/20250215__Sam_vs_Elon_Round_2.json
+2025-02-15 17:12:44,466 - root - INFO - Email saved successfully: data/emails/raw/20250215__Elons_97B_OpenAI_offer.json
+2025-02-15 17:12:44,466 - root - INFO - Email saved successfully: data/emails/raw/20250215__Sam_Altman_Reveals_AI_Costs_Drop_10x_Every_Year.json
+2025-02-15 17:12:44,466 - root - INFO - Email saved successfully: data/emails/raw/20250215_Mistral_le_Chat_Pika_Video_Editing_Googles_AI_Poli.json
+2025-02-15 17:12:44,467 - root - INFO - Email saved successfully: data/emails/raw/20250215_Inside_OpenAIs_Stargate_deal_Apples_camera_AirPods.json
+2025-02-15 17:12:44,467 - root - INFO - Email saved successfully: data/emails/raw/20250215__DeepMinds_AI_math_genius.json
+2025-02-15 17:12:44,467 - root - INFO - Email saved successfully: data/emails/raw/20250215__Sam_drops_2035_AI_bombshell.json
+2025-02-15 17:12:44,467 - root - INFO - Email saved successfully: data/emails/raw/20250215__Stanfords_50_AI_shock.json
+2025-02-15 17:12:44,468 - root - INFO - Email saved successfully: data/emails/raw/20250215_Mistral_AI_updates_Chatbot_Faster_than_ChatGPT_Cla.json
+2025-02-15 17:12:44,468 - root - INFO - Email saved successfully: data/emails/raw/20250215_Lyft_Anthropic_partnership_DeepSeek_VL2_2_OpenAI_c.json
+2025-02-15 17:12:44,468 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apples_robot_lamp_Google_AI_Mode_TikToks_dev_exodu.json
+2025-02-15 17:12:44,469 - root - INFO - Email saved successfully: data/emails/raw/20250215__Mistrals_speedy_new_AI_assistant.json
+2025-02-15 17:12:44,469 - root - INFO - Email saved successfully: data/emails/raw/20250215__AI_basics_in_13_bites.json
+2025-02-15 17:12:44,469 - root - INFO - Email saved successfully: data/emails/raw/20250215__Google_Unveils_Gemini_20_Models_with_its_Most_Cos.json
+2025-02-15 17:12:44,470 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAI_Robotics_Hardware_DeepSeek_Safety_Krutrim_L.json
+2025-02-15 17:12:44,470 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_Gemini_20_thinks_for_free.json
+2025-02-15 17:12:44,470 - root - INFO - Email saved successfully: data/emails/raw/20250215_Gemini_20_Alexa_with_Claude_underwater_settlements.json
+2025-02-15 17:12:44,471 - root - INFO - Email saved successfully: data/emails/raw/20250215__Googles_Gemini_20_goes_Pro.json
+2025-02-15 17:12:44,471 - root - INFO - Email saved successfully: data/emails/raw/20250215__Goodbye_Google_search.json
+2025-02-15 17:12:44,471 - root - INFO - Email saved successfully: data/emails/raw/20250215_Google_CEO_on_DeepSeek_Hugging_Face_replicates_Ope.json
+2025-02-15 17:12:44,472 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apple_Invites_OpenAIs_rebrand_Beejs_guide_to_git_.json
+2025-02-15 17:12:44,472 - root - INFO - Email saved successfully: data/emails/raw/20250215__TikTok_owner_unveils_OmniHuman.json
+2025-02-15 17:12:44,472 - root - INFO - Email saved successfully: data/emails/raw/20250215__Deepfakes_just_leveled_UP.json
+2025-02-15 17:12:44,472 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAIs_Deep_Research_Anthropic_Constitutional_Cla.json
+2025-02-15 17:12:44,473 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_ChatGPT_vs_Consultants.json
+2025-02-15 17:12:44,473 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apple_Confetti_Metas_leaked_metaverse_memo_post-AI.json
+2025-02-15 17:12:44,473 - root - INFO - Email saved successfully: data/emails/raw/20250215__SoftBank_and_OpenAI_announce_Japan_AI_partnership.json
+2025-02-15 17:12:44,473 - root - INFO - Email saved successfully: data/emails/raw/20250215__GPT_vs_Gemini_SHOWDOWN.json
+2025-02-15 17:12:44,474 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAI_Unveils_o3-mini_24_Faster_Reasoning_Model.json
+2025-02-15 17:12:44,474 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAI_o3_variants_3_Stanfords_Virtual_Lab_LLMs_Gu.json
+2025-02-15 17:13:15,620 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:13:15,627 - root - INFO - Email saved successfully: data/emails/processed/20250215__OpenAI_Revises_AI_Behavior_Rules_Less_Bias_Improv.json
+2025-02-15 17:13:45,821 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:13:45,824 - root - INFO - Email saved successfully: data/emails/processed/20250215_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 17:14:20,176 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:14:20,184 - root - INFO - Email saved successfully: data/emails/processed/20250215_Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 17:14:40,099 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:14:40,103 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:14:48,242 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:14:48,245 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:15:03,819 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:15:03,832 - root - INFO - Email saved successfully: data/emails/processed/20250215__OpenAI_Reveals_GPT-5_Roadmap_Dynamic_Intelligence.json
+2025-02-15 17:15:27,564 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:15:27,569 - root - INFO - Email saved successfully: data/emails/processed/20250215_Harvey_raises_300M_OpenAI_GPT-5_Roadmap_Apple_Huma.json
+2025-02-15 17:15:36,123 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:15:36,125 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:15:55,762 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:15:55,764 - root - INFO - Email saved successfully: data/emails/processed/20250215_Apple_humanoid_robots_OpenAIs_GPT-5_roadmap_foundi.json
+2025-02-15 17:16:09,383 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:16:09,385 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:16:20,677 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:16:20,698 - root - ERROR - Error processing email: unconverted data remains:  (UTC)
+2025-02-15 17:16:42,728 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 17:16:42,760 - root - INFO - Starting to process email backlog...
+2025-02-15 17:16:49,803 - root - INFO - Found 48 unprocessed emails
+2025-02-15 17:16:49,804 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAI_Revises_AI_Behavior_Rules_Less_Bias_Improv.json
+2025-02-15 17:16:49,804 - root - INFO - Email saved successfully: data/emails/raw/20250215_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 17:16:49,804 - root - INFO - Email saved successfully: data/emails/raw/20250215_Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 17:16:49,805 - root - INFO - Email saved successfully: data/emails/raw/20250215__Anthropics_next_AI_model_is_coming.json
+2025-02-15 17:16:49,805 - root - INFO - Email saved successfully: data/emails/raw/20250215__GPT-5s_dirty_secret.json
+2025-02-15 17:16:49,805 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAI_Reveals_GPT-5_Roadmap_Dynamic_Intelligence.json
+2025-02-15 17:16:49,805 - root - INFO - Email saved successfully: data/emails/raw/20250215_Harvey_raises_300M_OpenAI_GPT-5_Roadmap_Apple_Huma.json
+2025-02-15 17:16:49,806 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_OpenAIs_plan_for_2025.json
+2025-02-15 17:16:49,806 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apple_humanoid_robots_OpenAIs_GPT-5_roadmap_foundi.json
+2025-02-15 17:16:49,806 - root - INFO - Email saved successfully: data/emails/raw/20250215__GPT-5_changes_EVERYTHING.json
+2025-02-15 17:16:49,807 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAIs_new_GPT-5_roadmap.json
+2025-02-15 17:16:49,807 - root - INFO - Email saved successfully: data/emails/raw/20250215_Elon_Musk_offers_to_buy_OpenAI_Sam_Altman_offers_t.json
+2025-02-15 17:16:49,807 - root - INFO - Email saved successfully: data/emails/raw/20250215_Google_Pixel_leaks_YouTubes_TV_growth_2025s_top_st.json
+2025-02-15 17:16:49,807 - root - INFO - Email saved successfully: data/emails/raw/20250215__Global_tensions_rise_at_AI_summit.json
+2025-02-15 17:16:49,808 - root - INFO - Email saved successfully: data/emails/raw/20250215__Your_coworkers_AI_exposed.json
+2025-02-15 17:16:49,808 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAI_Intelligence_Age_Frances_112B_AI_Investment.json
+2025-02-15 17:16:49,808 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_AIs_fast_cat.json
+2025-02-15 17:16:49,809 - root - INFO - Email saved successfully: data/emails/raw/20250215_Elons_97B_OpenAI_bid_Sam_Altmans_AI_observations_T.json
+2025-02-15 17:16:49,809 - root - INFO - Email saved successfully: data/emails/raw/20250215__Sam_vs_Elon_Round_2.json
+2025-02-15 17:16:49,809 - root - INFO - Email saved successfully: data/emails/raw/20250215__Elons_97B_OpenAI_offer.json
+2025-02-15 17:16:49,810 - root - INFO - Email saved successfully: data/emails/raw/20250215__Sam_Altman_Reveals_AI_Costs_Drop_10x_Every_Year.json
+2025-02-15 17:16:49,810 - root - INFO - Email saved successfully: data/emails/raw/20250215_Mistral_le_Chat_Pika_Video_Editing_Googles_AI_Poli.json
+2025-02-15 17:16:49,810 - root - INFO - Email saved successfully: data/emails/raw/20250215_Inside_OpenAIs_Stargate_deal_Apples_camera_AirPods.json
+2025-02-15 17:16:49,810 - root - INFO - Email saved successfully: data/emails/raw/20250215__DeepMinds_AI_math_genius.json
+2025-02-15 17:16:49,811 - root - INFO - Email saved successfully: data/emails/raw/20250215__Sam_drops_2035_AI_bombshell.json
+2025-02-15 17:16:49,811 - root - INFO - Email saved successfully: data/emails/raw/20250215__Stanfords_50_AI_shock.json
+2025-02-15 17:16:49,811 - root - INFO - Email saved successfully: data/emails/raw/20250215_Mistral_AI_updates_Chatbot_Faster_than_ChatGPT_Cla.json
+2025-02-15 17:16:49,811 - root - INFO - Email saved successfully: data/emails/raw/20250215_Lyft_Anthropic_partnership_DeepSeek_VL2_2_OpenAI_c.json
+2025-02-15 17:16:49,812 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apples_robot_lamp_Google_AI_Mode_TikToks_dev_exodu.json
+2025-02-15 17:16:49,812 - root - INFO - Email saved successfully: data/emails/raw/20250215__Mistrals_speedy_new_AI_assistant.json
+2025-02-15 17:16:49,812 - root - INFO - Email saved successfully: data/emails/raw/20250215__AI_basics_in_13_bites.json
+2025-02-15 17:16:49,812 - root - INFO - Email saved successfully: data/emails/raw/20250215__Google_Unveils_Gemini_20_Models_with_its_Most_Cos.json
+2025-02-15 17:16:49,813 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAI_Robotics_Hardware_DeepSeek_Safety_Krutrim_L.json
+2025-02-15 17:16:49,813 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_Gemini_20_thinks_for_free.json
+2025-02-15 17:16:49,813 - root - INFO - Email saved successfully: data/emails/raw/20250215_Gemini_20_Alexa_with_Claude_underwater_settlements.json
+2025-02-15 17:16:49,813 - root - INFO - Email saved successfully: data/emails/raw/20250215__Googles_Gemini_20_goes_Pro.json
+2025-02-15 17:16:49,814 - root - INFO - Email saved successfully: data/emails/raw/20250215__Goodbye_Google_search.json
+2025-02-15 17:16:49,814 - root - INFO - Email saved successfully: data/emails/raw/20250215_Google_CEO_on_DeepSeek_Hugging_Face_replicates_Ope.json
+2025-02-15 17:16:49,814 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apple_Invites_OpenAIs_rebrand_Beejs_guide_to_git_.json
+2025-02-15 17:16:49,815 - root - INFO - Email saved successfully: data/emails/raw/20250215__TikTok_owner_unveils_OmniHuman.json
+2025-02-15 17:16:49,815 - root - INFO - Email saved successfully: data/emails/raw/20250215__Deepfakes_just_leveled_UP.json
+2025-02-15 17:16:49,816 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAIs_Deep_Research_Anthropic_Constitutional_Cla.json
+2025-02-15 17:16:49,816 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_ChatGPT_vs_Consultants.json
+2025-02-15 17:16:49,816 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apple_Confetti_Metas_leaked_metaverse_memo_post-AI.json
+2025-02-15 17:16:49,816 - root - INFO - Email saved successfully: data/emails/raw/20250215__SoftBank_and_OpenAI_announce_Japan_AI_partnership.json
+2025-02-15 17:16:49,817 - root - INFO - Email saved successfully: data/emails/raw/20250215__GPT_vs_Gemini_SHOWDOWN.json
+2025-02-15 17:16:49,817 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAI_Unveils_o3-mini_24_Faster_Reasoning_Model.json
+2025-02-15 17:16:49,817 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAI_o3_variants_3_Stanfords_Virtual_Lab_LLMs_Gu.json
+2025-02-15 17:17:00,993 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:17:00,997 - root - INFO - Email saved successfully: data/emails/processed/20250215__OpenAI_Revises_AI_Behavior_Rules_Less_Bias_Improv.json
+2025-02-15 17:17:28,436 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:17:28,442 - root - INFO - Email saved successfully: data/emails/processed/20250215_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 17:17:39,905 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:17:39,909 - root - INFO - Email saved successfully: data/emails/processed/20250215_Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 17:17:59,667 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:17:59,672 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:07:59 +0000. Using current datetime.
+2025-02-15 17:17:59,672 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:07:59 +0000. Using current datetime.
+2025-02-15 17:17:59,673 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:07:59 +0000. Using current datetime.
+2025-02-15 17:17:59,673 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:07:59 +0000. Using current datetime.
+2025-02-15 17:17:59,673 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:07:59 +0000. Using current datetime.
+2025-02-15 17:17:59,673 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:07:59 +0000. Using current datetime.
+2025-02-15 17:17:59,674 - root - INFO - Email saved successfully: data/emails/processed/20250215__Anthropics_next_AI_model_is_coming.json
+2025-02-15 17:18:16,871 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:18:16,872 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:06:09 +0000. Using current datetime.
+2025-02-15 17:18:16,872 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:06:09 +0000. Using current datetime.
+2025-02-15 17:18:16,872 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:06:09 +0000. Using current datetime.
+2025-02-15 17:18:16,872 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:06:09 +0000. Using current datetime.
+2025-02-15 17:18:16,872 - root - WARNING - Could not parse date: Fri, 14 Feb 2025 11:06:09 +0000. Using current datetime.
+2025-02-15 17:18:16,873 - root - INFO - Email saved successfully: data/emails/processed/20250215__GPT-5s_dirty_secret.json
+2025-02-15 17:18:35,813 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:18:35,823 - root - INFO - Email saved successfully: data/emails/processed/20250215__OpenAI_Reveals_GPT-5_Roadmap_Dynamic_Intelligence.json
+2025-02-15 17:18:58,615 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:18:58,616 - root - INFO - Email saved successfully: data/emails/processed/20250215_Harvey_raises_300M_OpenAI_GPT-5_Roadmap_Apple_Huma.json
+2025-02-15 17:20:05,016 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 17:20:05,074 - root - INFO - Starting to process email backlog...
+2025-02-15 17:20:12,880 - root - INFO - Found 48 unprocessed emails
+2025-02-15 17:20:12,881 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAI_Revises_AI_Behavior_Rules_Less_Bias_Improv.json
+2025-02-15 17:20:12,882 - root - INFO - Email saved successfully: data/emails/raw/20250215_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 17:20:12,882 - root - INFO - Email saved successfully: data/emails/raw/20250215_Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 17:20:12,882 - root - INFO - Email saved successfully: data/emails/raw/20250215__Anthropics_next_AI_model_is_coming.json
+2025-02-15 17:20:12,883 - root - INFO - Email saved successfully: data/emails/raw/20250215__GPT-5s_dirty_secret.json
+2025-02-15 17:20:12,883 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAI_Reveals_GPT-5_Roadmap_Dynamic_Intelligence.json
+2025-02-15 17:20:12,883 - root - INFO - Email saved successfully: data/emails/raw/20250215_Harvey_raises_300M_OpenAI_GPT-5_Roadmap_Apple_Huma.json
+2025-02-15 17:20:12,883 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_OpenAIs_plan_for_2025.json
+2025-02-15 17:20:12,884 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apple_humanoid_robots_OpenAIs_GPT-5_roadmap_foundi.json
+2025-02-15 17:20:12,884 - root - INFO - Email saved successfully: data/emails/raw/20250215__GPT-5_changes_EVERYTHING.json
+2025-02-15 17:20:12,885 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAIs_new_GPT-5_roadmap.json
+2025-02-15 17:20:12,885 - root - INFO - Email saved successfully: data/emails/raw/20250215_Elon_Musk_offers_to_buy_OpenAI_Sam_Altman_offers_t.json
+2025-02-15 17:20:12,885 - root - INFO - Email saved successfully: data/emails/raw/20250215_Google_Pixel_leaks_YouTubes_TV_growth_2025s_top_st.json
+2025-02-15 17:20:12,886 - root - INFO - Email saved successfully: data/emails/raw/20250215__Global_tensions_rise_at_AI_summit.json
+2025-02-15 17:20:12,886 - root - INFO - Email saved successfully: data/emails/raw/20250215__Your_coworkers_AI_exposed.json
+2025-02-15 17:20:12,887 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAI_Intelligence_Age_Frances_112B_AI_Investment.json
+2025-02-15 17:20:12,887 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_AIs_fast_cat.json
+2025-02-15 17:20:12,887 - root - INFO - Email saved successfully: data/emails/raw/20250215_Elons_97B_OpenAI_bid_Sam_Altmans_AI_observations_T.json
+2025-02-15 17:20:12,888 - root - INFO - Email saved successfully: data/emails/raw/20250215__Sam_vs_Elon_Round_2.json
+2025-02-15 17:20:12,888 - root - INFO - Email saved successfully: data/emails/raw/20250215__Elons_97B_OpenAI_offer.json
+2025-02-15 17:20:12,889 - root - INFO - Email saved successfully: data/emails/raw/20250215__Sam_Altman_Reveals_AI_Costs_Drop_10x_Every_Year.json
+2025-02-15 17:20:12,889 - root - INFO - Email saved successfully: data/emails/raw/20250215_Mistral_le_Chat_Pika_Video_Editing_Googles_AI_Poli.json
+2025-02-15 17:20:12,889 - root - INFO - Email saved successfully: data/emails/raw/20250215_Inside_OpenAIs_Stargate_deal_Apples_camera_AirPods.json
+2025-02-15 17:20:12,890 - root - INFO - Email saved successfully: data/emails/raw/20250215__DeepMinds_AI_math_genius.json
+2025-02-15 17:20:12,890 - root - INFO - Email saved successfully: data/emails/raw/20250215__Sam_drops_2035_AI_bombshell.json
+2025-02-15 17:20:12,890 - root - INFO - Email saved successfully: data/emails/raw/20250215__Stanfords_50_AI_shock.json
+2025-02-15 17:20:12,891 - root - INFO - Email saved successfully: data/emails/raw/20250215_Mistral_AI_updates_Chatbot_Faster_than_ChatGPT_Cla.json
+2025-02-15 17:20:12,891 - root - INFO - Email saved successfully: data/emails/raw/20250215_Lyft_Anthropic_partnership_DeepSeek_VL2_2_OpenAI_c.json
+2025-02-15 17:20:12,891 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apples_robot_lamp_Google_AI_Mode_TikToks_dev_exodu.json
+2025-02-15 17:20:12,892 - root - INFO - Email saved successfully: data/emails/raw/20250215__Mistrals_speedy_new_AI_assistant.json
+2025-02-15 17:20:12,892 - root - INFO - Email saved successfully: data/emails/raw/20250215__AI_basics_in_13_bites.json
+2025-02-15 17:20:12,892 - root - INFO - Email saved successfully: data/emails/raw/20250215__Google_Unveils_Gemini_20_Models_with_its_Most_Cos.json
+2025-02-15 17:20:12,892 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAI_Robotics_Hardware_DeepSeek_Safety_Krutrim_L.json
+2025-02-15 17:20:12,893 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_Gemini_20_thinks_for_free.json
+2025-02-15 17:20:12,893 - root - INFO - Email saved successfully: data/emails/raw/20250215_Gemini_20_Alexa_with_Claude_underwater_settlements.json
+2025-02-15 17:20:12,894 - root - INFO - Email saved successfully: data/emails/raw/20250215__Googles_Gemini_20_goes_Pro.json
+2025-02-15 17:20:12,894 - root - INFO - Email saved successfully: data/emails/raw/20250215__Goodbye_Google_search.json
+2025-02-15 17:20:12,894 - root - INFO - Email saved successfully: data/emails/raw/20250215_Google_CEO_on_DeepSeek_Hugging_Face_replicates_Ope.json
+2025-02-15 17:20:12,895 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apple_Invites_OpenAIs_rebrand_Beejs_guide_to_git_.json
+2025-02-15 17:20:12,895 - root - INFO - Email saved successfully: data/emails/raw/20250215__TikTok_owner_unveils_OmniHuman.json
+2025-02-15 17:20:12,895 - root - INFO - Email saved successfully: data/emails/raw/20250215__Deepfakes_just_leveled_UP.json
+2025-02-15 17:20:12,895 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAIs_Deep_Research_Anthropic_Constitutional_Cla.json
+2025-02-15 17:20:12,896 - root - INFO - Email saved successfully: data/emails/raw/20250215_BB_Digest_ChatGPT_vs_Consultants.json
+2025-02-15 17:20:12,896 - root - INFO - Email saved successfully: data/emails/raw/20250215_Apple_Confetti_Metas_leaked_metaverse_memo_post-AI.json
+2025-02-15 17:20:12,896 - root - INFO - Email saved successfully: data/emails/raw/20250215__SoftBank_and_OpenAI_announce_Japan_AI_partnership.json
+2025-02-15 17:20:12,897 - root - INFO - Email saved successfully: data/emails/raw/20250215__GPT_vs_Gemini_SHOWDOWN.json
+2025-02-15 17:20:12,897 - root - INFO - Email saved successfully: data/emails/raw/20250215__OpenAI_Unveils_o3-mini_24_Faster_Reasoning_Model.json
+2025-02-15 17:20:12,897 - root - INFO - Email saved successfully: data/emails/raw/20250215_OpenAI_o3_variants_3_Stanfords_Virtual_Lab_LLMs_Gu.json
+2025-02-15 17:20:28,045 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:20:28,050 - root - INFO - Email saved successfully: data/emails/processed/20250215__OpenAI_Revises_AI_Behavior_Rules_Less_Bias_Improv.json
+2025-02-15 17:20:57,110 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:20:57,254 - root - INFO - Email saved successfully: data/emails/processed/20250215_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 17:21:13,313 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:21:13,321 - root - INFO - Email saved successfully: data/emails/processed/20250215_Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 17:21:59,709 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:21:59,716 - root - INFO - Email saved successfully: data/emails/processed/20250215__Anthropics_next_AI_model_is_coming.json
+2025-02-15 17:22:37,537 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 17:22:37,574 - root - INFO - Starting to process email backlog...
+2025-02-15 17:22:44,331 - root - INFO - Found 48 unprocessed emails
+2025-02-15 17:22:44,332 - root - INFO - Email saved successfully: data/emails/raw/20250214__OpenAI_Revises_AI_Behavior_Rules_Less_Bias_Improv.json
+2025-02-15 17:22:44,333 - root - INFO - Email saved successfully: data/emails/raw/20250214_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 17:22:44,333 - root - INFO - Email saved successfully: data/emails/raw/20250214_Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 17:22:44,333 - root - INFO - Email saved successfully: data/emails/raw/20250214__Anthropics_next_AI_model_is_coming.json
+2025-02-15 17:22:44,334 - root - INFO - Email saved successfully: data/emails/raw/20250214__GPT-5s_dirty_secret.json
+2025-02-15 17:22:44,334 - root - INFO - Email saved successfully: data/emails/raw/20250213__OpenAI_Reveals_GPT-5_Roadmap_Dynamic_Intelligence.json
+2025-02-15 17:22:44,334 - root - INFO - Email saved successfully: data/emails/raw/20250213_Harvey_raises_300M_OpenAI_GPT-5_Roadmap_Apple_Huma.json
+2025-02-15 17:22:44,334 - root - INFO - Email saved successfully: data/emails/raw/20250213_BB_Digest_OpenAIs_plan_for_2025.json
+2025-02-15 17:22:44,335 - root - INFO - Email saved successfully: data/emails/raw/20250213_Apple_humanoid_robots_OpenAIs_GPT-5_roadmap_foundi.json
+2025-02-15 17:22:44,335 - root - INFO - Email saved successfully: data/emails/raw/20250213__GPT-5_changes_EVERYTHING.json
+2025-02-15 17:22:44,335 - root - INFO - Email saved successfully: data/emails/raw/20250213__OpenAIs_new_GPT-5_roadmap.json
+2025-02-15 17:22:44,335 - root - INFO - Email saved successfully: data/emails/raw/20250212_Elon_Musk_offers_to_buy_OpenAI_Sam_Altman_offers_t.json
+2025-02-15 17:22:44,336 - root - INFO - Email saved successfully: data/emails/raw/20250212_Google_Pixel_leaks_YouTubes_TV_growth_2025s_top_st.json
+2025-02-15 17:22:44,336 - root - INFO - Email saved successfully: data/emails/raw/20250212__Global_tensions_rise_at_AI_summit.json
+2025-02-15 17:22:44,336 - root - INFO - Email saved successfully: data/emails/raw/20250212__Your_coworkers_AI_exposed.json
+2025-02-15 17:22:44,336 - root - INFO - Email saved successfully: data/emails/raw/20250211_OpenAI_Intelligence_Age_Frances_112B_AI_Investment.json
+2025-02-15 17:22:44,337 - root - INFO - Email saved successfully: data/emails/raw/20250211_BB_Digest_AIs_fast_cat.json
+2025-02-15 17:22:44,337 - root - INFO - Email saved successfully: data/emails/raw/20250211_Elons_97B_OpenAI_bid_Sam_Altmans_AI_observations_T.json
+2025-02-15 17:22:44,337 - root - INFO - Email saved successfully: data/emails/raw/20250211__Sam_vs_Elon_Round_2.json
+2025-02-15 17:22:44,337 - root - INFO - Email saved successfully: data/emails/raw/20250211__Elons_97B_OpenAI_offer.json
+2025-02-15 17:22:44,338 - root - INFO - Email saved successfully: data/emails/raw/20250210__Sam_Altman_Reveals_AI_Costs_Drop_10x_Every_Year.json
+2025-02-15 17:22:44,338 - root - INFO - Email saved successfully: data/emails/raw/20250210_Mistral_le_Chat_Pika_Video_Editing_Googles_AI_Poli.json
+2025-02-15 17:22:44,339 - root - INFO - Email saved successfully: data/emails/raw/20250210_Inside_OpenAIs_Stargate_deal_Apples_camera_AirPods.json
+2025-02-15 17:22:44,339 - root - INFO - Email saved successfully: data/emails/raw/20250210__DeepMinds_AI_math_genius.json
+2025-02-15 17:22:44,339 - root - INFO - Email saved successfully: data/emails/raw/20250210__Sam_drops_2035_AI_bombshell.json
+2025-02-15 17:22:44,340 - root - INFO - Email saved successfully: data/emails/raw/20250209__Stanfords_50_AI_shock.json
+2025-02-15 17:22:44,340 - root - INFO - Email saved successfully: data/emails/raw/20250207_Mistral_AI_updates_Chatbot_Faster_than_ChatGPT_Cla.json
+2025-02-15 17:22:44,340 - root - INFO - Email saved successfully: data/emails/raw/20250207_Lyft_Anthropic_partnership_DeepSeek_VL2_2_OpenAI_c.json
+2025-02-15 17:22:44,340 - root - INFO - Email saved successfully: data/emails/raw/20250207_Apples_robot_lamp_Google_AI_Mode_TikToks_dev_exodu.json
+2025-02-15 17:22:44,341 - root - INFO - Email saved successfully: data/emails/raw/20250207__Mistrals_speedy_new_AI_assistant.json
+2025-02-15 17:22:44,341 - root - INFO - Email saved successfully: data/emails/raw/20250207__AI_basics_in_13_bites.json
+2025-02-15 17:22:44,341 - root - INFO - Email saved successfully: data/emails/raw/20250206__Google_Unveils_Gemini_20_Models_with_its_Most_Cos.json
+2025-02-15 17:22:44,341 - root - INFO - Email saved successfully: data/emails/raw/20250206_OpenAI_Robotics_Hardware_DeepSeek_Safety_Krutrim_L.json
+2025-02-15 17:22:44,342 - root - INFO - Email saved successfully: data/emails/raw/20250206_BB_Digest_Gemini_20_thinks_for_free.json
+2025-02-15 17:22:44,342 - root - INFO - Email saved successfully: data/emails/raw/20250206_Gemini_20_Alexa_with_Claude_underwater_settlements.json
+2025-02-15 17:22:44,342 - root - INFO - Email saved successfully: data/emails/raw/20250206__Googles_Gemini_20_goes_Pro.json
+2025-02-15 17:22:44,346 - root - INFO - Email saved successfully: data/emails/raw/20250206__Goodbye_Google_search.json
+2025-02-15 17:22:44,346 - root - INFO - Email saved successfully: data/emails/raw/20250205_Google_CEO_on_DeepSeek_Hugging_Face_replicates_Ope.json
+2025-02-15 17:22:44,347 - root - INFO - Email saved successfully: data/emails/raw/20250205_Apple_Invites_OpenAIs_rebrand_Beejs_guide_to_git_.json
+2025-02-15 17:22:44,347 - root - INFO - Email saved successfully: data/emails/raw/20250205__TikTok_owner_unveils_OmniHuman.json
+2025-02-15 17:22:44,347 - root - INFO - Email saved successfully: data/emails/raw/20250205__Deepfakes_just_leveled_UP.json
+2025-02-15 17:22:44,348 - root - INFO - Email saved successfully: data/emails/raw/20250204_OpenAIs_Deep_Research_Anthropic_Constitutional_Cla.json
+2025-02-15 17:22:44,348 - root - INFO - Email saved successfully: data/emails/raw/20250204_BB_Digest_ChatGPT_vs_Consultants.json
+2025-02-15 17:22:44,348 - root - INFO - Email saved successfully: data/emails/raw/20250204_Apple_Confetti_Metas_leaked_metaverse_memo_post-AI.json
+2025-02-15 17:22:44,349 - root - INFO - Email saved successfully: data/emails/raw/20250204__SoftBank_and_OpenAI_announce_Japan_AI_partnership.json
+2025-02-15 17:22:44,349 - root - INFO - Email saved successfully: data/emails/raw/20250204__GPT_vs_Gemini_SHOWDOWN.json
+2025-02-15 17:22:44,349 - root - INFO - Email saved successfully: data/emails/raw/20250203__OpenAI_Unveils_o3-mini_24_Faster_Reasoning_Model.json
+2025-02-15 17:22:44,349 - root - INFO - Email saved successfully: data/emails/raw/20250203_OpenAI_o3_variants_3_Stanfords_Virtual_Lab_LLMs_Gu.json
+2025-02-15 17:22:59,189 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:22:59,193 - root - INFO - Email saved successfully: data/emails/processed/20250214__OpenAI_Revises_AI_Behavior_Rules_Less_Bias_Improv.json
+2025-02-15 17:23:29,499 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:23:29,503 - root - INFO - Email saved successfully: data/emails/processed/20250214_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 17:23:47,828 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:23:47,831 - root - INFO - Email saved successfully: data/emails/processed/20250214_Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 17:24:11,379 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:24:11,383 - root - INFO - Email saved successfully: data/emails/processed/20250214__Anthropics_next_AI_model_is_coming.json
+2025-02-15 17:24:28,583 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:24:28,587 - root - INFO - Email saved successfully: data/emails/processed/20250214__GPT-5s_dirty_secret.json
+2025-02-15 17:24:42,100 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:24:42,104 - root - INFO - Email saved successfully: data/emails/processed/20250213__OpenAI_Reveals_GPT-5_Roadmap_Dynamic_Intelligence.json
+2025-02-15 17:25:02,931 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:25:02,943 - root - INFO - Email saved successfully: data/emails/processed/20250213_Harvey_raises_300M_OpenAI_GPT-5_Roadmap_Apple_Huma.json
+2025-02-15 17:25:28,484 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:25:28,489 - root - INFO - Email saved successfully: data/emails/processed/20250213_BB_Digest_OpenAIs_plan_for_2025.json
+2025-02-15 17:25:55,418 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:25:55,422 - root - INFO - Email saved successfully: data/emails/processed/20250213_Apple_humanoid_robots_OpenAIs_GPT-5_roadmap_foundi.json
+2025-02-15 17:26:20,402 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:26:20,404 - root - INFO - Email saved successfully: data/emails/processed/20250213__GPT-5_changes_EVERYTHING.json
+2025-02-15 17:26:40,473 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:26:40,527 - root - INFO - Email saved successfully: data/emails/processed/20250213__OpenAIs_new_GPT-5_roadmap.json
+2025-02-15 17:27:13,445 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:27:13,453 - root - INFO - Email saved successfully: data/emails/processed/20250212_Elon_Musk_offers_to_buy_OpenAI_Sam_Altman_offers_t.json
+2025-02-15 17:28:12,333 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:28:12,336 - root - INFO - Email saved successfully: data/emails/processed/20250212_Google_Pixel_leaks_YouTubes_TV_growth_2025s_top_st.json
+2025-02-15 17:28:59,625 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:28:59,634 - root - INFO - Email saved successfully: data/emails/processed/20250212__Global_tensions_rise_at_AI_summit.json
+2025-02-15 17:29:18,172 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:29:18,173 - root - INFO - Email saved successfully: data/emails/processed/20250212__Your_coworkers_AI_exposed.json
+2025-02-15 17:29:47,762 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:29:47,764 - root - INFO - Email saved successfully: data/emails/processed/20250211_OpenAI_Intelligence_Age_Frances_112B_AI_Investment.json
+2025-02-15 17:30:10,699 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:30:10,701 - root - INFO - Email saved successfully: data/emails/processed/20250211_BB_Digest_AIs_fast_cat.json
+2025-02-15 17:30:36,812 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:30:36,821 - root - INFO - Email saved successfully: data/emails/processed/20250211_Elons_97B_OpenAI_bid_Sam_Altmans_AI_observations_T.json
+2025-02-15 17:30:56,373 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:30:56,376 - root - INFO - Email saved successfully: data/emails/processed/20250211__Sam_vs_Elon_Round_2.json
+2025-02-15 17:31:12,089 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:31:12,098 - root - INFO - Email saved successfully: data/emails/processed/20250211__Elons_97B_OpenAI_offer.json
+2025-02-15 17:31:33,578 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:31:33,587 - root - INFO - Email saved successfully: data/emails/processed/20250210__Sam_Altman_Reveals_AI_Costs_Drop_10x_Every_Year.json
+2025-02-15 17:31:56,788 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:31:56,789 - root - INFO - Email saved successfully: data/emails/processed/20250210_Mistral_le_Chat_Pika_Video_Editing_Googles_AI_Poli.json
+2025-02-15 17:32:31,795 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:32:31,804 - root - INFO - Email saved successfully: data/emails/processed/20250210_Inside_OpenAIs_Stargate_deal_Apples_camera_AirPods.json
+2025-02-15 17:32:48,602 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:32:48,608 - root - INFO - Email saved successfully: data/emails/processed/20250210__DeepMinds_AI_math_genius.json
+2025-02-15 17:33:03,551 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:33:03,555 - root - INFO - Email saved successfully: data/emails/processed/20250210__Sam_drops_2035_AI_bombshell.json
+2025-02-15 17:33:18,707 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:33:18,711 - root - INFO - Email saved successfully: data/emails/processed/20250209__Stanfords_50_AI_shock.json
+2025-02-15 17:33:38,200 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:33:38,205 - root - INFO - Email saved successfully: data/emails/processed/20250207_Mistral_AI_updates_Chatbot_Faster_than_ChatGPT_Cla.json
+2025-02-15 17:34:34,482 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:34:34,635 - root - INFO - Email saved successfully: data/emails/processed/20250207_Lyft_Anthropic_partnership_DeepSeek_VL2_2_OpenAI_c.json
+2025-02-15 17:34:53,427 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:34:53,429 - root - INFO - Email saved successfully: data/emails/processed/20250207_Apples_robot_lamp_Google_AI_Mode_TikToks_dev_exodu.json
+2025-02-15 17:35:14,781 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:35:14,786 - root - INFO - Email saved successfully: data/emails/processed/20250207__Mistrals_speedy_new_AI_assistant.json
+2025-02-15 17:35:25,480 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:35:25,484 - root - INFO - Email saved successfully: data/emails/processed/20250207__AI_basics_in_13_bites.json
+2025-02-15 17:35:38,389 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:35:38,392 - root - INFO - Email saved successfully: data/emails/processed/20250206__Google_Unveils_Gemini_20_Models_with_its_Most_Cos.json
+2025-02-15 17:35:56,916 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:35:56,920 - root - INFO - Email saved successfully: data/emails/processed/20250206_OpenAI_Robotics_Hardware_DeepSeek_Safety_Krutrim_L.json
+2025-02-15 17:36:31,391 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:36:31,396 - root - INFO - Email saved successfully: data/emails/processed/20250206_BB_Digest_Gemini_20_thinks_for_free.json
+2025-02-15 17:36:53,544 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:36:53,548 - root - INFO - Email saved successfully: data/emails/processed/20250206_Gemini_20_Alexa_with_Claude_underwater_settlements.json
+2025-02-15 17:37:07,263 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:37:07,265 - root - INFO - Email saved successfully: data/emails/processed/20250206__Googles_Gemini_20_goes_Pro.json
+2025-02-15 17:37:25,082 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:37:25,217 - root - INFO - Email saved successfully: data/emails/processed/20250206__Goodbye_Google_search.json
+2025-02-15 17:37:48,018 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:37:48,123 - root - INFO - Email saved successfully: data/emails/processed/20250205_Google_CEO_on_DeepSeek_Hugging_Face_replicates_Ope.json
+2025-02-15 17:38:14,952 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:38:14,957 - root - INFO - Email saved successfully: data/emails/processed/20250205_Apple_Invites_OpenAIs_rebrand_Beejs_guide_to_git_.json
+2025-02-15 17:38:33,793 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:38:33,798 - root - INFO - Email saved successfully: data/emails/processed/20250205__TikTok_owner_unveils_OmniHuman.json
+2025-02-15 17:38:49,664 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:38:49,668 - root - INFO - Email saved successfully: data/emails/processed/20250205__Deepfakes_just_leveled_UP.json
+2025-02-15 17:39:18,438 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:39:18,441 - root - INFO - Email saved successfully: data/emails/processed/20250204_OpenAIs_Deep_Research_Anthropic_Constitutional_Cla.json
+2025-02-15 17:39:34,921 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:39:34,924 - root - INFO - Email saved successfully: data/emails/processed/20250204_BB_Digest_ChatGPT_vs_Consultants.json
+2025-02-15 17:39:55,190 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:39:55,194 - root - INFO - Email saved successfully: data/emails/processed/20250204_Apple_Confetti_Metas_leaked_metaverse_memo_post-AI.json
+2025-02-15 17:40:12,802 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:40:12,804 - root - INFO - Email saved successfully: data/emails/processed/20250204__SoftBank_and_OpenAI_announce_Japan_AI_partnership.json
+2025-02-15 17:40:28,132 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:40:28,140 - root - INFO - Email saved successfully: data/emails/processed/20250204__GPT_vs_Gemini_SHOWDOWN.json
+2025-02-15 17:40:45,363 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:40:45,367 - root - INFO - Email saved successfully: data/emails/processed/20250203__OpenAI_Unveils_o3-mini_24_Faster_Reasoning_Model.json
+2025-02-15 17:41:02,246 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 17:41:02,254 - root - INFO - Email saved successfully: data/emails/processed/20250203_OpenAI_o3_variants_3_Stanfords_Virtual_Lab_LLMs_Gu.json
+2025-02-15 17:41:02,255 - root - ERROR - Error in main execution: can't compare offset-naive and offset-aware datetimes
+Traceback (most recent call last):
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/client.py", line 617, in main
+    logger.error("Failed to generate newsletter summary")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/client.py", line 528, in generate_daily_summary
+    if not recent_articles:
+                            
+TypeError: can't compare offset-naive and offset-aware datetimes
+2025-02-15 18:07:41,212 - root - ERROR - Error in main execution: name 'config' is not defined
+Traceback (most recent call last):
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/main.py", line 14, in main
+    gmail_client = GmailClient()
+                   ^^^^^^^^^^^^^
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/lib/gmail_client.py", line 18, in __init__
+    self.service = self._authenticate_gmail()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/lib/gmail_client.py", line 24, in _authenticate_gmail
+    creds = Credentials.from_authorized_user_file("token.json", config.SCOPES)
+                                                                ^^^^^^
+NameError: name 'config' is not defined
+2025-02-15 18:10:37,371 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:10:37,400 - root - INFO - Starting to process email backlog...
+2025-02-15 18:10:41,353 - root - INFO - No unprocessed emails found
+2025-02-15 18:31:31,975 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:31:32,004 - root - INFO - Starting newsletter processing...
+2025-02-15 18:31:35,907 - root - INFO - No new emails found
+2025-02-15 18:31:35,907 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:31:35,907 - root - ERROR - Error in main execution: name 'Path' is not defined
+Traceback (most recent call last):
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/main.py", line 27, in main
+    articles = processor.load_articles_from_files(from_date, to_date)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/lib/newsletter_processor.py", line 48, in load_articles_from_files
+    processed_dir = Path("data/emails/processed")
+                    ^^^^
+NameError: name 'Path' is not defined
+2025-02-15 18:31:53,124 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:31:53,152 - root - INFO - Starting newsletter processing...
+2025-02-15 18:31:56,747 - root - INFO - No new emails found
+2025-02-15 18:31:56,747 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:31:56,748 - root - ERROR - Error in main execution: unconverted data remains: _Gemini_20_Alexa_with_Claude_underwater_settlements.json
+Traceback (most recent call last):
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/main.py", line 27, in main
+    articles = processor.load_articles_from_files(from_date, to_date)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/lib/newsletter_processor.py", line 54, in load_articles_from_files
+    <= datetime.strptime(f.name.split("__")[0], "%Y%m%d")
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.9/Frameworks/Python.framework/Versions/3.12/lib/python3.12/_strptime.py", line 653, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.9/Frameworks/Python.framework/Versions/3.12/lib/python3.12/_strptime.py", line 435, in _strptime
+    raise ValueError("unconverted data remains: %s" %
+ValueError: unconverted data remains: _Gemini_20_Alexa_with_Claude_underwater_settlements.json
+2025-02-15 18:32:45,563 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:32:45,592 - root - INFO - Starting newsletter processing...
+2025-02-15 18:32:49,286 - root - INFO - No new emails found
+2025-02-15 18:32:49,287 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:32:49,288 - root - ERROR - No processed emails found in the last 24 hours
+2025-02-15 18:34:49,601 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:34:49,631 - root - INFO - Starting newsletter processing...
+2025-02-15 18:34:53,343 - root - INFO - No new emails found
+2025-02-15 18:34:53,343 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:34:53,344 - root - ERROR - No processed emails found in the last 24 hours
+2025-02-15 18:35:31,398 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:35:31,429 - root - INFO - Starting newsletter processing...
+2025-02-15 18:35:35,128 - root - INFO - No new emails found
+2025-02-15 18:35:35,129 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:35:35,129 - root - ERROR - No processed emails found in the last 24 hours
+2025-02-15 18:38:54,964 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:38:54,995 - root - INFO - Starting newsletter processing...
+2025-02-15 18:38:58,684 - root - INFO - No new emails found
+2025-02-15 18:38:58,685 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:38:58,686 - root - ERROR - Error loading articles from 20250214_Elons_OpenAI_offer_letter_TikToks_app_store_return.json: unconverted data remains: _Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 18:38:58,688 - root - ERROR - Error loading articles from 20250214_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json: unconverted data remains: _Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 18:38:58,742 - root - ERROR - Failed to send newsletter: <HttpError 400 when requesting https://gmail.googleapis.com/gmail/v1/users/me/messages/send?alt=json returned "Recipient address required". Details: "[{'message': 'Recipient address required', 'domain': 'global', 'reason': 'invalidArgument'}]">
+2025-02-15 18:38:58,743 - root - ERROR - Error in main execution: object bool can't be used in 'await' expression
+Traceback (most recent call last):
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/main.py", line 48, in main
+    if await send_newsletter(
+       ^^^^^^^^^^^^^^^^^^^^^^
+TypeError: object bool can't be used in 'await' expression
+2025-02-15 18:41:32,494 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:41:32,523 - root - INFO - Starting newsletter processing...
+2025-02-15 18:41:36,417 - root - INFO - No new emails found
+2025-02-15 18:41:36,417 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:41:36,417 - root - INFO - Retrieving processed email from 2025-02-14 18:41:36.417530 to 2025-02-15 18:41:36.417535...
+2025-02-15 18:41:36,418 - root - ERROR - No processed emails found in the last 24 hours
+2025-02-15 18:41:55,488 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:41:55,518 - root - INFO - Starting newsletter processing...
+2025-02-15 18:41:59,067 - root - INFO - No new emails found
+2025-02-15 18:41:59,067 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:41:59,067 - root - INFO - Retrieving processed email from 2025-02-13 18:41:59.067719 to 2025-02-15 18:41:59.067724...
+2025-02-15 18:41:59,068 - root - ERROR - Error loading articles from 20250214_Elons_OpenAI_offer_letter_TikToks_app_store_return.json: unconverted data remains: _Elons_OpenAI_offer_letter_TikToks_app_store_return.json
+2025-02-15 18:41:59,070 - root - ERROR - Error loading articles from 20250214_Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json: unconverted data remains: _Veo_2_in_YouTube_Adobe_Firefly_Video_Model_Google_.json
+2025-02-15 18:41:59,269 - root - ERROR - Failed to send newsletter: <HttpError 400 when requesting https://gmail.googleapis.com/gmail/v1/users/me/messages/send?alt=json returned "Recipient address required". Details: "[{'message': 'Recipient address required', 'domain': 'global', 'reason': 'invalidArgument'}]">
+2025-02-15 18:41:59,270 - root - ERROR - Failed to send newsletter
+2025-02-15 18:45:17,657 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:45:17,688 - root - INFO - Starting newsletter processing...
+2025-02-15 18:45:21,928 - root - INFO - No new emails found
+2025-02-15 18:45:21,929 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:45:21,929 - root - INFO - Retrieving processed email from 2025-02-13 18:45:21.929267 to 2025-02-15 18:45:21.929277...
+2025-02-15 18:45:22,262 - root - INFO - Newsletter sent successfully
+2025-02-15 18:47:24,953 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:47:24,985 - root - INFO - Starting newsletter processing...
+2025-02-15 18:47:28,633 - root - INFO - No new emails found
+2025-02-15 18:47:28,633 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:47:28,633 - root - INFO - Retrieving processed email from 2025-02-13 18:47:28.633344 to 2025-02-15 18:47:28.633355...
+2025-02-15 18:47:28,636 - root - INFO - Processed 39 articles
+2025-02-15 18:47:28,788 - root - INFO - Newsletter sent successfully
+2025-02-15 18:48:47,187 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:48:47,213 - root - INFO - Starting newsletter processing...
+2025-02-15 18:48:50,861 - root - INFO - No new emails found
+2025-02-15 18:48:50,862 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:48:50,862 - root - INFO - Retrieving processed email from 2025-02-13 18:48:50.862323 to 2025-02-15 18:48:50.862334...
+2025-02-15 18:48:50,867 - root - INFO - Processed 39 articles
+2025-02-15 18:48:50,867 - root - INFO - Found 0 articles for summary generation
+2025-02-15 18:48:51,162 - root - INFO - Newsletter sent successfully
+2025-02-15 18:49:13,356 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 18:49:13,385 - root - INFO - Starting newsletter processing...
+2025-02-15 18:49:16,847 - root - INFO - No new emails found
+2025-02-15 18:49:16,847 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 18:49:16,847 - root - INFO - Retrieving processed email from 2025-02-13 18:49:16.847366 to 2025-02-15 18:49:16.847505...
+2025-02-15 18:49:16,851 - root - INFO - Processed 39 articles
+2025-02-15 18:49:16,851 - root - INFO - Found 39 articles for summary generation
+2025-02-15 18:49:23,329 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 18:49:23,736 - root - INFO - Newsletter sent successfully
+2025-02-15 19:00:14,015 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 19:00:14,047 - root - INFO - Starting newsletter processing...
+2025-02-15 19:00:18,201 - root - INFO - No new emails found
+2025-02-15 19:00:18,202 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 19:00:18,202 - root - INFO - Retrieving processed email from 2025-02-13 19:00:18.202094 to 2025-02-15 19:00:18.202098...
+2025-02-15 19:00:18,202 - root - INFO - Loading articles from 5 processed email files
+2025-02-15 19:00:18,206 - root - INFO - Processed 39 articles
+2025-02-15 19:00:18,206 - root - INFO - Found 39 articles for summary generation
+2025-02-15 19:00:22,939 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 19:00:23,319 - root - INFO - Newsletter sent successfully
+2025-02-15 19:07:57,253 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 19:07:57,286 - root - INFO - Starting newsletter processing...
+2025-02-15 19:08:01,211 - root - INFO - No new emails found
+2025-02-15 19:08:01,211 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 19:08:01,211 - root - INFO - Retrieving processed email from 2025-02-13 19:08:01.211491 to 2025-02-15 19:08:01.211502...
+2025-02-15 19:08:01,212 - root - INFO - Loading articles from 5 processed email files
+2025-02-15 19:08:01,215 - root - INFO - Processed 39 articles
+2025-02-15 19:08:01,215 - root - INFO - Found 39 articles for summary generation
+2025-02-15 19:08:06,272 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 19:08:06,647 - root - INFO - Newsletter sent successfully
+2025-02-15 19:09:19,610 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 19:09:19,639 - root - INFO - Starting newsletter processing...
+2025-02-15 19:09:23,436 - root - INFO - No new emails found
+2025-02-15 19:09:23,436 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 19:09:23,436 - root - INFO - Retrieving processed email from 2025-02-13 19:09:23.436528 to 2025-02-15 19:09:23.436539...
+2025-02-15 19:09:23,438 - root - INFO - Loading articles from 5 processed email files
+2025-02-15 19:09:23,440 - root - INFO - Processed 39 articles
+2025-02-15 19:09:23,441 - root - INFO - Found 39 articles for summary generation
+2025-02-15 19:09:27,847 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 19:09:28,252 - root - INFO - Newsletter sent successfully
+2025-02-15 19:15:27,906 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 19:15:27,936 - root - INFO - Starting newsletter processing...
+2025-02-15 19:15:31,837 - root - INFO - No new emails found
+2025-02-15 19:15:31,837 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 19:15:31,837 - root - INFO - Retrieving processed email from 2025-02-13 19:15:31.837743 to 2025-02-15 19:15:31.837756...
+2025-02-15 19:15:31,839 - root - INFO - Loading articles from 5 processed email files
+2025-02-15 19:15:31,843 - root - INFO - Processed 39 articles
+2025-02-15 19:15:31,843 - root - INFO - Found 39 articles for summary generation
+2025-02-15 19:15:37,406 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 19:15:37,767 - root - INFO - Newsletter sent successfully
+2025-02-15 19:17:28,013 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 19:17:28,045 - root - INFO - Starting newsletter processing...
+2025-02-15 19:17:31,776 - root - INFO - No new emails found
+2025-02-15 19:17:31,776 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 19:17:31,776 - root - INFO - Retrieving processed email from 2025-02-13 19:17:31.776222 to 2025-02-15 19:17:31.776227...
+2025-02-15 19:17:31,776 - root - INFO - Loading articles from 5 processed email files
+2025-02-15 19:17:31,779 - root - INFO - Processed 39 articles
+2025-02-15 19:17:31,779 - root - INFO - Found 39 articles for summary generation
+2025-02-15 19:17:36,595 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 19:17:36,818 - root - INFO - Newsletter sent successfully

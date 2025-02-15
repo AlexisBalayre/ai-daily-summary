@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI News - By Alexis Balayre</title>
+    <style>
+      body {
+        font-family: "Helvetica Neue", sans-serif;
+        background-color: #f0f2f5;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 650px;
+        margin: 30px auto;
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      h1,
+      h2 {
+        color: #2c3e50;
+      }
+      p,
+      li {
+        color: #34495e;
+        line-height: 1.6;
+      }
+      ul {
+        padding: 0;
+        list-style-type: disc;
+        margin-left: 20px;
+      }
+      a {
+        color: #2980b9;
+        text-decoration: none;
+      }
+      .category {
+        background: #ecf0f1;
+        padding: 15px;
+        margin-top: 20px;
+        border-left: 5px solid #3498db;
+        border-radius: 5px;
+      }
+      footer {
+        text-align: center;
+        margin-top: 30px;
+        font-size: 0.85em;
+        color: #7f8c8d;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>AI Newsletter - {{date}}</h1>
+      <h2>Summary</h2>
+      <p>{{summary}}</p>
+      <h2>Key Facts</h2>
+      <ul>
+        {{key_facts}}
+      </ul>
+      <h2>Articles</h2>
+      {{articles}}
+      <footer>
+        &copy; {{year}} Alexis Balayre AI Newsletter. All rights reserved.
+      </footer>
+    </div>
+  </body>
+</html>
