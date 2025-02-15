@@ -633,3 +633,159 @@ TypeError: object bool can't be used in 'await' expression
 2025-02-15 19:17:31,779 - root - INFO - Found 39 articles for summary generation
 2025-02-15 19:17:36,595 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
 2025-02-15 19:17:36,818 - root - INFO - Newsletter sent successfully
+2025-02-15 20:44:32,386 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 20:44:32,478 - root - INFO - Starting newsletter processing...
+2025-02-15 20:44:36,307 - root - INFO - Processing 29 emails...
+2025-02-15 20:44:36,308 - root - INFO - Email saved successfully: data/emails/raw/20250214_The_Weekly_Kaitchup_79.json
+2025-02-15 20:44:36,308 - root - INFO - Email saved successfully: data/emails/raw/20250213_Thinking_LLMs_with_Simple_Fine-tuning_and_Budget_F.json
+2025-02-15 20:44:36,308 - root - INFO - Email saved successfully: data/emails/raw/20250213_Here_Are_My_Go-To_AI_Tools.json
+2025-02-15 20:44:36,308 - root - INFO - Email saved successfully: data/emails/raw/20250213_Breaking_OpenAIs_efforts_at_pure_scaling_have_hit_.json
+2025-02-15 20:44:36,309 - root - INFO - Email saved successfully: data/emails/raw/20250212_Attention_Is_All_You_Need_The_Original_Transformer.json
+2025-02-15 20:44:36,309 - root - INFO - Email saved successfully: data/emails/raw/20250212_How_LLMs_Are_Changing_Every_Job.json
+2025-02-15 20:44:36,309 - root - INFO - Email saved successfully: data/emails/raw/20250211_TAI_139_LLM_Adoption_Anthropic_Measures_Use_Cases_.json
+2025-02-15 20:44:36,310 - root - INFO - Email saved successfully: data/emails/raw/20250211_Everything_I_warned_about_in_Taming_Silicon_Valley.json
+2025-02-15 20:44:36,310 - root - INFO - Email saved successfully: data/emails/raw/20250211_Did_Elon_Musk_just_Muk_Sam_Altman.json
+2025-02-15 20:44:36,310 - root - INFO - Email saved successfully: data/emails/raw/20250211_Two_years_of_Artificial_Ignorance.json
+2025-02-15 20:44:36,310 - root - INFO - Email saved successfully: data/emails/raw/20250210_Paris_AI_Summit_Train_Wreck.json
+2025-02-15 20:44:36,311 - root - INFO - Email saved successfully: data/emails/raw/20250210_GRPO_Train_LLMs_with_DeepSeek-R1s_Reinforcement_Le.json
+2025-02-15 20:44:36,311 - root - INFO - Email saved successfully: data/emails/raw/20250210_ChinAI_299_The_True_Unicorns_1_billion_tokensday_U.json
+2025-02-15 20:44:36,311 - root - INFO - Email saved successfully: data/emails/raw/20250210_Recording_How_Modern_CPUs_Execute_Your_Code_A_Deep.json
+2025-02-15 20:44:36,311 - root - INFO - Email saved successfully: data/emails/raw/20250209_Shame_on_Google_twice.json
+2025-02-15 20:44:36,311 - root - INFO - Email saved successfully: data/emails/raw/20250209_WARNING_Elon_Musk_is_crippling_the_future_of_the_U.json
+2025-02-15 20:44:36,311 - root - INFO - Email saved successfully: data/emails/raw/20250209_Sunday_Rundown_87_Deep_Research_Mega_Laptop.json
+2025-02-15 20:44:36,312 - root - INFO - Email saved successfully: data/emails/raw/20250209_Five_ways_in_which_the_last_3_months_and_especiall.json
+2025-02-15 20:44:36,312 - root - INFO - Email saved successfully: data/emails/raw/20250207_AI_Roundup_104_Deep_Research.json
+2025-02-15 20:44:36,312 - root - INFO - Email saved successfully: data/emails/raw/20250207_The_Weekly_Kaitchup_78.json
+2025-02-15 20:44:36,312 - root - INFO - Email saved successfully: data/emails/raw/20250206_Just_How_Open_Is_Open-Source_AI.json
+2025-02-15 20:44:36,313 - root - INFO - Email saved successfully: data/emails/raw/20250206_The_future_of_software_development_LLM_Developers.json
+2025-02-15 20:44:36,313 - root - INFO - Email saved successfully: data/emails/raw/20250206_Irony_too_funny_for_words.json
+2025-02-15 20:44:36,313 - root - INFO - Email saved successfully: data/emails/raw/20250205_Qwen25-VL_Whats_New_and_How_Good_Are_They_for_Char.json
+2025-02-15 20:44:36,313 - root - INFO - Email saved successfully: data/emails/raw/20250205_Native_Speakers.json
+2025-02-15 20:44:36,313 - root - INFO - Email saved successfully: data/emails/raw/20250205_Google_2001_Dont_Be_Evil.json
+2025-02-15 20:44:36,314 - root - INFO - Email saved successfully: data/emails/raw/20250205_Understanding_Reasoning_LLMs.json
+2025-02-15 20:44:36,314 - root - INFO - Email saved successfully: data/emails/raw/20250204_ChatGPT_in_Shambles.json
+2025-02-15 20:44:36,314 - root - INFO - Email saved successfully: data/emails/raw/20250204_TAI_138_OpenAIs_o3-Mini_and_Deep_Research_A_New_Er.json
+2025-02-15 20:44:51,143 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:44:51,147 - root - INFO - Email saved successfully: data/emails/processed/20250214_The_Weekly_Kaitchup_79.json
+2025-02-15 20:44:58,108 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:44:58,112 - root - INFO - Email saved successfully: data/emails/processed/20250213_Thinking_LLMs_with_Simple_Fine-tuning_and_Budget_F.json
+2025-02-15 20:44:59,336 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:44:59,339 - root - INFO - Email saved successfully: data/emails/processed/20250213_Here_Are_My_Go-To_AI_Tools.json
+2025-02-15 20:45:14,596 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:45:14,599 - root - INFO - Email saved successfully: data/emails/processed/20250213_Breaking_OpenAIs_efforts_at_pure_scaling_have_hit_.json
+2025-02-15 20:45:30,730 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:45:30,735 - root - INFO - Email saved successfully: data/emails/processed/20250212_Attention_Is_All_You_Need_The_Original_Transformer.json
+2025-02-15 20:45:42,855 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:45:42,859 - root - INFO - Email saved successfully: data/emails/processed/20250212_How_LLMs_Are_Changing_Every_Job.json
+2025-02-15 20:46:10,606 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:46:10,610 - root - INFO - Email saved successfully: data/emails/processed/20250211_TAI_139_LLM_Adoption_Anthropic_Measures_Use_Cases_.json
+2025-02-15 20:46:13,306 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:46:13,310 - root - INFO - Email saved successfully: data/emails/processed/20250211_Everything_I_warned_about_in_Taming_Silicon_Valley.json
+2025-02-15 20:46:22,822 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:46:22,828 - root - INFO - Email saved successfully: data/emails/processed/20250211_Did_Elon_Musk_just_Muk_Sam_Altman.json
+2025-02-15 20:46:35,795 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:46:35,799 - root - INFO - Email saved successfully: data/emails/processed/20250211_Two_years_of_Artificial_Ignorance.json
+2025-02-15 20:46:44,087 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:46:44,088 - root - INFO - Email saved successfully: data/emails/processed/20250210_Paris_AI_Summit_Train_Wreck.json
+2025-02-15 20:46:59,449 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:46:59,453 - root - INFO - Email saved successfully: data/emails/processed/20250210_GRPO_Train_LLMs_with_DeepSeek-R1s_Reinforcement_Le.json
+2025-02-15 20:47:19,622 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:47:19,625 - root - INFO - Email saved successfully: data/emails/processed/20250210_ChinAI_299_The_True_Unicorns_1_billion_tokensday_U.json
+2025-02-15 20:47:23,102 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:47:23,104 - root - INFO - Email saved successfully: data/emails/processed/20250210_Recording_How_Modern_CPUs_Execute_Your_Code_A_Deep.json
+2025-02-15 20:47:27,081 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:47:27,089 - root - INFO - Email saved successfully: data/emails/processed/20250209_Shame_on_Google_twice.json
+2025-02-15 20:47:38,054 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:47:38,060 - root - INFO - Email saved successfully: data/emails/processed/20250209_WARNING_Elon_Musk_is_crippling_the_future_of_the_U.json
+2025-02-15 20:48:00,580 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:48:00,585 - root - INFO - Email saved successfully: data/emails/processed/20250209_Sunday_Rundown_87_Deep_Research_Mega_Laptop.json
+2025-02-15 20:48:13,278 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:48:13,283 - root - INFO - Email saved successfully: data/emails/processed/20250209_Five_ways_in_which_the_last_3_months_and_especiall.json
+2025-02-15 20:48:20,651 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:48:20,655 - root - INFO - Email saved successfully: data/emails/processed/20250207_AI_Roundup_104_Deep_Research.json
+2025-02-15 20:48:41,335 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:48:41,338 - root - INFO - Email saved successfully: data/emails/processed/20250207_The_Weekly_Kaitchup_78.json
+2025-02-15 20:49:11,953 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:49:11,956 - root - INFO - Email saved successfully: data/emails/processed/20250206_Just_How_Open_Is_Open-Source_AI.json
+2025-02-15 20:49:26,913 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:49:26,918 - root - INFO - Email saved successfully: data/emails/processed/20250206_The_future_of_software_development_LLM_Developers.json
+2025-02-15 20:49:32,688 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:49:32,691 - root - INFO - Email saved successfully: data/emails/processed/20250206_Irony_too_funny_for_words.json
+2025-02-15 20:49:39,065 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:49:39,069 - root - INFO - Email saved successfully: data/emails/processed/20250205_Qwen25-VL_Whats_New_and_How_Good_Are_They_for_Char.json
+2025-02-15 20:49:50,516 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:49:50,518 - root - INFO - Email saved successfully: data/emails/processed/20250205_Native_Speakers.json
+2025-02-15 20:50:01,410 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:50:01,416 - root - INFO - Email saved successfully: data/emails/processed/20250205_Google_2001_Dont_Be_Evil.json
+2025-02-15 20:50:20,390 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:50:20,397 - root - INFO - Email saved successfully: data/emails/processed/20250205_Understanding_Reasoning_LLMs.json
+2025-02-15 20:50:37,454 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:50:37,458 - root - INFO - Email saved successfully: data/emails/processed/20250204_ChatGPT_in_Shambles.json
+2025-02-15 20:51:02,389 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 20:51:02,409 - root - INFO - Email saved successfully: data/emails/processed/20250204_TAI_138_OpenAIs_o3-Mini_and_Deep_Research_A_New_Er.json
+2025-02-15 20:51:02,410 - root - INFO - Processed 112 articles
+2025-02-15 20:51:02,410 - root - ERROR - Error in main execution: can't compare offset-naive and offset-aware datetimes
+Traceback (most recent call last):
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/main.py", line 45, in main
+    newsletter_content = await processor.generate_daily_summary(articles)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/lib/newsletter_processor.py", line 213, in generate_daily_summary
+    recent_articles = [a for a in articles if a.date > yesterday]
+                                              ^^^^^^^^^^^^^^^^^^
+TypeError: can't compare offset-naive and offset-aware datetimes
+2025-02-15 21:20:23,919 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 21:20:23,955 - root - INFO - Starting newsletter processing...
+2025-02-15 21:20:26,012 - root - INFO - No new emails found
+2025-02-15 21:20:26,012 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 21:20:26,012 - root - INFO - Retrieving processed email from 2025-02-13 21:20:26.012638 to 2025-02-15 21:20:26.012648...
+2025-02-15 21:20:26,013 - root - INFO - Loading articles from 6 processed email files
+2025-02-15 21:20:26,025 - root - INFO - Processed 42 articles
+2025-02-15 21:20:26,025 - root - ERROR - Error in main execution: can't compare offset-naive and offset-aware datetimes
+Traceback (most recent call last):
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/main.py", line 45, in main
+    newsletter_content = await processor.generate_daily_summary(articles)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexis/Programmation/AI/misc/ai-daily-summary/lib/newsletter_processor.py", line 213, in generate_daily_summary
+    recent_articles = [a for a in articles if a.date > yesterday]
+                                              ^^^^^^^^^^^^^^^^^^
+TypeError: can't compare offset-naive and offset-aware datetimes
+2025-02-15 21:21:50,763 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 21:21:50,793 - root - INFO - Starting newsletter processing...
+2025-02-15 21:21:52,577 - root - INFO - No new emails found
+2025-02-15 21:21:52,577 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 21:21:52,577 - root - INFO - Retrieving processed email from 2025-02-13 21:21:52.577950 to 2025-02-15 21:21:52.577962...
+2025-02-15 21:21:52,579 - root - INFO - Loading articles from 6 processed email files
+2025-02-15 21:21:52,582 - root - INFO - Processed 42 articles
+2025-02-15 21:21:52,582 - root - INFO - Found 42 articles for summary generation
+2025-02-15 21:21:58,119 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 21:21:58,423 - root - INFO - Newsletter sent successfully
+2025-02-15 21:39:11,198 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 21:39:11,228 - root - INFO - Starting newsletter processing...
+2025-02-15 21:39:13,092 - root - INFO - No new emails found
+2025-02-15 21:39:13,092 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 21:39:13,092 - root - INFO - Retrieving processed email from 2025-02-13 21:39:13.092684 to 2025-02-15 21:39:13.092695...
+2025-02-15 21:39:13,093 - root - INFO - Loading articles from 6 processed email files
+2025-02-15 21:39:13,096 - root - INFO - Processed 42 articles
+2025-02-15 21:39:13,096 - root - INFO - Found 42 articles for summary generation
+2025-02-15 21:39:20,741 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 21:39:21,044 - root - INFO - Newsletter sent successfully
+2025-02-15 21:43:50,707 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 21:43:50,735 - root - INFO - Starting newsletter processing...
+2025-02-15 21:43:52,436 - root - INFO - No new emails found
+2025-02-15 21:43:52,436 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 21:43:52,436 - root - INFO - Retrieving processed email from 2025-02-13 21:43:52.436469 to 2025-02-15 21:43:52.436485...
+2025-02-15 21:43:52,437 - root - INFO - Loading articles from 6 processed email files
+2025-02-15 21:43:52,439 - root - INFO - Processed 42 articles
+2025-02-15 21:43:52,439 - root - INFO - Found 42 articles for summary generation
+2025-02-15 21:43:59,216 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 21:43:59,521 - root - INFO - Newsletter sent successfully
+2025-02-15 21:46:04,776 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-02-15 21:46:04,804 - root - INFO - Starting newsletter processing...
+2025-02-15 21:46:06,595 - root - INFO - No new emails found
+2025-02-15 21:46:06,595 - root - INFO - Retrieving processed email from the 24 hours...
+2025-02-15 21:46:06,595 - root - INFO - Retrieving processed email from 2025-02-13 21:46:06.595653 to 2025-02-15 21:46:06.595664...
+2025-02-15 21:46:06,597 - root - INFO - Loading articles from 6 processed email files
+2025-02-15 21:46:06,600 - root - INFO - Processed 42 articles
+2025-02-15 21:46:06,600 - root - INFO - Found 42 articles for summary generation
+2025-02-15 21:46:15,001 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-15 21:46:15,240 - root - INFO - Newsletter sent successfully

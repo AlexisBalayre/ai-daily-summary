@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass
 from typing import List, Optional, Dict
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from difflib import SequenceMatcher
 from openai import AsyncOpenAI
 from google.auth.transport.requests import Request
@@ -50,12 +50,10 @@ class NewsletterProcessor:
         files = [
             f
             for f in processed_dir.glob("*.json")
-            if from_date
-            <= datetime.strptime(f.name.split("_")[0], "%Y%m%d")
-            <= to_date
+            if from_date <= datetime.strptime(f.name.split("_")[0], "%Y%m%d") <= to_date
         ]
         articles = []
-        
+
         logger.info(f"Loading articles from {len(files)} processed email files")
 
         for file in files:
@@ -129,38 +127,46 @@ class NewsletterProcessor:
         return articles
 
     async def _extract_articles_from_email(self, email: Dict) -> Dict:
-        """Extract structured articles from email content"""
+        """Extract structured articles from email content, filtering by specific topics"""
+        # Define the system prompt with clear instructions and topic filtering
+        system_prompt = """
+            You are an expert at extracting structured data from newsletter emails. Your task is to extract articles from the email content that match the following topics:
+            - AI Research and Advances
+            - AI Products, Tools, and Repositories
+            - Data Science Techniques and Tips
+            - Industry News and Trends
+
+            For each matching article, identify:
+            - Title
+            - Main content
+            - Topic category (must be one of the above topics)
+            - Any URLs mentioned
+
+            Output your response strictly in valid JSON with the following structure:
+            {
+                "articles": [
+                    {
+                        "title": "Article title",
+                        "content": "Main content",
+                        "topic": "Topic category",
+                        "url": "URL if present (empty string if not)"
+                    }
+                ]
+            }
+            Do not include any additional text or explanation outside of this JSON structure.
+            """
+
+        # Prepare the user prompt with the email body
         prompt = f"""
-        Extract articles from this newsletter email. For each article, identify:
-        - Title
-        - Main content
-        - Topic category
-        - Any URLs mentioned
-        
-        Format the output as JSON:
-        {{
-            "articles": [
-                {{
-                    "title": "Article title",
-                    "content": "Main content",
-                    "topic": "Topic category",
-                    "url": "URL if present"
-                }}
-            ]
-        }}
-        
-        Email content:
-        {email['body']}
-        """
+            Email content:
+            {email['body']}
+            """
 
         try:
             completion = await self.openai_client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {
-                        "role": "system",
-                        "content": "Extract structured article data from newsletter emails.",
-                    },
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ],
                 response_format={"type": "json_object"},
@@ -209,9 +215,11 @@ class NewsletterProcessor:
     ) -> NewsletterContent:
         """Generate daily summary and key facts from articles"""
         # Filter for last day's articles
-        yesterday = datetime.now() - timedelta(days=2)
-        recent_articles = [a for a in articles if a.date > yesterday]
-        
+        yesterday = datetime.now(timezone.utc) - timedelta(days=2)
+        recent_articles = [
+            a for a in articles if a.date.replace(tzinfo=timezone.utc) > yesterday
+        ]
+
         logger.info(f"Found {len(recent_articles)} articles for summary generation")
 
         if not recent_articles:
@@ -227,33 +235,41 @@ class NewsletterProcessor:
             f"Title: {a.title}\nContent: {a.content}" for a in recent_articles
         )
 
+        # Refined prompt
         prompt = f"""
-        Analyze these AI news articles and generate:
-        1. A high-level summary of the day's AI news
-        2. Key facts and developments as bullet points
-        
-        Format the output as JSON:
-        {{
-            "summary": "Overall summary of the day's news",
-            "key_facts": [
-                "Key fact 1",
-                "Key fact 2",
-                ...
-            ]
-        }}
-        
-        Articles:
-        {articles_text}
-        """
+                    Articles:
+                    {articles_text}
+                    """
+
+        system_prompt = """
+            You are an expert in AI news and summarization. Below are daily newsletter articles categorized as follows:
+            - AI Research and Advances
+            - AI Products, Tools, and Repositories
+            - Data Science Techniques and Tips
+            - Industry News and Trends
+
+            Your tasks are:
+            1. Generate a complete summary that captures the key developments and trends across these categories.
+            2. List the most important facts and developments as bullet points.
+
+            Output your response in valid JSON with the following structure:
+            {
+                "summary": "A high-level summary of the day's AI news.",
+                "key_facts": [
+                    "Key fact 1",
+                    "Key fact 2",
+                    ...
+                ]
+            }
+
+            Do not include any additional text or explanation outside of this JSON structure.
+            """
 
         try:
             completion = await self.openai_client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {
-                        "role": "system",
-                        "content": "Generate concise summaries of AI news.",
-                    },
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ],
                 response_format={"type": "json_object"},

@@ -159,7 +159,7 @@ def save_individual_email(
 def send_newsletter(service, subject, content, recipient) -> bool:
     try:
         template = load_template()
-        html_content = template.replace("{{date}}", datetime.now().strftime("%Y-%m-%d"))
+        html_content = template.replace("{{date}}", datetime.now().strftime("%B %d, %Y"))
         html_content = html_content.replace("{{summary}}", content.summary)
         html_content = html_content.replace("{{year}}", str(datetime.now().year))
         html_content = html_content.replace(
@@ -194,9 +194,14 @@ def send_newsletter(service, subject, content, recipient) -> bool:
                 categories["Industry News and Trends"].append(article)
 
         articles_html = ""
+        flag = False
         for category, articles in categories.items():
             if articles:
-                articles_html += f"<h3>{category}</h3>"
+                if flag: 
+                    articles_html += f"<br/><h3>{category}</h3>"
+                else:
+                    articles_html += f"<h3>{category}</h3>"
+                flag = True
                 for article in articles:
                     articles_html += (
                         f"<h4>{article.title}</h4>"
