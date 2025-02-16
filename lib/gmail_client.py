@@ -3,6 +3,7 @@ import json
 import base64
 import re
 from typing import List, Optional, Dict
+from datetime import datetime, timedelta
 import asyncio
 
 from google.auth.transport.requests import Request
@@ -89,7 +90,13 @@ class GmailClient:
         whitelist = self._load_whitelist()
 
         # Fetch all email IDs without date restriction
-        search_results = self.service.users().messages().list(userId="me").execute()
+        date_2_days_ago = (datetime.utcnow() - timedelta(days=2)).strftime("%Y/%m/%d")
+
+        # Fetch email IDs from the last 2 days
+        search_query = f"after:{date_2_days_ago}"
+        search_results = (
+            self.service.users().messages().list(userId="me", q=search_query).execute()
+        )
         messages = search_results.get("messages", [])
 
         if not messages:

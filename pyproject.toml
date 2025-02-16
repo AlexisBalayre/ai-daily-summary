@@ -13,6 +13,8 @@ google-auth-httplib2 = "^0.2.0"
 google-auth-oauthlib = "^1.2.1"
 openai = "^1.60.2"
 aiohttp = "^3.11.12"
+requests = "^2.32.3"
+beautifulsoup4 = "^4.13.3"
 
 
 [build-system]
