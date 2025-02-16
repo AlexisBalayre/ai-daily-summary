@@ -46,10 +46,6 @@ def setup_logging():
     return logger
 
 
-# Configuration
-TEMPLATE_FILE = Path("email_template.html")
-
-
 @dataclass
 class Config:
     SCOPES: List[str] = (
@@ -61,7 +57,13 @@ class Config:
     RAW_EMAILS_DIR: Path = DATA_DIR / "emails" / "raw"
     PROCESSED_EMAILS_DIR: Path = DATA_DIR / "emails" / "processed"
     CONFIG_FILE: Path = Path("config.json")
-    TEMPLATE_FILE: Path = Path("email_template.html")
+    EMAIL_TEMPLATES_DIR: Path = Path("email_templates")
+    GITHUB_HOT_REPOS_EMAIL_TEMPLATE: Path = (
+        EMAIL_TEMPLATES_DIR / "github_hot_repos_email_template.html"
+    )
+    AI_DAILY_NEWS_EMAIL_TEMPLATE: Path = (
+        EMAIL_TEMPLATES_DIR / "ai_daily_news_email_template.html"
+    )
 
     def __post_init__(self):
         # Create necessary directories
@@ -74,12 +76,15 @@ config = Config()
 logger = setup_logging()  # Initialize logger
 
 
-def load_template():
-    if TEMPLATE_FILE.exists():
-        with open(TEMPLATE_FILE, "r") as file:
-            return file.read()
+def load_template(template_name: str) -> str:
+    """Load an email template from file"""
+    if template_name == "github_hot_repos":
+        template_file = config.GITHUB_HOT_REPOS_EMAIL_TEMPLATE
+    elif template_name == "ai_daily_news":
+        template_file = config.AI_DAILY_NEWS_EMAIL_TEMPLATE
     else:
         raise FileNotFoundError("Email template file not found.")
+    return template_file.read_text()
 
 
 def error_handler(func):
@@ -156,10 +161,12 @@ def save_individual_email(
         logger.error(f"Error saving individual email: {str(e)}")
 
 
-def send_newsletter(service, subject, content, recipient) -> bool:
+def send_ai_daily_newsletter(service, subject, content, recipients) -> bool:
     try:
-        template = load_template()
-        html_content = template.replace("{{date}}", datetime.now().strftime("%B %d, %Y"))
+        template = load_template("ai_daily_news")
+        html_content = template.replace(
+            "{{date}}", datetime.now().strftime("%B %d, %Y")
+        )
         html_content = html_content.replace("{{summary}}", content.summary)
         html_content = html_content.replace("{{year}}", str(datetime.now().year))
         html_content = html_content.replace(
@@ -197,7 +204,7 @@ def send_newsletter(service, subject, content, recipient) -> bool:
         flag = False
         for category, articles in categories.items():
             if articles:
-                if flag: 
+                if flag:
                     articles_html += f"<br/><h3>{category}</h3>"
                 else:
                     articles_html += f"<h3>{category}</h3>"
@@ -205,7 +212,6 @@ def send_newsletter(service, subject, content, recipient) -> bool:
                 for article in articles:
                     articles_html += (
                         f"<h4>{article.title}</h4>"
-                        f"<p><strong>Topic:</strong> {article.topic}</p>"
                         f"<p>{article.content}</p>"
                         f'<p>Source: {article.source} | <a href="{article.url}">Read more</a></p>'
                     )
@@ -214,7 +220,67 @@ def send_newsletter(service, subject, content, recipient) -> bool:
 
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
-        message["To"] = recipient
+        message["Bcc"] = recipients
+        message["From"] = "me"
+
+        part = MIMEText(html_content, "html")
+        message.attach(part)
+
+        raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+        service.users().messages().send(userId="me", body={"raw": raw}).execute()
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send newsletter: {e}")
+        return False
+
+
+def send_github_hot_repositories_newsletter(
+    service, subject, trending_repositories, explore_repositories, recipients
+) -> bool:
+    try:
+        template = load_template("github_hot_repos")
+        html_content = template.replace(
+            "{{date}}", datetime.now().strftime("%B %d, %Y")
+        )
+        html_content = html_content.replace("{{year}}", str(datetime.now().year))
+
+        trending_html = ""
+        for repo in trending_repositories:
+            trending_html += (
+                f'<div class="repository">'
+                f'<div class="repository-header">'
+                f'<a class="repository-title repository-link" href="{repo.url}">{repo.author}/{repo.name}</a>'
+                f"</div>"
+                f'<div class="repository-stats">'
+                f'<span class="stat">⭐ {repo.stars}</span>'
+                f'<span class="stat">🍴 {repo.forks}</span>'
+                f'<span class="language-tag">{repo.language}</span>'
+                f"</div>"
+                f'<p class="description">{repo.description}</p>'
+                f"</div>"
+            )
+
+        explore_html = ""
+        for repo in explore_repositories:
+            explore_html += (
+                f'<div class="repository">'
+                f'<div class="repository-header">'
+                f'<a class="repository-title repository-link" href="{repo.url}">{repo.author}/{repo.name}</a>'
+                f"</div>"
+                f'<div class="repository-stats">'
+                f'<span class="stat">⭐ {repo.stars}</span>'
+                f'<span class="language-tag">{repo.language}</span>'
+                f"</div>"
+                f'<p class="description">{repo.description}</p>'
+                f"</div>"
+            )
+
+        html_content = html_content.replace("{{trending_repositories}}", trending_html)
+        html_content = html_content.replace("{{explore_repositories}}", explore_html)
+
+        message = MIMEMultipart("alternative")
+        message["Subject"] = subject
+        message["Bcc"] = recipients
         message["From"] = "me"
 
         part = MIMEText(html_content, "html")

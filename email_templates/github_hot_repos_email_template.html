@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="color-scheme" content="only light" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hot GitHub Repositories - Weekly Newsletter</title>
+    <style>
+      body {
+        font-family: "Helvetica Neue", sans-serif;
+        background-color: #0d1117;
+        margin: 0;
+        padding: 20px;
+        color: #c9d1d9;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 30px auto;
+        background: #161b22;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 1px solid #30363d;
+      }
+
+      h1, h2 {
+        color: #ffffff;
+        border-bottom: 1px solid #30363d;
+        padding-bottom: 10px;
+      }
+
+      .date {
+        color: #8b949e;
+        font-size: 0.9em;
+        margin-top: -20px;
+        margin-bottom: 30px;
+      }
+
+      .section {
+        margin: 25px 0;
+        padding: 20px;
+        background: #1c2128;
+        border-radius: 6px;
+        border: 1px solid #30363d;
+      }
+
+      .repository {
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #30363d;
+      }
+
+      .repository:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .repository-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .repository-title {
+        font-size: 1.2em;
+        font-weight: bold;
+      }
+
+      .repository-link {
+        color: #58a6ff;
+        text-decoration: none;
+      }
+
+      .repository-link:hover {
+        text-decoration: underline;
+      }
+
+      .repository-stats {
+        display: flex;
+        gap: 15px;
+        color: #8b949e;
+        font-size: 0.9em;
+        margin: 10px 0;
+      }
+
+      .stat {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .language-tag {
+        display: inline-block;
+        padding: 3px 8px;
+        background: #238636;
+        color: #ffffff;
+        border-radius: 12px;
+        font-size: 0.8em;
+      }
+
+      .description {
+        color: #8b949e;
+        line-height: 1.6;
+        margin: 10px 0;
+      }
+
+      .trending-section, .explore-section {
+        margin-top: 30px;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #ffffff;
+        font-size: 1.3em;
+        margin-bottom: 20px;
+      }
+
+      footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #30363d;
+        color: #8b949e;
+        font-size: 0.85em;
+      }
+
+      .summary {
+        line-height: 1.6;
+        color: #c9d1d9;
+      }
+
+      .highlights {
+        list-style-type: none;
+        padding: 0;
+      }
+
+      .highlight-item {
+        margin: 10px 0;
+        padding: 10px;
+        background: #1c2128;
+        border-radius: 6px;
+        border: 1px solid #30363d;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Hot GitHub Repositories - {{date}}</h1>
+
+      <div class="trending-section">
+        <div class="section-title">
+          🔥 Trending Repositories
+        </div>
+        <div class="section">
+          {{trending_repositories}}
+        </div>
+      </div>
+
+      <div class="explore-section">
+        <div class="section-title">
+          ⭐ Featured Discoveries
+        </div>
+        <div class="section">
+          {{explore_repositories}}
+        </div>
+      </div>
+
+      <footer>
+        <p>&copy; {{year}} Alexis Balayre Hot GitHub Repositories Newsletter. All rights reserved.</p>
+      </footer>
+    </div>
+  </body>
+</html>
