@@ -89,7 +89,10 @@ class GithubScraper:
     def _parse_numeric_value(self, text: str) -> int:
         """Parse numeric values from text, removing commas and converting to int"""
         try:
-            return int(text.strip().split()[0].replace(",", ""))
+            text = text.strip().split()[0].replace(",", "")
+            if "k" in text:
+                return int(float(text[:-1]) * 1000)
+            return int(text)
         except (ValueError, IndexError):
             return 0
 

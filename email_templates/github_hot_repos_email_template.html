@@ -8,7 +8,6 @@
     <style>
       body {
         font-family: "Helvetica Neue", sans-serif;
-        background-color: #0d1117;
         margin: 0;
         padding: 20px;
         color: #c9d1d9;
@@ -24,7 +23,8 @@
         border: 1px solid #30363d;
       }
 
-      h1, h2 {
+      h1,
+      h2 {
         color: #ffffff;
         border-bottom: 1px solid #30363d;
         padding-bottom: 10px;
@@ -93,7 +93,6 @@
       }
 
       .language-tag {
-        display: inline-block;
         padding: 3px 8px;
         background: #238636;
         color: #ffffff;
@@ -107,7 +106,8 @@
         margin: 10px 0;
       }
 
-      .trending-section, .explore-section {
+      .trending-section,
+      .explore-section {
         margin-top: 30px;
       }
 
@@ -127,6 +127,7 @@
         border-top: 1px solid #30363d;
         color: #8b949e;
         font-size: 0.85em;
+        width: 100%;
       }
 
       .summary {
@@ -153,25 +154,20 @@
       <h1>Hot GitHub Repositories - {{date}}</h1>
 
       <div class="trending-section">
-        <div class="section-title">
-          🔥 Trending Repositories
-        </div>
-        <div class="section">
-          {{trending_repositories}}
-        </div>
+        <div class="section-title">🔥 Trending Repositories</div>
+        <div class="section">{{trending_repositories}}</div>
       </div>
 
       <div class="explore-section">
-        <div class="section-title">
-          ⭐ Featured Discoveries
-        </div>
-        <div class="section">
-          {{explore_repositories}}
-        </div>
+        <div class="section-title">⭐ Featured Discoveries</div>
+        <div class="section">{{explore_repositories}}</div>
       </div>
 
       <footer>
-        <p>&copy; {{year}} Alexis Balayre Hot GitHub Repositories Newsletter. All rights reserved.</p>
+        <p>
+          &copy; {{year}} Alexis Balayre Hot GitHub Repositories Newsletter. All
+          rights reserved.
+        </p>
       </footer>
     </div>
   </body>
