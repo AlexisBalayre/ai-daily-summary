@@ -220,7 +220,8 @@ def send_ai_daily_newsletter(service, subject, content, recipients) -> bool:
 
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
-        message["Bcc"] = recipients
+        message["to"] = recipients.split(",")[0]
+        message["Bcc"] = ", ".join(recipients.split(",")[1:])
         message["From"] = "me"
 
         part = MIMEText(html_content, "html")
@@ -254,8 +255,8 @@ def send_github_hot_repositories_newsletter(
                 f'<div class="repository-stats">'
                 f'<span class="stat">⭐ {repo.stars}</span>'
                 f'<span class="stat">🍴 {repo.forks}</span>'
-                f'<span class="language-tag">{repo.language}</span>'
                 f"</div>"
+                f'<span class="language-tag">{repo.language}</span>'
                 f'<p class="description">{repo.description}</p>'
                 f"</div>"
             )
@@ -269,8 +270,8 @@ def send_github_hot_repositories_newsletter(
                 f"</div>"
                 f'<div class="repository-stats">'
                 f'<span class="stat">⭐ {repo.stars}</span>'
-                f'<span class="language-tag">{repo.language}</span>'
                 f"</div>"
+                f'<span class="language-tag">{repo.language}</span>'
                 f'<p class="description">{repo.description}</p>'
                 f"</div>"
             )
@@ -280,7 +281,8 @@ def send_github_hot_repositories_newsletter(
 
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
-        message["Bcc"] = recipients
+        message["to"] = recipients.split(",")[0]
+        message["Bcc"] = ", ".join(recipients.split(",")[1:])
         message["From"] = "me"
 
         part = MIMEText(html_content, "html")
