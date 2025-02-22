@@ -218,17 +218,20 @@ def send_ai_daily_newsletter(service, subject, content, recipients) -> bool:
 
         html_content = html_content.replace("{{articles}}", articles_html)
 
-        message = MIMEMultipart("alternative")
-        message["Subject"] = subject
-        message["to"] = recipients.split(",")[0]
-        message["Bcc"] = ", ".join(recipients.split(",")[1:])
-        message["From"] = "me"
+        # Split and clean the recipient addresses.
+        recipients_list = [r.strip() for r in recipients.split(",") if r.strip()]
 
-        part = MIMEText(html_content, "html")
-        message.attach(part)
+        for recipient in recipients_list:
+            message = MIMEMultipart("alternative")
+            message["Subject"] = subject
+            message["To"] = recipient  # Each recipient sees only their own email.
+            message["From"] = "me"
 
-        raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
-        service.users().messages().send(userId="me", body={"raw": raw}).execute()
+            part = MIMEText(html_content, "html")
+            message.attach(part)
+
+            raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+            service.users().messages().send(userId="me", body={"raw": raw}).execute()
         return True
     except Exception as e:
         logging.error(f"Failed to send newsletter: {e}")
