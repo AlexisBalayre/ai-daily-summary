@@ -1,78 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" content="only light"/>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI News - By Alexis Balayre</title>
-    <style>
+    <!--[if mso]>
+      <style type="text/css">
+        table {
+          border-collapse: collapse;
+          border-spacing: 0;
+          margin: 0;
+        }
+        div,
+        td {
+          padding: 0;
+        }
+        div {
+          margin: 0 !important;
+        }
+      </style>
+    <![endif]-->
+    <style type="text/css">
+      /* Base styles */
       body {
-        font-family: "Helvetica Neue", sans-serif;
         margin: 0;
-        padding: 20px;
-        color: #c9d1d9;
+        padding: 0;
+        width: 100% !important;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
       }
+
+      /* Client-specific resets */
+      table,
+      td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+
+      img {
+        -ms-interpolation-mode: bicubic;
+        border: 0;
+      }
+
+      /* Main styles */
       .container {
-        max-width: 800px;
-        margin: 30px auto;
-        background: #161b22;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        border: 1px solid #30363d;
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
       }
+
+      .content {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+
       h1,
-      h2 {
-        color: #ffffff;
-        border-bottom: 1px solid #30363d;
+      h2,
+      h3,
+      h4 {
+        color: #333333;
+        font-family: Arial, sans-serif;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        line-height: 1.4;
+      }
+
+      h1 {
+        font-size: 24px;
+        border-bottom: 1px solid #dddddd;
         padding-bottom: 10px;
       }
+
+      h2 {
+        font-size: 20px;
+        border-bottom: 1px solid #dddddd;
+        padding-bottom: 8px;
+      }
+
       p,
       li {
-        color: #ffffff;
+        color: #444444;
+        font-size: 16px;
         line-height: 1.6;
+        margin-bottom: 10px;
       }
+
       ul {
-        padding: 0;
-        list-style-type: disc;
-        margin-left: 20px;
+        padding-left: 20px;
+        margin: 15px 0;
       }
+
+      li {
+        margin-bottom: 8px;
+      }
+
       a {
-        color: #2980b9;
-        text-decoration: none;
+        color: #0066cc;
+        text-decoration: underline;
       }
+
       .category {
-        background: #1c2128;
+        border: 1px solid #dddddd;
+        border-left: 4px solid #0066cc;
         padding: 15px;
-        margin-top: 20px;
-        border-left: 5px solid #3498db;
-        border-radius: 5px;
+        margin: 15px 0;
       }
-      footer {
-        text-align: center;
+
+      .footer {
         margin-top: 30px;
         padding-top: 20px;
-        border-top: 1px solid #30363d;
-        color: #8b949e;
-        font-size: 0.85em;
-        width: 100%;
+        border-top: 1px solid #dddddd;
+        color: #666666;
+        font-size: 14px;
+        text-align: center;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>AI Newsletter - {{date}}</h1>
-      <h2>Summary</h2>
-      <p>{{summary}}</p>
-      <h2>Key Facts</h2>
-      <ul>
-        {{key_facts}}
-      </ul>
-      <br/>
-      <h2>Articles</h2>
-      {{articles}}
-      <footer>
-        &copy; {{year}} Alexis Balayre AI Newsletter. All rights reserved.
-      </footer>
-    </div>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+      <tr>
+        <td align="center" style="padding: 20px 0">
+          <table
+            role="presentation"
+            cellpadding="0"
+            cellspacing="0"
+            width="600"
+            class="container"
+          >
+            <tr>
+              <td class="content">
+                <h1>AI Newsletter - {{date}}</h1>
+
+                <h2>Summary</h2>
+                <p>{{summary}}</p>
+
+                <h2>Key Facts</h2>
+                <ul>
+                  {{key_facts}}
+                </ul>
+
+                <h2>Articles</h2>
+                {{articles}}
+
+                <div class="footer">
+                  &copy; {{year}} Alexis Balayre AI Newsletter. All rights
+                  reserved.
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
