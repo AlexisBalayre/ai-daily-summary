@@ -100,7 +100,7 @@ class GmailClient:
         messages = search_results.get("messages", [])
 
         if not messages:
-            logger.info(f"No new emails found in the last {days_back} days")
+            logger.info(f"No new emails found in the last {date_2_days_ago} days")
             return []
 
         emails = []
