@@ -100,16 +100,25 @@ class GithubScraper:
         """Parse repository data from a trending page BeautifulSoup element"""
         try:
             title_element = repo_element.select_one("h2.h3")
-            return TrendingRepository(
+            description = repo_element.select_one("p.color-fg-muted").text.strip() if repo_element.select_one("p.color-fg-muted") else ""
+            if "There was an error while loading" in description:
+                description = ""
+            
+            repo = TrendingRepository(
                 author=title_element.select_one("a").text.strip().split("/")[0],
                 name=title_element.select_one("a").text.strip().split("/")[1],
-                description=repo_element.select_one("p.color-fg-muted").text.strip() if repo_element.select_one("p.color-fg-muted") else "",
+                description=description,
                 stars=self._parse_numeric_value(repo_element.select_one("a.Link--muted").text),
                 forks=self._parse_numeric_value(repo_element.select("a.Link--muted")[1].text),
                 url=f"{self.BASE_URL}{title_element.select_one('a')['href']}",
                 language=repo_element.select('span[itemprop="programmingLanguage"]')[0].text.strip() 
                 if repo_element.select('span[itemprop="programmingLanguage"]') else "Unknown"
             )
+
+            if not repo.description:
+               repo.description = self._fetch_repository_description(repo.url)
+            
+            return repo
         except Exception as e:
             logger.error(f"Error parsing trending repository: {str(e)}")
             return None
@@ -129,11 +138,14 @@ class GithubScraper:
             name = full_name_elements[1].text.strip()
             url = f"{self.BASE_URL}{full_name_elements[1]['href']}"
 
-            return ExploreRepository(
+            description = repo_element.select_one("p.color-fg-muted").text.strip() if repo_element.select_one("p.color-fg-muted") else ""
+            if "There was an error while loading" in description:
+                description = ""
+
+            repo = ExploreRepository(
                 author=author,
                 name=name,
-                description=repo_element.select_one("p.color-fg-muted").text.strip() 
-                if repo_element.select_one("p.color-fg-muted") else "",
+                description=description,
                 stars=self._parse_numeric_value(
                     repo_element.select_one('span[id="repo-stars-counter-star"]').text
                 ) if repo_element.select_one('span[id="repo-stars-counter-star"]') else 0,
@@ -143,6 +155,11 @@ class GithubScraper:
                 updated_at=repo_element.select_one("relative-time")["datetime"]
                 if repo_element.select_one("relative-time") else ""
             )
+
+            if not repo.description:
+                repo.description = self._fetch_repository_description(repo.url)
+            
+            return repo
         except Exception as e:
             logger.error(f"Error parsing explore repository: {str(e)}")
             return None
@@ -183,6 +200,24 @@ class GithubScraper:
             logger.error(f"Error fetching page {url}: {str(e)}")
             return None
 
+    def _fetch_repository_description(self, url: str) -> str:
+        """Fetch repository description from the repository page"""
+        try:
+            if soup := self._fetch_page(url):
+                meta_desc = soup.find("meta", {"name": "description"})
+                if meta_desc:
+                    content = meta_desc.get("content", "").strip()
+                    # Remove the " - Author/Repo" suffix if present
+                    # GitHub titles usually end with " - Author/RepoName"
+                    if " - " in content:
+                        parts = content.rsplit(" - ", 1)
+                        if len(parts) == 2 and "/" in parts[1]:
+                             content = parts[0]
+                    return content
+        except Exception as e:
+            logger.error(f"Error fetching repository description for {url}: {str(e)}")
+        return ""
+
     def fetch_trending_repositories(self) -> List[TrendingRepository]:
         """Fetch and parse trending repositories from GitHub"""
         repositories = []
@@ -210,7 +245,7 @@ class GithubScraper:
         return repositories
 
 
-if __name__ == "__main__":
+def main():
     scraper = GithubScraper()
 
     # Fetch trending repositories
@@ -220,3 +255,7 @@ if __name__ == "__main__":
     # Fetch explore repositories
     explore_repos = scraper.fetch_explore_repositories()
     print(f"Collected {len(explore_repos)} explore repositories")
+
+
+if __name__ == "__main__":
+    main()

@@ -10,6 +10,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+import os
 
 from .utils import logger, error_handler, save_individual_email
 
@@ -41,7 +42,17 @@ class NewsletterContent:
 
 class NewsletterProcessor:
     def __init__(self):
-        self.openai_client = AsyncOpenAI()
+        self.provider = os.getenv("LLM_PROVIDER", "openai").lower()
+        self.model = os.getenv("LLM_MODEL", "gpt-4o-mini")
+        
+        if self.provider == "ollama":
+            base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+            api_key = "ollama"  # Ollama doesn't require a real key
+            self.openai_client = AsyncOpenAI(base_url=base_url, api_key=api_key)
+            logger.info(f"Initialized Ollama client with model {self.model} at {base_url}")
+        else:
+            self.openai_client = AsyncOpenAI()
+            logger.info(f"Initialized OpenAI client with model {self.model}")
 
     def load_articles_from_files(
         self, from_date: datetime, to_date: datetime
@@ -164,7 +175,7 @@ class NewsletterProcessor:
 
         try:
             completion = await self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
@@ -267,7 +278,7 @@ class NewsletterProcessor:
 
         try:
             completion = await self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},

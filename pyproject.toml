@@ -1,22 +1,29 @@
-[tool.poetry]
+[project]
 name = "ai-daily-summary"
 version = "0.1.0"
 description = ""
-authors = ["Alexis Balayre <60859013+AlexisBal@users.noreply.github.com>"]
 readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Alexis Balayre", email = "60859013+AlexisBal@users.noreply.github.com" }
+]
+dependencies = [
+    "python-dotenv>=1.0.1",
+    "google-api-python-client>=2.159.0",
+    "google-auth-httplib2>=0.2.0",
+    "google-auth-oauthlib>=1.2.1",
+    "openai>=1.60.2",
+    "aiohttp>=3.11.12",
+    "requests>=2.32.3",
+    "beautifulsoup4>=4.13.3",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-python-dotenv = "^1.0.1"
-google-api-python-client = "^2.159.0"
-google-auth-httplib2 = "^0.2.0"
-google-auth-oauthlib = "^1.2.1"
-openai = "^1.60.2"
-aiohttp = "^3.11.12"
-requests = "^2.32.3"
-beautifulsoup4 = "^4.13.3"
-
+[project.scripts]
+scrape-github = "lib.github_scraper:main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["lib"]
