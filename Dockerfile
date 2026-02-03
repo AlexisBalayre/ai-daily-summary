@@ -11,6 +11,7 @@ ENV PIP_NO_CACHE_DIR=1
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     cron \
+    curl \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
@@ -47,6 +48,10 @@ RUN chmod +x /docker-entrypoint.sh
 
 # Expose API port
 EXPOSE 8000
+
+# Health check to verify API is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
 # Set entrypoint
 ENTRYPOINT ["/docker-entrypoint.sh"]
