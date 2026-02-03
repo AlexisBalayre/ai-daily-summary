@@ -46,16 +46,32 @@ async def run_newsletter(context: JobContext) -> Dict[str, Any]:
 
 
 async def run_tts(context: JobContext) -> Dict[str, Any]:
-    """Generate TTS audio briefing."""
+    """Generate TTS audio briefing and send via Telegram."""
     logger.info(f"Starting TTS job (run_id={context.run_id})")
 
     with get_session() as session:
         tts = TTSBriefingOutput()
         audio_path = await tts.generate(session, target_date=date.today())
 
+        # Send via Telegram if configured
+        telegram_sent = False
+        try:
+            from ai_daily.outputs.telegram import TelegramSender
+
+            telegram = TelegramSender()
+            if telegram.enabled:
+                telegram_sent = await telegram.send_audio(
+                    audio_path,
+                    caption=f"AI Daily Briefing - {date.today().strftime('%B %d, %Y')}",
+                    title="AI Daily Briefing",
+                )
+        except Exception as e:
+            logger.warning(f"Telegram send failed: {e}")
+
         return {
             "audio_path": str(audio_path),
             "date": date.today().isoformat(),
+            "telegram_sent": telegram_sent,
         }
 
 

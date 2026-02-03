@@ -65,6 +65,19 @@ class GmailConfig:
 
 
 @dataclass
+class TelegramConfig:
+    """Telegram bot configuration."""
+
+    bot_token: str = field(default_factory=lambda: os.getenv("TELEGRAM_BOT_TOKEN", ""))
+    chat_id: str = field(default_factory=lambda: os.getenv("TELEGRAM_CHAT_ID", ""))
+
+    @property
+    def enabled(self) -> bool:
+        """Check if Telegram is configured."""
+        return bool(self.bot_token and self.chat_id)
+
+
+@dataclass
 class OrchestratorConfig:
     """Orchestrator scheduling and retry configuration."""
 
@@ -99,6 +112,7 @@ class Config:
     db: DatabaseConfig = field(default_factory=DatabaseConfig)
     llm: LLMConfig = field(default_factory=LLMConfig)
     gmail: GmailConfig = field(default_factory=GmailConfig)
+    telegram: TelegramConfig = field(default_factory=TelegramConfig)
     orchestrator: OrchestratorConfig = field(default_factory=OrchestratorConfig)
 
     # Paths
