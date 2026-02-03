@@ -12,49 +12,6 @@ until pg_isready -h "${DB_HOST:-postgres}" -p "${DB_PORT:-5432}" -U "${DB_USER:-
 done
 echo "[$(date -Iseconds)] Database is ready!"
 
-# Pull Ollama models if using Ollama provider
-if [ "${LLM_PROVIDER:-ollama}" = "ollama" ]; then
-    OLLAMA_URL="${OLLAMA_HOST:-http://ollama:11434}"
-    echo "[$(date -Iseconds)] Waiting for Ollama service at ${OLLAMA_URL}..."
-
-    # Wait for Ollama to be ready
-    max_retries=30
-    retry_count=0
-    until curl -s "${OLLAMA_URL}/api/tags" > /dev/null 2>&1; do
-        retry_count=$((retry_count + 1))
-        if [ $retry_count -ge $max_retries ]; then
-            echo "[$(date -Iseconds)] WARNING: Ollama service not available after ${max_retries} attempts. Continuing without model pull..."
-            break
-        fi
-        echo "[$(date -Iseconds)] Ollama not ready (attempt ${retry_count}/${max_retries}), waiting..."
-        sleep 5
-    done
-
-    if curl -s "${OLLAMA_URL}/api/tags" > /dev/null 2>&1; then
-        echo "[$(date -Iseconds)] Ollama is ready!"
-
-        # Pull LLM model
-        LLM_MODEL_NAME="${LLM_MODEL:-llama3.2}"
-        echo "[$(date -Iseconds)] Pulling LLM model: ${LLM_MODEL_NAME}..."
-        if curl -s -X POST "${OLLAMA_URL}/api/pull" -d "{\"name\": \"${LLM_MODEL_NAME}\"}" > /dev/null 2>&1; then
-            echo "[$(date -Iseconds)] LLM model ${LLM_MODEL_NAME} pulled successfully (or already exists)"
-        else
-            echo "[$(date -Iseconds)] WARNING: Failed to pull LLM model ${LLM_MODEL_NAME}"
-        fi
-
-        # Pull embedding model
-        EMBEDDING_MODEL_NAME="${EMBEDDING_MODEL:-nomic-embed-text}"
-        echo "[$(date -Iseconds)] Pulling embedding model: ${EMBEDDING_MODEL_NAME}..."
-        if curl -s -X POST "${OLLAMA_URL}/api/pull" -d "{\"name\": \"${EMBEDDING_MODEL_NAME}\"}" > /dev/null 2>&1; then
-            echo "[$(date -Iseconds)] Embedding model ${EMBEDDING_MODEL_NAME} pulled successfully (or already exists)"
-        else
-            echo "[$(date -Iseconds)] WARNING: Failed to pull embedding model ${EMBEDDING_MODEL_NAME}"
-        fi
-
-        echo "[$(date -Iseconds)] Ollama models ready!"
-    fi
-fi
-
 # Run database migrations
 echo "[$(date -Iseconds)] Running database migrations..."
 if ! alembic upgrade head; then
