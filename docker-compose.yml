@@ -44,14 +44,14 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      # Gmail configuration
-      GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID:-}
-      GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET:-}
-      GMAIL_PROJECT_ID: ${GMAIL_PROJECT_ID:-}
+      # Gmail configuration (required for email sending)
+      GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID}
+      GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET}
+      GMAIL_PROJECT_ID: ${GMAIL_PROJECT_ID}
       # Newsletter configuration
-      RECIPIENTS: ${RECIPIENTS:-}
+      RECIPIENTS: ${RECIPIENTS}
       # Path configuration
       DATA_DIR: /app/data
       LOGS_DIR: /app/logs
