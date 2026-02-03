@@ -26,6 +26,14 @@ def init():
 
 
 @main.command()
+def seed():
+    """Seed database with initial sources from config.json."""
+    from ai_daily.db.seed import seed_sources
+    seed_sources()
+    console.print("[green]Database seeded successfully![/green]")
+
+
+@main.command()
 @click.argument("job_type", type=click.Choice(["gmail", "github", "crawlers", "all"]))
 def run(job_type: str):
     """Run ETL pipeline for specified source type."""
