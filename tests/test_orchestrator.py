@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -102,3 +103,47 @@ async def test_executor_exhausts_retries():
     assert result["success"] is False
     assert "Always fails" in result["error"]
     assert mock_job.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_notifier_sends_alert():
+    """Test notifier sends email on failure."""
+    from ai_daily.orchestrator.notifier import Notifier
+
+    mock_gmail = MagicMock()
+    mock_gmail.users.return_value.messages.return_value.send.return_value.execute.return_value = {}
+
+    notifier = Notifier(gmail_service=mock_gmail, recipients=["test@example.com"])
+
+    await notifier.send_failure_alert(
+        job_name="etl",
+        error="Connection timeout",
+        run_id=42,
+        started_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+        attempts=3,
+    )
+
+    mock_gmail.users.return_value.messages.return_value.send.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_notifier_rate_limits():
+    """Test notifier rate limits alerts per job."""
+    from ai_daily.orchestrator.notifier import Notifier
+
+    mock_gmail = MagicMock()
+    mock_gmail.users.return_value.messages.return_value.send.return_value.execute.return_value = {}
+
+    notifier = Notifier(gmail_service=mock_gmail, recipients=["test@example.com"])
+
+    # First alert should send
+    await notifier.send_failure_alert("etl", "Error 1", 1, datetime.now(timezone.utc), 3)
+    assert mock_gmail.users.return_value.messages.return_value.send.call_count == 1
+
+    # Second alert for same job within rate limit should not send
+    await notifier.send_failure_alert("etl", "Error 2", 2, datetime.now(timezone.utc), 3)
+    assert mock_gmail.users.return_value.messages.return_value.send.call_count == 1
+
+    # Alert for different job should send
+    await notifier.send_failure_alert("newsletter", "Error 3", 3, datetime.now(timezone.utc), 3)
+    assert mock_gmail.users.return_value.messages.return_value.send.call_count == 2
