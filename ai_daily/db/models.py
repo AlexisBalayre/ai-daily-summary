@@ -58,7 +58,8 @@ class Article(Base):
     ingested_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     topic: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     tags: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
-    embedding: Mapped[Optional[List[float]]] = mapped_column(Vector(1536), nullable=True)
+    # 1024 dimensions for mxbai-embed-large / nomic-embed-text (Ollama local models)
+    embedding: Mapped[Optional[List[float]]] = mapped_column(Vector(1024), nullable=True)
     content_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     source: Mapped["Source"] = relationship("Source", back_populates="articles")
