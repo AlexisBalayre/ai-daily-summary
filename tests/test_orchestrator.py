@@ -191,3 +191,29 @@ def test_scheduler_prevents_duplicate_runs():
     # Second call at same time should not return the job
     due = scheduler.get_due_jobs(dt)
     assert "etl" not in due
+
+
+# CLI Tests
+from click.testing import CliRunner
+
+
+def test_cli_orchestrator_status():
+    """Test orchestrator status command exists."""
+    from ai_daily.cli import main
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["orchestrator", "status"])
+
+    # Should not fail with "No such command"
+    assert "No such command" not in result.output
+
+
+def test_cli_orchestrator_trigger_requires_job():
+    """Test orchestrator trigger requires job name."""
+    from ai_daily.cli import main
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["orchestrator", "trigger"])
+
+    assert result.exit_code != 0
+    assert "Missing argument" in result.output or "required" in result.output.lower()

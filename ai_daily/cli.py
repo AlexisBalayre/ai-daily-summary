@@ -204,5 +204,162 @@ def source_add(source_type: str, name: str, config: str = None):
         console.print(f"[green]Added source: {name} (ID: {src.id})[/green]")
 
 
+@main.group()
+def orchestrator():
+    """Manage the job orchestrator."""
+    pass
+
+
+@orchestrator.command("start")
+def orchestrator_start():
+    """Start the orchestrator scheduler."""
+    from ai_daily.config import config
+    from ai_daily.etl.extractors.gmail import GmailExtractor
+    from ai_daily.orchestrator import Executor, JOBS, Notifier, Scheduler
+    from ai_daily.orchestrator.types import RetryConfig
+
+    console.print("[cyan]Starting orchestrator...[/cyan]")
+
+    # Build retry config from settings
+    retry_config = RetryConfig(
+        max_attempts=config.orchestrator.retry_max_attempts,
+        base_delay=config.orchestrator.retry_base_delay,
+        multiplier=config.orchestrator.retry_multiplier,
+    )
+
+    # Initialize components
+    executor = Executor(retry_config)
+
+    # Initialize Gmail for notifications
+    try:
+        gmail_extractor = GmailExtractor()
+        notifier = Notifier(
+            gmail_service=gmail_extractor.service,
+            recipients=config.recipients,
+        )
+    except Exception as e:
+        console.print(f"[yellow]Gmail not available, notifications disabled: {e}[/yellow]")
+        notifier = None
+
+    # Build schedules from config
+    schedules = {
+        "etl": config.orchestrator.etl_schedule,
+        "newsletter": config.orchestrator.newsletter_schedule,
+        "tts": config.orchestrator.tts_schedule,
+    }
+
+    scheduler = Scheduler(
+        schedules=schedules,
+        executor=executor,
+        notifier=notifier,
+        jobs=JOBS,
+    )
+
+    console.print(f"[green]Schedules:[/green]")
+    for job, cron in schedules.items():
+        console.print(f"  {job}: {cron}")
+
+    try:
+        asyncio.run(scheduler.start())
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Orchestrator stopped[/yellow]")
+
+
+@orchestrator.command("status")
+def orchestrator_status():
+    """Show orchestrator status and next scheduled runs."""
+    from croniter import croniter
+    from ai_daily.config import config
+
+    schedules = {
+        "etl": config.orchestrator.etl_schedule,
+        "newsletter": config.orchestrator.newsletter_schedule,
+        "tts": config.orchestrator.tts_schedule,
+    }
+
+    table = Table(title="Scheduled Jobs")
+    table.add_column("Job", style="cyan")
+    table.add_column("Schedule", style="magenta")
+    table.add_column("Next Run", style="green")
+
+    now = datetime.utcnow()
+    for job_name, cron_expr in schedules.items():
+        cron = croniter(cron_expr, now)
+        next_run = cron.get_next(datetime)
+        table.add_row(job_name, cron_expr, next_run.strftime("%Y-%m-%d %H:%M"))
+
+    console.print(table)
+
+    # Also show recent job runs
+    with get_session() as session:
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        jobs = session.query(JobRun).filter(
+            JobRun.started_at >= yesterday
+        ).order_by(JobRun.started_at.desc()).limit(10).all()
+
+        if jobs:
+            runs_table = Table(title="Recent Runs (Last 24h)")
+            runs_table.add_column("Status", style="cyan")
+            runs_table.add_column("Job", style="magenta")
+            runs_table.add_column("Started", style="green")
+            runs_table.add_column("Duration")
+
+            for job in jobs:
+                status_icon = "+" if job.status == "success" else "x" if job.status == "failed" else "..."
+                status_color = "green" if job.status == "success" else "red" if job.status == "failed" else "yellow"
+
+                duration = ""
+                if job.finished_at and job.started_at:
+                    delta = job.finished_at - job.started_at
+                    duration = f"{delta.total_seconds():.1f}s"
+
+                runs_table.add_row(
+                    f"[{status_color}]{status_icon}[/{status_color}]",
+                    job.job_name,
+                    job.started_at.strftime("%H:%M") if job.started_at else "N/A",
+                    duration,
+                )
+
+            console.print(runs_table)
+
+
+@orchestrator.command("trigger")
+@click.argument("job_name", type=click.Choice(["etl", "newsletter", "tts"]))
+def orchestrator_trigger(job_name: str):
+    """Manually trigger a job."""
+    from ai_daily.config import config
+    from ai_daily.orchestrator import Executor, JOBS
+    from ai_daily.orchestrator.types import RetryConfig
+
+    console.print(f"[cyan]Triggering job: {job_name}[/cyan]")
+
+    retry_config = RetryConfig(
+        max_attempts=config.orchestrator.retry_max_attempts,
+        base_delay=config.orchestrator.retry_base_delay,
+        multiplier=config.orchestrator.retry_multiplier,
+    )
+
+    executor = Executor(retry_config)
+    job_func = JOBS[job_name]
+
+    async def _run():
+        result = await executor.run(job_name, job_func)
+        return result
+
+    try:
+        result = asyncio.run(_run())
+
+        if result["success"]:
+            console.print(f"[green]Job completed successfully![/green]")
+            if result.get("metrics"):
+                console.print(f"Metrics: {result['metrics']}")
+        else:
+            console.print(f"[red]Job failed: {result.get('error')}[/red]")
+            raise SystemExit(1)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
     main()
