@@ -1,0 +1,82 @@
+# AI Daily Summary - Data Platform
+# Docker Compose configuration for PostgreSQL + pgvector and the AI Daily app
+# NOTE: Ollama runs on the host machine, not in a container
+
+services:
+  # PostgreSQL database with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ai-daily-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:-ai_daily}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ai-daily-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-ai_daily}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # AI Daily application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-daily-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-ai_daily}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      # LLM configuration (defaults to Ollama for local deployment)
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      LLM_MODEL: ${LLM_MODEL:-qwen3:30b-a3b}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-qwen3-embedding:8b}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      # Gmail configuration (required for email sending)
+      GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID}
+      GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET}
+      GMAIL_PROJECT_ID: ${GMAIL_PROJECT_ID}
+      # Newsletter configuration
+      RECIPIENTS: ${RECIPIENTS}
+      # Path configuration
+      DATA_DIR: /app/data
+      LOGS_DIR: /app/logs
+      TEMPLATES_DIR: /app/templates
+      CONFIG_FILE: /app/config.json
+    ports:
+      - "8000:8000"
+    volumes:
+      - app_data:/app/data
+      - app_logs:/app/logs
+      # Mount Gmail token if using OAuth (optional)
+      - ./token.json:/app/token.json:ro
+    networks:
+      - ai-daily-network
+
+networks:
+  ai-daily-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: ai-daily-postgres-data
+  app_data:
+    name: ai-daily-app-data
+  app_logs:
+    name: ai-daily-app-logs
