@@ -1,5 +1,5 @@
 # AI Daily Summary - Data Platform
-# Python application with cron scheduling for ETL and newsletter generation
+# Python application with orchestrator scheduling for ETL and newsletter generation
 
 FROM python:3.12-slim
 
@@ -10,7 +10,6 @@ ENV PIP_NO_CACHE_DIR=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    cron \
     curl \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
@@ -32,15 +31,6 @@ RUN pip install --upgrade pip && \
 
 # Create directories for data and logs
 RUN mkdir -p /app/data /app/logs
-
-# Set up cron jobs
-# ETL at 6:00 AM daily
-# Newsletter + TTS at 7:30 AM daily
-RUN echo "0 6 * * * cd /app && /usr/local/bin/ai-daily run all >> /app/logs/cron-etl.log 2>&1" > /etc/cron.d/ai-daily && \
-    echo "30 7 * * * cd /app && /usr/local/bin/ai-daily run-daily >> /app/logs/cron-daily.log 2>&1" >> /etc/cron.d/ai-daily && \
-    echo "" >> /etc/cron.d/ai-daily && \
-    chmod 0644 /etc/cron.d/ai-daily && \
-    crontab /etc/cron.d/ai-daily
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh

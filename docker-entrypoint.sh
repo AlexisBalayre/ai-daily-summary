@@ -24,23 +24,13 @@ echo "[$(date -Iseconds)] Database migrations completed successfully"
 echo "[$(date -Iseconds)] Seeding database..."
 ai-daily seed || echo "[$(date -Iseconds)] Seeding skipped (may already be seeded)"
 
-# Start cron daemon in background
-echo "[$(date -Iseconds)] Starting cron daemon..."
-cron
-
-# Export environment variables for cron jobs
-# Cron runs in a minimal environment, so we need to pass env vars
-printenv | grep -E '^(DB_|LLM_|OPENAI_|GMAIL_|RECIPIENTS|OLLAMA_|DATA_DIR|LOGS_DIR|TEMPLATES_DIR|CONFIG_FILE)' > /etc/environment
-# Secure the environment file (contains sensitive credentials)
-chmod 0600 /etc/environment
-echo "[$(date -Iseconds)] Environment variables exported for cron jobs"
+# Start orchestrator in background
+echo "[$(date -Iseconds)] Starting orchestrator..."
+ai-daily orchestrator start &
 
 echo "=== AI Daily Summary - Container ready ==="
-echo "[$(date -Iseconds)] Cron jobs scheduled:"
-echo "  - ETL: 6:00 AM daily"
-echo "  - Newsletter + TTS: 7:30 AM daily"
-echo ""
+echo "[$(date -Iseconds)] Orchestrator running in background with scheduled tasks"
 echo "[$(date -Iseconds)] API server starting on port 8000..."
 
-# Keep the container running by starting the API server
-exec ai-daily serve
+# Start API server (keeps container running)
+exec uvicorn ai_daily.api.server:app --host 0.0.0.0 --port 8000
