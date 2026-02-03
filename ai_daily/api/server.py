@@ -12,6 +12,8 @@ app = FastAPI(
 )
 
 # CORS middleware
+# TODO: In production, configure allow_origins via environment variable (e.g., CORS_ORIGINS)
+# instead of allowing all origins with "*"
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Configure appropriately for production
