@@ -1,8 +1,31 @@
+# Environment
 .env
 token.json
+
+# OS
 .DS_Store
-logs/
-data/
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Project
+logs/
+data/
 .worktrees/
