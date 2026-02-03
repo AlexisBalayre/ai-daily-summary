@@ -1,14 +1,26 @@
 """API route handlers."""
 
+import logging
 from datetime import date, datetime
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import or_, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from ai_daily.db import Article, DailySummary, JobRun, Source, get_session
+
+logger = logging.getLogger(__name__)
+
+
+def escape_like_wildcards(value: str) -> str:
+    """Escape SQL LIKE wildcard characters (% and _) in user input.
+
+    This prevents users from injecting wildcards that could affect query behavior.
+    """
+    return value.replace("%", r"\%").replace("_", r"\_")
 
 router = APIRouter()
 
@@ -75,36 +87,47 @@ def list_articles(
     db: Session = Depends(get_db),
 ):
     """List articles with optional filters."""
-    stmt = select(Article)
+    try:
+        stmt = select(Article)
 
-    if q:
-        stmt = stmt.where(or_(
-            Article.title.ilike(f"%{q}%"),
-            Article.content.ilike(f"%{q}%"),
-        ))
+        if q:
+            escaped_q = escape_like_wildcards(q)
+            stmt = stmt.where(or_(
+                Article.title.ilike(f"%{escaped_q}%", escape="\\"),
+                Article.content.ilike(f"%{escaped_q}%", escape="\\"),
+            ))
 
-    if topic:
-        stmt = stmt.where(Article.topic == topic)
+        if topic:
+            stmt = stmt.where(Article.topic == topic)
 
-    if from_date:
-        stmt = stmt.where(Article.published_at >= datetime.combine(from_date, datetime.min.time()))
+        if from_date:
+            stmt = stmt.where(Article.published_at >= datetime.combine(from_date, datetime.min.time()))
 
-    if to_date:
-        stmt = stmt.where(Article.published_at <= datetime.combine(to_date, datetime.max.time()))
+        if to_date:
+            stmt = stmt.where(Article.published_at <= datetime.combine(to_date, datetime.max.time()))
 
-    stmt = stmt.order_by(Article.published_at.desc()).offset(offset).limit(limit)
+        stmt = stmt.order_by(Article.published_at.desc()).offset(offset).limit(limit)
 
-    articles = db.execute(stmt).scalars().all()
-    return articles
+        articles = db.execute(stmt).scalars().all()
+        return articles
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in list_articles: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
 
 
 @router.get("/articles/{article_id}", response_model=ArticleResponse)
 def get_article(article_id: int, db: Session = Depends(get_db)):
     """Get a single article by ID."""
-    article = db.get(Article, article_id)
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    return article
+    try:
+        article = db.get(Article, article_id)
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+        return article
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in get_article: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
 
 
 @router.get("/search", response_model=List[ArticleResponse])
@@ -118,36 +141,51 @@ def semantic_search(
     Note: Full vector search requires embedding the query.
     This is a placeholder that falls back to keyword search.
     """
-    # TODO: Implement proper vector search
-    # For now, fall back to keyword search
-    stmt = select(Article).where(or_(
-        Article.title.ilike(f"%{q}%"),
-        Article.content.ilike(f"%{q}%"),
-    )).order_by(Article.published_at.desc()).limit(limit)
+    try:
+        # TODO: Implement proper vector search
+        # For now, fall back to keyword search
+        escaped_q = escape_like_wildcards(q)
+        stmt = select(Article).where(or_(
+            Article.title.ilike(f"%{escaped_q}%", escape="\\"),
+            Article.content.ilike(f"%{escaped_q}%", escape="\\"),
+        )).order_by(Article.published_at.desc()).limit(limit)
 
-    return db.execute(stmt).scalars().all()
+        return db.execute(stmt).scalars().all()
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in semantic_search: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
 
 
 # Summary endpoints
 @router.get("/summary/{target_date}", response_model=SummaryResponse)
 def get_summary(target_date: date, db: Session = Depends(get_db)):
     """Get daily summary for a specific date."""
-    stmt = select(DailySummary).where(
-        DailySummary.date == datetime.combine(target_date, datetime.min.time())
-    )
-    summary = db.execute(stmt).scalar_one_or_none()
+    try:
+        stmt = select(DailySummary).where(
+            DailySummary.date == datetime.combine(target_date, datetime.min.time())
+        )
+        summary = db.execute(stmt).scalar_one_or_none()
 
-    if not summary:
-        raise HTTPException(status_code=404, detail="Summary not found for this date")
+        if not summary:
+            raise HTTPException(status_code=404, detail="Summary not found for this date")
 
-    return summary
+        return summary
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in get_summary: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
 
 
 # Source endpoints
 @router.get("/sources", response_model=List[SourceResponse])
 def list_sources(db: Session = Depends(get_db)):
     """List all sources."""
-    return db.execute(select(Source)).scalars().all()
+    try:
+        return db.execute(select(Source)).scalars().all()
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in list_sources: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
 
 
 # Job endpoints
@@ -157,5 +195,9 @@ def list_jobs(
     db: Session = Depends(get_db),
 ):
     """List recent job runs."""
-    stmt = select(JobRun).order_by(JobRun.started_at.desc()).limit(limit)
-    return db.execute(stmt).scalars().all()
+    try:
+        stmt = select(JobRun).order_by(JobRun.started_at.desc()).limit(limit)
+        return db.execute(stmt).scalars().all()
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in list_jobs: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
