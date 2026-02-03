@@ -1,16 +1,19 @@
 """Text-to-speech briefing generation."""
 
 import json
+import logging
 from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, APIError
 from sqlalchemy.orm import Session
 
 from ai_daily.config import config
 from ai_daily.db import DailySummary
 from ai_daily.outputs.summary_generator import SummaryGenerator
+
+logger = logging.getLogger(__name__)
 
 # Pocket TTS import (may not be available)
 try:
@@ -59,7 +62,12 @@ Output the script as plain text, ready to be read aloud."""
 
         if self.tts_model is None:
             self.tts_model = TTSModel.load_model()
-            self.voice_state = self.tts_model.get_state_for_audio_prompt(voice)
+            try:
+                self.voice_state = self.tts_model.get_state_for_audio_prompt(voice)
+            except Exception as e:
+                logger.error(f"Failed to initialize voice state for voice '{voice}': {e}")
+                self.tts_model = None
+                raise
 
     async def generate_script(self, summary: DailySummary) -> str:
         """Generate spoken script from summary."""
@@ -68,15 +76,30 @@ Output the script as plain text, ready to be read aloud."""
 Key Facts:
 {chr(10).join(f'- {fact}' for fact in (summary.key_facts or []))}"""
 
-        response = await self.llm_client.chat.completions.create(
-            model=config.llm.model,
-            messages=[
-                {"role": "system", "content": self.SCRIPT_PROMPT},
-                {"role": "user", "content": content}
-            ],
-        )
+        fallback_script = f"Here is your daily briefing. {summary.summary_text}"
 
-        return response.choices[0].message.content
+        try:
+            response = await self.llm_client.chat.completions.create(
+                model=config.llm.model,
+                messages=[
+                    {"role": "system", "content": self.SCRIPT_PROMPT},
+                    {"role": "user", "content": content}
+                ],
+            )
+        except APIError as e:
+            logger.error(f"OpenAI API error while generating script: {e}")
+            return fallback_script
+
+        if not response.choices:
+            logger.error("LLM response contained no choices")
+            return fallback_script
+
+        message_content = response.choices[0].message.content
+        if message_content is None:
+            logger.error("LLM response message content is None")
+            return fallback_script
+
+        return message_content
 
     async def generate(
         self,
@@ -105,14 +128,26 @@ Key Facts:
 
         # Save script for reference
         script_path = self.output_dir / f"{target_date.isoformat()}_script.txt"
-        script_path.write_text(script)
+        try:
+            script_path.write_text(script)
+        except OSError as e:
+            logger.error(f"Failed to write script to {script_path}: {e}")
+            raise
 
         # Generate audio
         self._init_tts(voice)
-        audio = self.tts_model.generate_audio(self.voice_state, script)
+        try:
+            audio = self.tts_model.generate_audio(self.voice_state, script)
+        except Exception as e:
+            logger.error(f"Failed to generate TTS audio: {e}")
+            raise
 
         # Save audio
         audio_path = self.output_dir / f"{target_date.isoformat()}_briefing.wav"
-        scipy.io.wavfile.write(str(audio_path), self.tts_model.sample_rate, audio.numpy())
+        try:
+            scipy.io.wavfile.write(str(audio_path), self.tts_model.sample_rate, audio.numpy())
+        except OSError as e:
+            logger.error(f"Failed to write audio file to {audio_path}: {e}")
+            raise
 
         return audio_path
