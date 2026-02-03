@@ -65,6 +65,33 @@ class GmailConfig:
 
 
 @dataclass
+class OrchestratorConfig:
+    """Orchestrator scheduling and retry configuration."""
+
+    # Cron schedules
+    etl_schedule: str = field(
+        default_factory=lambda: os.getenv("ETL_SCHEDULE", "0 */4 * * *")
+    )
+    tts_schedule: str = field(
+        default_factory=lambda: os.getenv("TTS_SCHEDULE", "0 9 * * *")
+    )
+    newsletter_schedule: str = field(
+        default_factory=lambda: os.getenv("NEWSLETTER_SCHEDULE", "0 14 * * *")
+    )
+
+    # Retry configuration
+    retry_max_attempts: int = field(
+        default_factory=lambda: int(os.getenv("RETRY_MAX_ATTEMPTS", "3"))
+    )
+    retry_base_delay: float = field(
+        default_factory=lambda: float(os.getenv("RETRY_BASE_DELAY", "10.0"))
+    )
+    retry_multiplier: float = field(
+        default_factory=lambda: float(os.getenv("RETRY_MULTIPLIER", "3.0"))
+    )
+
+
+@dataclass
 class Config:
     """Main application configuration container."""
 
@@ -72,6 +99,7 @@ class Config:
     db: DatabaseConfig = field(default_factory=DatabaseConfig)
     llm: LLMConfig = field(default_factory=LLMConfig)
     gmail: GmailConfig = field(default_factory=GmailConfig)
+    orchestrator: OrchestratorConfig = field(default_factory=OrchestratorConfig)
 
     # Paths
     data_dir: Path = field(
