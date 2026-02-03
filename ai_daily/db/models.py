@@ -35,7 +35,11 @@ class Source(Base):
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    articles: Mapped[List["Article"]] = relationship("Article", back_populates="source")
+    articles: Mapped[List["Article"]] = relationship("Article", back_populates="source", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_sources_type", "type"),
+    )
 
 
 class Article(Base):
@@ -44,7 +48,7 @@ class Article(Base):
     __tablename__ = "articles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_id: Mapped[int] = mapped_column(Integer, ForeignKey("sources.id"))
+    source_id: Mapped[int] = mapped_column(Integer, ForeignKey("sources.id", ondelete="CASCADE"), nullable=False)
     external_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -64,6 +68,7 @@ class Article(Base):
         Index("idx_articles_published", "published_at"),
         Index("idx_articles_topic", "topic"),
         Index("idx_articles_content_hash", "content_hash"),
+        Index("idx_articles_source", "source_id"),
     )
 
 
