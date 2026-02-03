@@ -324,14 +324,12 @@ def orchestrator_status():
 
 
 @orchestrator.command("trigger")
-@click.argument("job_name", type=click.Choice(["etl", "newsletter", "tts"]))
+@click.argument("job_name", type=click.Choice(["etl", "newsletter", "tts", "all"]))
 def orchestrator_trigger(job_name: str):
-    """Manually trigger a job."""
+    """Manually trigger a job (or 'all' for ETL → TTS → Newsletter)."""
     from ai_daily.config import config
     from ai_daily.orchestrator import Executor, JOBS
     from ai_daily.orchestrator.types import RetryConfig
-
-    console.print(f"[cyan]Triggering job: {job_name}[/cyan]")
 
     retry_config = RetryConfig(
         max_attempts=config.orchestrator.retry_max_attempts,
@@ -340,22 +338,53 @@ def orchestrator_trigger(job_name: str):
     )
 
     executor = Executor(retry_config)
-    job_func = JOBS[job_name]
 
-    async def _run():
-        result = await executor.run(job_name, job_func)
-        return result
+    # Determine which jobs to run
+    if job_name == "all":
+        jobs_to_run = ["etl", "tts", "newsletter"]
+        console.print("[cyan]Running all jobs: ETL → TTS → Newsletter[/cyan]")
+    else:
+        jobs_to_run = [job_name]
+        console.print(f"[cyan]Triggering job: {job_name}[/cyan]")
+
+    async def _run_jobs():
+        results = []
+        for name in jobs_to_run:
+            console.print(f"\n[bold]Running {name}...[/bold]")
+            job_func = JOBS[name]
+            result = await executor.run(name, job_func)
+            results.append((name, result))
+
+            if result["success"]:
+                console.print(f"[green]{name}: completed[/green]")
+                if result.get("metrics"):
+                    console.print(f"  Metrics: {result['metrics']}")
+            else:
+                console.print(f"[red]{name}: failed - {result.get('error')}[/red]")
+                if job_name == "all":
+                    console.print("[yellow]Stopping pipeline due to failure[/yellow]")
+                    break
+        return results
 
     try:
-        result = asyncio.run(_run())
+        results = asyncio.run(_run_jobs())
 
-        if result["success"]:
-            console.print(f"[green]Job completed successfully![/green]")
-            if result.get("metrics"):
-                console.print(f"Metrics: {result['metrics']}")
+        # Summary for 'all' mode
+        if job_name == "all":
+            console.print("\n[bold]Summary:[/bold]")
+            all_success = all(r[1]["success"] for r in results)
+            for name, result in results:
+                status = "[green]✓[/green]" if result["success"] else "[red]✗[/red]"
+                console.print(f"  {status} {name}")
+
+            if not all_success:
+                raise SystemExit(1)
         else:
-            console.print(f"[red]Job failed: {result.get('error')}[/red]")
-            raise SystemExit(1)
+            if not results[0][1]["success"]:
+                raise SystemExit(1)
+
+    except SystemExit:
+        raise
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise SystemExit(1)
