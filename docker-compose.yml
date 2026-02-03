@@ -1,7 +1,25 @@
 # AI Daily Summary - Data Platform
-# Docker Compose configuration for PostgreSQL + pgvector and the AI Daily app
+# Docker Compose configuration for PostgreSQL + pgvector, Ollama, and the AI Daily app
 
 services:
+  # Ollama for local LLM and embeddings
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ai-daily-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - ai-daily-network
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
   # PostgreSQL database with pgvector extension
   postgres:
     image: pgvector/pgvector:pg16
@@ -33,6 +51,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      ollama:
+        condition: service_healthy
     environment:
       # Database configuration
       DB_HOST: postgres
@@ -40,12 +60,13 @@ services:
       DB_NAME: ${DB_NAME:-ai_daily}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      # LLM configuration
-      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
-      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      # LLM configuration (defaults to Ollama for local deployment)
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      LLM_MODEL: ${LLM_MODEL:-llama3.2}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
       # Gmail configuration (required for email sending)
       GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID}
       GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET}
@@ -74,6 +95,8 @@ networks:
 volumes:
   postgres_data:
     name: ai-daily-postgres-data
+  ollama_data:
+    name: ai-daily-ollama-data
   app_data:
     name: ai-daily-app-data
   app_logs:
