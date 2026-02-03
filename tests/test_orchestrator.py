@@ -147,3 +147,47 @@ async def test_notifier_rate_limits():
     # Alert for different job should send
     await notifier.send_failure_alert("newsletter", "Error 3", 3, datetime.now(timezone.utc), 3)
     assert mock_gmail.users.return_value.messages.return_value.send.call_count == 2
+
+
+def test_scheduler_cron_matching():
+    """Test scheduler correctly matches cron expressions."""
+    from ai_daily.orchestrator.scheduler import Scheduler
+
+    scheduler = Scheduler(
+        schedules={"etl": "0 */4 * * *", "newsletter": "0 14 * * *"},
+        executor=MagicMock(),
+    )
+
+    # 4:00 AM should match ETL (every 4 hours)
+    dt = datetime(2026, 2, 3, 4, 0, 0)
+    due = scheduler.get_due_jobs(dt)
+    assert "etl" in due
+    assert "newsletter" not in due
+
+    # 2:00 PM should match newsletter
+    dt = datetime(2026, 2, 3, 14, 0, 0)
+    due = scheduler.get_due_jobs(dt)
+    assert "newsletter" in due
+
+
+def test_scheduler_prevents_duplicate_runs():
+    """Test scheduler prevents running same job twice in same minute."""
+    from ai_daily.orchestrator.scheduler import Scheduler
+
+    scheduler = Scheduler(
+        schedules={"etl": "0 */4 * * *"},
+        executor=MagicMock(),
+    )
+
+    dt = datetime(2026, 2, 3, 4, 0, 0)
+
+    # First call should return the job
+    due = scheduler.get_due_jobs(dt)
+    assert "etl" in due
+
+    # Mark as recently run
+    scheduler.mark_run("etl", dt)
+
+    # Second call at same time should not return the job
+    due = scheduler.get_due_jobs(dt)
+    assert "etl" not in due
