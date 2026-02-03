@@ -141,6 +141,13 @@ def serve():
     uvicorn.run("ai_daily.api.server:app", host="0.0.0.0", port=8000, reload=True)
 
 
+@main.command("run-daily")
+def run_daily():
+    """Run the complete daily pipeline (ETL + newsletter + TTS)."""
+    from ai_daily.main import run_daily_pipeline
+    asyncio.run(run_daily_pipeline())
+
+
 @main.group()
 def source():
     """Manage sources."""
