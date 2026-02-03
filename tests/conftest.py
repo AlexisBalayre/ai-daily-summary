@@ -2,10 +2,10 @@
 
 import json
 import pytest
-from sqlalchemy import create_engine, event, Text
+from sqlalchemy import create_engine, event, Text, delete
 from sqlalchemy.orm import sessionmaker, DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Boolean, DateTime
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional
 
 
@@ -26,7 +26,7 @@ class SqliteSource(SqliteBase):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     config: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Store JSON as text
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     def set_config(self, config_dict: dict) -> None:
         """Set config from dict."""
@@ -50,7 +50,7 @@ class SqliteArticle(SqliteBase):
     url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     author: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     published_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    ingested_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    ingested_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     topic: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     content_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
@@ -70,5 +70,9 @@ def session(engine):
     Session = sessionmaker(bind=engine)
     session = Session()
     yield session
+    # Cleanup - truncate tables to ensure test isolation
     session.rollback()
+    session.execute(delete(SqliteArticle))
+    session.execute(delete(SqliteSource))
+    session.commit()
     session.close()
