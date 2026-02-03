@@ -1,7 +1,7 @@
 [project]
 name = "ai-daily-summary"
-version = "0.1.0"
-description = ""
+version = "0.2.0"
+description = "AI-powered daily summary and newsletter generation platform"
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [
@@ -16,14 +16,37 @@ dependencies = [
     "aiohttp>=3.11.12",
     "requests>=2.32.3",
     "beautifulsoup4>=4.13.3",
+    # New dependencies for data platform
+    "sqlalchemy[asyncio]>=2.0.0",
+    "asyncpg>=0.29.0",
+    "psycopg2-binary>=2.9.9",
+    "alembic>=1.13.0",
+    "pgvector>=0.2.4",
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "click>=8.1.0",
+    "rich>=13.7.0",
+    "pocket-tts>=0.1.0",
+    "scipy>=1.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
 ]
 
 [project.scripts]
 scrape-github = "lib.github_scraper:main"
+ai-daily = "ai_daily.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["lib"]
+packages = ["ai_daily", "lib"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
