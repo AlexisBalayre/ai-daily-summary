@@ -154,6 +154,53 @@ ai-daily serve [--host 0.0.0.0] [--port 8000]
 | `RECIPIENTS` | Newsletter recipients | - |
 | `GITHUB_COOKIE` | GitHub session cookie | - |
 
+## Orchestrator
+
+The orchestrator manages job scheduling with cron expressions, automatic retries, and failure notifications.
+
+### Scheduled Jobs
+
+| Job | Default Schedule | Description |
+|-----|-----------------|-------------|
+| `etl` | `0 */4 * * *` | Collect articles every 4 hours |
+| `tts` | `0 9 * * *` | Generate TTS briefing at 9:00 AM |
+| `newsletter` | `0 14 * * *` | Send newsletter at 2:00 PM |
+
+### Orchestrator Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ETL_SCHEDULE` | ETL job schedule (cron) | `0 */4 * * *` |
+| `TTS_SCHEDULE` | TTS job schedule (cron) | `0 9 * * *` |
+| `NEWSLETTER_SCHEDULE` | Newsletter schedule (cron) | `0 14 * * *` |
+| `RETRY_MAX_ATTEMPTS` | Max retry attempts | `3` |
+| `RETRY_BASE_DELAY` | Initial retry delay (seconds) | `10` |
+| `RETRY_MULTIPLIER` | Delay multiplier | `3` |
+
+### Orchestrator CLI Commands
+
+```bash
+# Start orchestrator (foreground)
+ai-daily orchestrator start
+
+# Show scheduled jobs and recent runs
+ai-daily orchestrator status
+
+# Manually trigger a job
+ai-daily orchestrator trigger etl
+ai-daily orchestrator trigger newsletter
+ai-daily orchestrator trigger tts
+```
+
+### Retry Behavior
+
+Jobs retry with exponential backoff:
+- Attempt 1: immediate
+- Attempt 2: after 10 seconds
+- Attempt 3: after 30 seconds (10 × 3)
+
+On final failure, an email alert is sent to configured recipients.
+
 ### Model Recommendations
 
 For best results with local inference:
