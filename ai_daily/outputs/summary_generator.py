@@ -1,15 +1,18 @@
 """Generate daily summaries from articles."""
 
 import json
+import logging
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 
-from openai import AsyncOpenAI
+from openai import APIError, AsyncOpenAI
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ai_daily.config import config
 from ai_daily.db import Article, DailySummary
+
+logger = logging.getLogger(__name__)
 
 
 class SummaryGenerator:
@@ -62,6 +65,20 @@ Output valid JSON:
 
         return list(session.execute(stmt).scalars().all())
 
+    def _create_fallback_summary(
+        self, session: Session, target_date: date, articles: List[Article], error_message: str
+    ) -> DailySummary:
+        """Create a fallback summary when LLM generation fails."""
+        summary = DailySummary(
+            date=datetime.combine(target_date, datetime.min.time()),
+            summary_text=f"Summary generation failed: {error_message}",
+            key_facts=[],
+            article_ids=[a.id for a in articles],
+        )
+        session.add(summary)
+        session.commit()
+        return summary
+
     async def generate(self, session: Session, target_date: Optional[date] = None) -> DailySummary:
         """Generate summary for a date.
 
@@ -94,23 +111,42 @@ Output valid JSON:
             session.commit()
             return summary
 
-        # Prepare content
+        # Prepare content with null coalescing for article fields
         articles_text = "\n\n".join(
-            f"Title: {a.title}\nTopic: {a.topic}\nContent: {a.content[:500]}"
+            f"Title: {a.title or 'Untitled'}\nTopic: {a.topic or 'Unknown'}\nContent: {(a.content or '')[:500]}"
             for a in articles[:50]  # Limit to avoid token limits
         )
 
-        # Generate summary
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": self.SYSTEM_PROMPT},
-                {"role": "user", "content": f"Articles for {target_date}:\n\n{articles_text}"}
-            ],
-            response_format={"type": "json_object"},
-        )
+        # Generate summary with error handling
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": self.SYSTEM_PROMPT},
+                    {"role": "user", "content": f"Articles for {target_date}:\n\n{articles_text}"}
+                ],
+                response_format={"type": "json_object"},
+            )
+        except APIError as e:
+            logger.error("OpenAI API error during summary generation: %s", e)
+            return self._create_fallback_summary(session, target_date, articles, "LLM API error occurred.")
 
-        result = json.loads(response.choices[0].message.content)
+        # Validate response structure
+        if not response.choices or len(response.choices) == 0:
+            logger.error("LLM response has no choices")
+            return self._create_fallback_summary(session, target_date, articles, "LLM returned empty response.")
+
+        message_content = response.choices[0].message.content
+        if message_content is None:
+            logger.error("LLM response message content is None")
+            return self._create_fallback_summary(session, target_date, articles, "LLM returned no content.")
+
+        # Parse JSON with error handling
+        try:
+            result = json.loads(message_content)
+        except json.JSONDecodeError as e:
+            logger.error("Failed to parse LLM response as JSON: %s", e)
+            return self._create_fallback_summary(session, target_date, articles, "Failed to parse LLM response.")
 
         # Create and save summary
         summary = DailySummary(
