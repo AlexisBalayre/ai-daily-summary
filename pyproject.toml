@@ -1,7 +1,7 @@
 [project]
 name = "ai-daily-summary"
 version = "0.2.0"
-description = ""
+description = "AI-powered daily summary and newsletter generation platform"
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [
