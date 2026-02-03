@@ -45,7 +45,11 @@ def run(job_type: str):
         console.print(f"  Created: {metrics['articles_created']}")
         console.print(f"  Duplicates: {metrics['duplicates_skipped']}")
 
-    asyncio.run(_run())
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        console.print(f"[red]ETL pipeline failed: {e}[/red]")
+        raise SystemExit(1)
 
 
 @main.command()
@@ -69,8 +73,9 @@ def status():
         table.add_column("Metrics")
 
         for job in jobs:
-            status_icon = "+" if job.status == "success" else "x" if job.status == "failed" else "..."
-            status_color = "green" if job.status == "success" else "red" if job.status == "failed" else "yellow"
+            job_status = job.status or "unknown"
+            status_icon = "+" if job_status == "success" else "x" if job_status == "failed" else "..."
+            status_color = "green" if job_status == "success" else "red" if job_status == "failed" else "yellow"
 
             duration = ""
             if job.finished_at and job.started_at:
@@ -82,10 +87,12 @@ def status():
                 if "articles_created" in job.metrics:
                     metrics_str = f"{job.metrics['articles_created']} articles"
 
+            started_str = job.started_at.strftime("%H:%M") if job.started_at else "N/A"
+
             table.add_row(
                 f"[{status_color}]{status_icon}[/{status_color}]",
                 job.job_name,
-                job.started_at.strftime("%H:%M"),
+                started_str,
                 duration,
                 metrics_str,
             )
@@ -163,11 +170,18 @@ def source_add(source_type: str, name: str, config: str = None):
     """Add a new source."""
     import json
 
+    parsed_config = None
+    if config:
+        try:
+            parsed_config = json.loads(config)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(f"Invalid JSON config: {e}")
+
     with get_session() as session:
         src = Source(
             type=source_type,
             name=name,
-            config=json.loads(config) if config else None,
+            config=parsed_config,
             enabled=True,
         )
         session.add(src)
