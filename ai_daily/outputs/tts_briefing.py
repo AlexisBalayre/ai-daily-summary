@@ -2,6 +2,8 @@
 
 import json
 import logging
+import os
+import shutil
 from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
@@ -43,6 +45,11 @@ Output the script as plain text, ready to be read aloud."""
         self.summary_generator = SummaryGenerator()
         self.output_dir = config.data_dir / "briefings"
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # iCloud sync directory for phone access
+        icloud_default = Path.home() / "Library" / "Mobile Documents" / "com~apple~CloudDocs" / "AI Daily Briefings"
+        tts_output = os.getenv("TTS_OUTPUT_DIR", "")
+        self.sync_dir = Path(tts_output) if tts_output else icloud_default
 
         if config.llm.provider == "ollama":
             self.llm_client = AsyncOpenAI(
@@ -150,4 +157,19 @@ Key Facts:
             logger.error(f"Failed to write audio file to {audio_path}: {e}")
             raise
 
-        return audio_path
+        # Copy to iCloud sync directory
+        sync_path = self._copy_to_sync_dir(audio_path, target_date)
+
+        return audio_path, sync_path
+
+    def _copy_to_sync_dir(self, audio_path: Path, target_date: date) -> Optional[Path]:
+        """Copy audio to cloud sync directory for phone access."""
+        try:
+            self.sync_dir.mkdir(parents=True, exist_ok=True)
+            sync_path = self.sync_dir / f"briefing_{target_date.isoformat()}.wav"
+            shutil.copy2(audio_path, sync_path)
+            logger.info(f"Audio copied to sync dir: {sync_path}")
+            return sync_path
+        except Exception as e:
+            logger.warning(f"Failed to copy to sync dir: {e}")
+            return None
