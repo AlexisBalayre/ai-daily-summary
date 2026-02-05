@@ -40,8 +40,10 @@ async def run_daily_pipeline():
         # Generate TTS briefing (optional)
         try:
             tts = TTSBriefingOutput()
-            audio_path = await tts.generate(session, target_date=date.today())
+            audio_path, sync_path = await tts.generate(session, target_date=date.today())
             logger.info(f"TTS briefing generated: {audio_path}")
+            if sync_path:
+                logger.info(f"TTS synced to: {sync_path}")
         except Exception as e:
             logger.warning(f"TTS generation skipped: {e}")
 
