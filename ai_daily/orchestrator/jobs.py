@@ -46,35 +46,17 @@ async def run_newsletter(context: JobContext) -> Dict[str, Any]:
 
 
 async def run_tts(context: JobContext) -> Dict[str, Any]:
-    """Generate TTS audio briefing, sync to iCloud, notify via Telegram."""
+    """Generate TTS audio briefing and sync to iCloud."""
     logger.info(f"Starting TTS job (run_id={context.run_id})")
 
     with get_session() as session:
         tts = TTSBriefingOutput()
         audio_path, sync_path = await tts.generate(session, target_date=date.today())
 
-        # Notify via Telegram if configured
-        telegram_sent = False
-        try:
-            from ai_daily.outputs.telegram import TelegramSender
-
-            telegram = TelegramSender()
-            if telegram.enabled:
-                today_str = date.today().strftime("%B %d, %Y")
-                message = f"🎙 <b>AI Daily Briefing</b> - {today_str}\n\n"
-                if sync_path:
-                    message += "Your audio briefing is ready in iCloud Drive > AI Daily Briefings."
-                else:
-                    message += "Audio generated but iCloud sync failed. Check server logs."
-                telegram_sent = await telegram.send_message(message)
-        except Exception as e:
-            logger.warning(f"Telegram notification failed: {e}")
-
         return {
             "audio_path": str(audio_path),
             "sync_path": str(sync_path) if sync_path else None,
             "date": date.today().isoformat(),
-            "telegram_sent": telegram_sent,
         }
 
 
