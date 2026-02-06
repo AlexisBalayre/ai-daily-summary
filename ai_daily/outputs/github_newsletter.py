@@ -60,9 +60,9 @@ class GitHubNewsletterOutput:
         return list(session.execute(stmt).scalars().all())
 
     def _generate_repos_html(self, articles: List[Article]) -> str:
-        """Generate HTML for repos with modern light theme styling."""
+        """Generate HTML for repos with professional styling."""
         if not articles:
-            return '''<p style="font-family: 'DM Sans', sans-serif; font-size: 14px; color: #6e7781; text-align: center; padding: 40px;">No trending repos detected today.</p>'''
+            return '''<p style="font-family: 'Source Serif 4', Georgia, serif; font-size: 15px; color: #71717a; text-align: center; padding: 40px;">No trending repositories today.</p>'''
 
         html = ""
         for idx, article in enumerate(articles[:15], 1):  # Limit to top 15
@@ -86,19 +86,19 @@ class GitHubNewsletterOutput:
                     forks = line.replace("Forks:", "").strip()
 
             # Truncate description
-            desc_text = escape(description[:200]) + "..." if len(description) > 200 else escape(description)
+            desc_text = escape(description[:180]) + "..." if len(description) > 180 else escape(description)
 
             html += f'''
-            <div class="repo-card" style="background: #f6f8fa; border: 1px solid #d1d9e0; border-radius: 12px; padding: 24px; margin: 16px 0; position: relative;">
-                <span class="repo-rank" style="position: absolute; top: -10px; right: 20px; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: #8250df; background: #fbefff; padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(130, 80, 223, 0.2); letter-spacing: 1px;">#{idx:02d}</span>
-                <p class="repo-name" style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; margin: 0 0 12px 0; line-height: 1.3;">
-                    <a href="{url}" style="color: #0969da; text-decoration: none;">{title}</a>
+            <div class="repo-card" style="background: #fafafa; border: 1px solid #e4e4e7; border-radius: 6px; padding: 20px; margin-bottom: 16px; position: relative;">
+                <span class="repo-rank" style="position: absolute; top: -8px; right: 16px; font-family: 'Inter', -apple-system, sans-serif; font-size: 10px; font-weight: 600; color: #71717a; background: #ffffff; padding: 4px 10px; border-radius: 12px; border: 1px solid #e4e4e7;">#{idx:02d}</span>
+                <p class="repo-name" style="font-family: 'Inter', -apple-system, sans-serif; font-size: 15px; font-weight: 600; margin: 0 0 10px 0; line-height: 1.4;">
+                    <a href="{url}" style="color: #18181b; text-decoration: none;">{title}</a>
                 </p>
-                <p class="repo-desc" style="font-family: 'DM Sans', sans-serif; font-size: 14px; color: #424a53; line-height: 1.65; margin: 0 0 18px 0; padding-left: 14px; border-left: 3px solid #d1d9e0;">{desc_text}</p>
-                <div class="repo-meta" style="display: flex; flex-wrap: wrap; gap: 10px; font-family: 'Fira Code', monospace; font-size: 12px;">
-                    <span class="meta-tag meta-lang" style="display: inline-flex; align-items: center; gap: 6px; color: #0969da; background: #ddf4ff; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(9, 105, 218, 0.15); font-weight: 500;">&#128221; {escape(language)}</span>
-                    <span class="meta-tag meta-stars" style="display: inline-flex; align-items: center; gap: 6px; color: #bf5700; background: #fff8f2; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(191, 87, 0, 0.15); font-weight: 500;">&#11088; {escape(stars)}</span>
-                    {f'<span class="meta-tag meta-forks" style="display: inline-flex; align-items: center; gap: 6px; color: #1a7f37; background: #dafbe1; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(26, 127, 55, 0.15); font-weight: 500;">&#127860; {escape(forks)}</span>' if forks else ''}
+                <p class="repo-desc" style="font-family: 'Source Serif 4', Georgia, serif; font-size: 15px; color: #52525b; line-height: 1.6; margin: 0 0 16px 0;">{desc_text}</p>
+                <div class="repo-meta" style="display: flex; flex-wrap: wrap; gap: 12px; font-family: 'Inter', -apple-system, sans-serif; font-size: 12px;">
+                    <span class="meta-item" style="display: inline-flex; align-items: center; gap: 6px; color: #52525b; background: #ffffff; padding: 4px 10px; border-radius: 4px; border: 1px solid #e4e4e7;">{escape(language)}</span>
+                    <span class="meta-item" style="display: inline-flex; align-items: center; gap: 6px; color: #52525b; background: #ffffff; padding: 4px 10px; border-radius: 4px; border: 1px solid #e4e4e7;">{escape(stars)} stars</span>
+                    {f'<span class="meta-item" style="display: inline-flex; align-items: center; gap: 6px; color: #52525b; background: #ffffff; padding: 4px 10px; border-radius: 4px; border: 1px solid #e4e4e7;">{escape(forks)} forks</span>' if forks else ''}
                 </div>
             </div>
             '''
