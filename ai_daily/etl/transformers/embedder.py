@@ -28,9 +28,10 @@ class Embedder:
         response = await self.client.aio.models.embed_content(
             model=self.model,
             contents=text,
+            config={"output_dimensionality": 768},
         )
 
-        return response.embeddings[0].values
+        return list(response.embeddings[0].values)
 
     async def embed_batch(self, texts: List[str]) -> List[List[float]]:
         """Generate embeddings for multiple texts.
@@ -48,7 +49,8 @@ class Embedder:
             response = await self.client.aio.models.embed_content(
                 model=self.model,
                 contents=text,
+                config={"output_dimensionality": 768},
             )
-            embeddings.append(response.embeddings[0].values)
+            embeddings.append(list(response.embeddings[0].values))
 
         return embeddings
