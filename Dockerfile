@@ -18,9 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy project files
-COPY pyproject.toml ./
+COPY pyproject.toml README.md ./
 COPY ai_daily/ ./ai_daily/
-COPY lib/ ./lib/
 COPY templates/ ./templates/
 COPY config.json ./
 COPY alembic.ini ./

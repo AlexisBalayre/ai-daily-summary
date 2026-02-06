@@ -89,6 +89,10 @@ class ETLPipeline:
                     }]
 
                 for article_data in articles_data:
+                    if not article_data.get("title") or not article_data.get("content"):
+                        logger.warning(f"Skipping article with missing title/content from {source.name}")
+                        continue
+
                     content_hash = compute_content_hash(
                         article_data["title"],
                         article_data["content"]

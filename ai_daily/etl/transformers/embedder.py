@@ -2,24 +2,17 @@
 
 from typing import List
 
-from openai import AsyncOpenAI
+import google.generativeai as genai
 
 from ai_daily.config import config
 
 
 class Embedder:
-    """Generate vector embeddings using OpenAI or Ollama."""
+    """Generate vector embeddings using Google's embedding API."""
 
     def __init__(self):
-        if config.llm.provider == "ollama":
-            self.client = AsyncOpenAI(
-                base_url=config.llm.ollama_base_url,
-                api_key="ollama"
-            )
-            self.model = "nomic-embed-text"
-        else:
-            self.client = AsyncOpenAI()
-            self.model = config.llm.embedding_model
+        genai.configure(api_key=config.llm.google_api_key)
+        self.model = config.llm.embedding_model
 
     async def embed(self, text: str) -> List[float]:
         """Generate embedding for text.
@@ -32,12 +25,13 @@ class Embedder:
         """
         text = text[:8000]
 
-        response = await self.client.embeddings.create(
-            model=self.model,
-            input=text,
+        result = genai.embed_content(
+            model=f"models/{self.model}",
+            content=text,
+            task_type="RETRIEVAL_DOCUMENT",
         )
 
-        return response.data[0].embedding
+        return result["embedding"]
 
     async def embed_batch(self, texts: List[str]) -> List[List[float]]:
         """Generate embeddings for multiple texts.
@@ -50,9 +44,10 @@ class Embedder:
         """
         texts = [t[:8000] for t in texts]
 
-        response = await self.client.embeddings.create(
-            model=self.model,
-            input=texts,
+        result = genai.embed_content(
+            model=f"models/{self.model}",
+            content=texts,
+            task_type="RETRIEVAL_DOCUMENT",
         )
 
-        return [d.embedding for d in response.data]
+        return result["embedding"]

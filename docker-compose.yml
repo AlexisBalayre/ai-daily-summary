@@ -1,6 +1,5 @@
 # AI Daily Summary - Data Platform
 # Docker Compose configuration for PostgreSQL + pgvector and the AI Daily app
-# NOTE: Ollama runs on the host machine, not in a container
 
 services:
   # PostgreSQL database with pgvector extension
@@ -41,13 +40,11 @@ services:
       DB_NAME: ${DB_NAME:-ai_daily}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      # LLM configuration (defaults to Ollama for local deployment)
-      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
-      LLM_MODEL: ${LLM_MODEL:-qwen3:30b-a3b}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-qwen3-embedding:8b}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      # LLM configuration (Google AI Studio)
+      LLM_PROVIDER: ${LLM_PROVIDER:-google}
+      LLM_MODEL: ${LLM_MODEL:-gemini-2.0-flash-lite}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-004}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:?GOOGLE_API_KEY is required}
       # Gmail configuration (required for email sending)
       GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID}
       GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET}
@@ -64,8 +61,8 @@ services:
     volumes:
       - app_data:/app/data
       - app_logs:/app/logs
-      # Mount Gmail token if using OAuth (optional)
-      - ./token.json:/app/token.json:ro
+      # Mount Gmail token (read-write so OAuth can refresh)
+      - ./token.json:/app/token.json
     networks:
       - ai-daily-network
 

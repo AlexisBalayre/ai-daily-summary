@@ -35,15 +35,15 @@ class DatabaseConfig:
 
 @dataclass
 class LLMConfig:
-    """LLM provider configuration."""
+    """LLM provider configuration (Google AI Studio)."""
 
-    provider: str = field(default_factory=lambda: os.getenv("LLM_PROVIDER", "openai"))
-    model: str = field(default_factory=lambda: os.getenv("LLM_MODEL", "gpt-4o-mini"))
+    provider: str = field(default_factory=lambda: os.getenv("LLM_PROVIDER", "google"))
+    model: str = field(default_factory=lambda: os.getenv("LLM_MODEL", "gemini-2.0-flash-lite"))
     embedding_model: str = field(
-        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "text-embedding-004")
     )
-    ollama_base_url: str = field(
-        default_factory=lambda: os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    google_api_key: str = field(
+        default_factory=lambda: os.getenv("GOOGLE_API_KEY", "")
     )
 
 

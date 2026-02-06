@@ -5,7 +5,7 @@ import logging
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 
-from openai import APIError, AsyncOpenAI
+import google.generativeai as genai
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -37,14 +37,14 @@ Output valid JSON:
 }"""
 
     def __init__(self):
-        if config.llm.provider == "ollama":
-            self.client = AsyncOpenAI(
-                base_url=config.llm.ollama_base_url,
-                api_key="ollama"
-            )
-        else:
-            self.client = AsyncOpenAI()
-        self.model = config.llm.model
+        genai.configure(api_key=config.llm.google_api_key)
+        self.model = genai.GenerativeModel(
+            model_name=config.llm.model,
+            system_instruction=self.SYSTEM_PROMPT,
+            generation_config=genai.GenerationConfig(
+                response_mime_type="application/json",
+            ),
+        )
 
     def get_cached_summary(self, session: Session, target_date: date) -> Optional[DailySummary]:
         """Get cached summary for date if exists."""
@@ -119,31 +119,21 @@ Output valid JSON:
 
         # Generate summary with error handling
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": self.SYSTEM_PROMPT},
-                    {"role": "user", "content": f"Articles for {target_date}:\n\n{articles_text}"}
-                ],
-                response_format={"type": "json_object"},
+            response = await self.model.generate_content_async(
+                f"Articles for {target_date}:\n\n{articles_text}"
             )
-        except APIError as e:
-            logger.error("OpenAI API error during summary generation: %s", e)
+        except Exception as e:
+            logger.error("Google API error during summary generation: %s", e)
             return self._create_fallback_summary(session, target_date, articles, "LLM API error occurred.")
 
-        # Validate response structure
-        if not response.choices or len(response.choices) == 0:
-            logger.error("LLM response has no choices")
+        # Validate response
+        if not response.text:
+            logger.error("LLM response has no text")
             return self._create_fallback_summary(session, target_date, articles, "LLM returned empty response.")
-
-        message_content = response.choices[0].message.content
-        if message_content is None:
-            logger.error("LLM response message content is None")
-            return self._create_fallback_summary(session, target_date, articles, "LLM returned no content.")
 
         # Parse JSON with error handling
         try:
-            result = json.loads(message_content)
+            result = json.loads(response.text)
         except json.JSONDecodeError as e:
             logger.error("Failed to parse LLM response as JSON: %s", e)
             return self._create_fallback_summary(session, target_date, articles, "Failed to parse LLM response.")

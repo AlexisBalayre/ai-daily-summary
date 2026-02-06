@@ -1,12 +1,17 @@
 """LLM-based content parser for extracting structured articles."""
 
 import json
-from typing import Dict, List
+import logging
+from typing import Dict, List, Optional
 
-from openai import AsyncOpenAI
+import google.generativeai as genai
 
 from ai_daily.config import config
 from ai_daily.etl.types import RawContent
+
+logger = logging.getLogger(__name__)
+
+REQUIRED_FIELDS = {"title", "content", "topic"}
 
 
 class LLMParser:
@@ -21,49 +26,74 @@ Extract articles that match these topics:
 - Industry News and Trends
 
 For each article, identify:
-- title: Clear, descriptive title
-- content: Main content summary (2-3 sentences)
-- topic: One of the categories above
+- title: Clear, descriptive title (required)
+- content: Main content summary, 2-3 sentences (required)
+- topic: One of the categories above (required)
 - url: URL if mentioned
 
-Output valid JSON:
+You MUST output valid JSON with this exact structure:
 {
     "articles": [
         {"title": "...", "content": "...", "topic": "...", "url": "..."}
     ]
 }"""
 
+    MAX_RETRIES = 2
+
     def __init__(self):
-        if config.llm.provider == "ollama":
-            self.client = AsyncOpenAI(
-                base_url=config.llm.ollama_base_url,
-                api_key="ollama"
-            )
-        else:
-            self.client = AsyncOpenAI()
-        self.model = config.llm.model
+        genai.configure(api_key=config.llm.google_api_key)
+        self.model = genai.GenerativeModel(
+            model_name=config.llm.model,
+            system_instruction=self.SYSTEM_PROMPT,
+            generation_config=genai.GenerationConfig(
+                response_mime_type="application/json",
+            ),
+        )
+
+    def _validate_articles(self, articles: List[Dict]) -> Optional[str]:
+        """Validate that all articles have required fields.
+
+        Returns None if valid, or an error description if invalid.
+        """
+        if not isinstance(articles, list):
+            return "Expected a list of articles"
+        if not articles:
+            return "No articles extracted"
+        for i, article in enumerate(articles):
+            missing = REQUIRED_FIELDS - set(article.keys())
+            if missing:
+                return f"Article {i} missing fields: {missing}"
+            for field in REQUIRED_FIELDS:
+                if not isinstance(article[field], str) or not article[field].strip():
+                    return f"Article {i} has empty or non-string '{field}'"
+        return None
+
+    async def _call_llm(self, content: str) -> Dict:
+        """Make a single LLM call and parse the JSON response."""
+        response = await self.model.generate_content_async(
+            f"Content:\n{content}"
+        )
+        return json.loads(response.text)
 
     async def parse(self, raw_content: RawContent) -> List[Dict]:
-        """Parse raw content into structured articles.
-
-        Args:
-            raw_content: The raw content to parse.
-
-        Returns:
-            List of article dictionaries with title, content, topic, url.
-        """
+        """Parse raw content into structured articles with retry on bad format."""
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": self.SYSTEM_PROMPT},
-                    {"role": "user", "content": f"Content:\n{raw_content.content[:8000]}"}
-                ],
-                response_format={"type": "json_object"},
-            )
-
-            result = json.loads(response.choices[0].message.content)
+            content = raw_content.content[:8000]
+            result = await self._call_llm(content)
             articles = result.get("articles", [])
+
+            error = self._validate_articles(articles)
+            for attempt in range(self.MAX_RETRIES):
+                if error is None:
+                    break
+                logger.warning(f"LLM output invalid ({error}), retry {attempt + 1}/{self.MAX_RETRIES}")
+                result = await self._call_llm(content)
+                articles = result.get("articles", [])
+                error = self._validate_articles(articles)
+
+            if error is not None:
+                logger.warning(f"LLM retries exhausted ({error}), using fallback")
+                return self._fallback(raw_content)
 
             for article in articles:
                 article["source_name"] = raw_content.source_name
@@ -72,12 +102,17 @@ Output valid JSON:
                     article["url"] = raw_content.url
 
             return articles
-        except Exception:
-            return [{
-                "title": raw_content.title,
-                "content": raw_content.content[:1000],
-                "topic": "Industry News and Trends",
-                "url": raw_content.url,
-                "source_name": raw_content.source_name,
-                "external_id": raw_content.external_id,
-            }]
+        except Exception as e:
+            logger.warning(f"LLM parse failed ({e}), using fallback")
+            return self._fallback(raw_content)
+
+    def _fallback(self, raw_content: RawContent) -> List[Dict]:
+        """Return raw content as a single article when LLM fails."""
+        return [{
+            "title": raw_content.title,
+            "content": raw_content.content[:1000],
+            "topic": "Industry News and Trends",
+            "url": raw_content.url,
+            "source_name": raw_content.source_name,
+            "external_id": raw_content.external_id,
+        }]
