@@ -127,7 +127,7 @@ class Config:
         )
     )
 
-    # Recipients for newsletter
+    # Recipients for newsletters (fallback for all)
     recipients: List[str] = field(
         default_factory=lambda: [
             r.strip()
@@ -135,6 +135,30 @@ class Config:
             if r.strip()
         ]
     )
+
+    # Per-newsletter recipient lists (fall back to recipients if not set)
+    newsletter_recipients: List[str] = field(
+        default_factory=lambda: [
+            r.strip()
+            for r in os.getenv("NEWSLETTER_RECIPIENTS", "").split(",")
+            if r.strip()
+        ]
+    )
+    github_recipients: List[str] = field(
+        default_factory=lambda: [
+            r.strip()
+            for r in os.getenv("GITHUB_RECIPIENTS", "").split(",")
+            if r.strip()
+        ]
+    )
+
+    def get_newsletter_recipients(self) -> List[str]:
+        """Get recipients for AI Daily newsletter (falls back to general recipients)."""
+        return self.newsletter_recipients if self.newsletter_recipients else self.recipients
+
+    def get_github_recipients(self) -> List[str]:
+        """Get recipients for GitHub newsletter (falls back to general recipients)."""
+        return self.github_recipients if self.github_recipients else self.recipients
 
     def __post_init__(self) -> None:
         """Ensure paths are Path objects and directories exist."""
