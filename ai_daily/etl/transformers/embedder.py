@@ -2,7 +2,7 @@
 
 from typing import List
 
-import google.generativeai as genai
+from google import genai
 
 from ai_daily.config import config
 
@@ -11,7 +11,7 @@ class Embedder:
     """Generate vector embeddings using Google's embedding API."""
 
     def __init__(self):
-        genai.configure(api_key=config.llm.google_api_key)
+        self.client = genai.Client(api_key=config.llm.google_api_key)
         self.model = config.llm.embedding_model
 
     async def embed(self, text: str) -> List[float]:
@@ -25,13 +25,12 @@ class Embedder:
         """
         text = text[:8000]
 
-        result = genai.embed_content(
-            model=f"models/{self.model}",
-            content=text,
-            task_type="RETRIEVAL_DOCUMENT",
+        response = await self.client.aio.models.embed_content(
+            model=self.model,
+            contents=text,
         )
 
-        return result["embedding"]
+        return response.embeddings[0].values
 
     async def embed_batch(self, texts: List[str]) -> List[List[float]]:
         """Generate embeddings for multiple texts.
@@ -43,11 +42,13 @@ class Embedder:
             List of vector embeddings.
         """
         texts = [t[:8000] for t in texts]
+        embeddings = []
 
-        result = genai.embed_content(
-            model=f"models/{self.model}",
-            content=texts,
-            task_type="RETRIEVAL_DOCUMENT",
-        )
+        for text in texts:
+            response = await self.client.aio.models.embed_content(
+                model=self.model,
+                contents=text,
+            )
+            embeddings.append(response.embeddings[0].values)
 
-        return result["embedding"]
+        return embeddings

@@ -7,7 +7,8 @@ from datetime import date
 from pathlib import Path
 from typing import Optional
 
-import google.generativeai as genai
+from google import genai
+from google.genai.types import GenerateContentConfig
 from sqlalchemy.orm import Session
 
 from ai_daily.config import config
@@ -50,11 +51,8 @@ Output the script as plain text, ready to be read aloud."""
         tts_output = os.getenv("TTS_OUTPUT_DIR", "")
         self.sync_dir = Path(tts_output) if tts_output else icloud_default
 
-        genai.configure(api_key=config.llm.google_api_key)
-        self.llm_model = genai.GenerativeModel(
-            model_name=config.llm.model,
-            system_instruction=self.SCRIPT_PROMPT,
-        )
+        self.client = genai.Client(api_key=config.llm.google_api_key)
+        self.model = config.llm.model
 
         self.tts_model = None
         self.voice_state = None
@@ -83,7 +81,13 @@ Key Facts:
         fallback_script = f"Here is your daily briefing. {summary.summary_text}"
 
         try:
-            response = await self.llm_model.generate_content_async(content)
+            response = await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=content,
+                config=GenerateContentConfig(
+                    system_instruction=self.SCRIPT_PROMPT,
+                ),
+            )
         except Exception as e:
             logger.error(f"Google API error while generating script: {e}")
             return fallback_script

@@ -5,7 +5,8 @@ import logging
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 
-import google.generativeai as genai
+from google import genai
+from google.genai.types import GenerateContentConfig
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -37,14 +38,8 @@ Output valid JSON:
 }"""
 
     def __init__(self):
-        genai.configure(api_key=config.llm.google_api_key)
-        self.model = genai.GenerativeModel(
-            model_name=config.llm.model,
-            system_instruction=self.SYSTEM_PROMPT,
-            generation_config=genai.GenerationConfig(
-                response_mime_type="application/json",
-            ),
-        )
+        self.client = genai.Client(api_key=config.llm.google_api_key)
+        self.model = config.llm.model
 
     def get_cached_summary(self, session: Session, target_date: date) -> Optional[DailySummary]:
         """Get cached summary for date if exists."""
@@ -119,8 +114,13 @@ Output valid JSON:
 
         # Generate summary with error handling
         try:
-            response = await self.model.generate_content_async(
-                f"Articles for {target_date}:\n\n{articles_text}"
+            response = await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=f"Articles for {target_date}:\n\n{articles_text}",
+                config=GenerateContentConfig(
+                    system_instruction=self.SYSTEM_PROMPT,
+                    response_mime_type="application/json",
+                ),
             )
         except Exception as e:
             logger.error("Google API error during summary generation: %s", e)

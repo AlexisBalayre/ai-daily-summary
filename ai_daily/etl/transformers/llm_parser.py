@@ -4,7 +4,8 @@ import json
 import logging
 from typing import Dict, List, Optional
 
-import google.generativeai as genai
+from google import genai
+from google.genai.types import GenerateContentConfig
 
 from ai_daily.config import config
 from ai_daily.etl.types import RawContent
@@ -41,14 +42,8 @@ You MUST output valid JSON with this exact structure:
     MAX_RETRIES = 2
 
     def __init__(self):
-        genai.configure(api_key=config.llm.google_api_key)
-        self.model = genai.GenerativeModel(
-            model_name=config.llm.model,
-            system_instruction=self.SYSTEM_PROMPT,
-            generation_config=genai.GenerationConfig(
-                response_mime_type="application/json",
-            ),
-        )
+        self.client = genai.Client(api_key=config.llm.google_api_key)
+        self.model = config.llm.model
 
     def _validate_articles(self, articles: List[Dict]) -> Optional[str]:
         """Validate that all articles have required fields.
@@ -70,8 +65,13 @@ You MUST output valid JSON with this exact structure:
 
     async def _call_llm(self, content: str) -> Dict:
         """Make a single LLM call and parse the JSON response."""
-        response = await self.model.generate_content_async(
-            f"Content:\n{content}"
+        response = await self.client.aio.models.generate_content(
+            model=self.model,
+            contents=f"Content:\n{content}",
+            config=GenerateContentConfig(
+                system_instruction=self.SYSTEM_PROMPT,
+                response_mime_type="application/json",
+            ),
         )
         return json.loads(response.text)
 
