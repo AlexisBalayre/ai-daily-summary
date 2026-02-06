@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from google import genai
 from google.genai.types import GenerateContentConfig
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from ai_daily.config import config
@@ -48,17 +48,21 @@ Output valid JSON:
         )
         return session.execute(stmt).scalar_one_or_none()
 
-    def get_articles_for_date(self, session: Session, target_date: date) -> List[Article]:
-        """Get articles for a specific date."""
-        start = datetime.combine(target_date, datetime.min.time())
-        end = start + timedelta(days=1)
+    def get_recent_articles(self, session: Session, hours: int = 24) -> List[Article]:
+        """Get articles from the last N hours."""
+        cutoff = datetime.utcnow() - timedelta(hours=hours)
 
         stmt = select(Article).where(
-            Article.ingested_at >= start,
-            Article.ingested_at < end
+            Article.ingested_at >= cutoff
         ).order_by(Article.ingested_at.desc())
 
         return list(session.execute(stmt).scalars().all())
+
+    def has_new_articles_since(self, session: Session, since: datetime) -> bool:
+        """Check if there are articles ingested after a given time."""
+        stmt = select(func.count(Article.id)).where(Article.ingested_at > since)
+        count = session.execute(stmt).scalar()
+        return count > 0
 
     def _create_fallback_summary(
         self, session: Session, target_date: date, articles: List[Article], error_message: str
@@ -74,12 +78,13 @@ Output valid JSON:
         session.commit()
         return summary
 
-    async def generate(self, session: Session, target_date: Optional[date] = None) -> DailySummary:
-        """Generate summary for a date.
+    async def generate(self, session: Session, target_date: Optional[date] = None, force: bool = False) -> DailySummary:
+        """Generate summary for recent articles.
 
         Args:
             session: Database session.
-            target_date: Date to summarize. Defaults to today.
+            target_date: Date to label the summary. Defaults to today.
+            force: If True, regenerate even if cached.
 
         Returns:
             DailySummary model instance.
@@ -87,13 +92,18 @@ Output valid JSON:
         if target_date is None:
             target_date = date.today()
 
-        # Check cache
+        # Check cache (unless forced)
         cached = self.get_cached_summary(session, target_date)
-        if cached:
-            return cached
+        if cached and not force:
+            # Check if there are newer articles since the summary was created
+            if not self.has_new_articles_since(session, cached.created_at):
+                return cached
+            # Delete stale cache
+            session.delete(cached)
+            session.commit()
 
-        # Get articles
-        articles = self.get_articles_for_date(session, target_date)
+        # Get recent articles (last 24 hours)
+        articles = self.get_recent_articles(session, hours=24)
 
         if not articles:
             summary = DailySummary(
