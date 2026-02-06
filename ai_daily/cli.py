@@ -245,6 +245,7 @@ def orchestrator_start():
     schedules = {
         "etl": config.orchestrator.etl_schedule,
         "newsletter": config.orchestrator.newsletter_schedule,
+        "github": config.orchestrator.github_schedule,
         "tts": config.orchestrator.tts_schedule,
     }
 
@@ -274,6 +275,7 @@ def orchestrator_status():
     schedules = {
         "etl": config.orchestrator.etl_schedule,
         "newsletter": config.orchestrator.newsletter_schedule,
+        "github": config.orchestrator.github_schedule,
         "tts": config.orchestrator.tts_schedule,
     }
 
@@ -324,7 +326,7 @@ def orchestrator_status():
 
 
 @orchestrator.command("trigger")
-@click.argument("job_name", type=click.Choice(["etl", "newsletter", "tts", "all"]))
+@click.argument("job_name", type=click.Choice(["etl", "newsletter", "github", "tts", "all"]))
 def orchestrator_trigger(job_name: str):
     """Manually trigger a job (or 'all' for ETL → TTS → Newsletter)."""
     from ai_daily.config import config
@@ -341,8 +343,8 @@ def orchestrator_trigger(job_name: str):
 
     # Determine which jobs to run
     if job_name == "all":
-        jobs_to_run = ["etl", "tts", "newsletter"]
-        console.print("[cyan]Running all jobs: ETL → TTS → Newsletter[/cyan]")
+        jobs_to_run = ["etl", "tts", "newsletter", "github"]
+        console.print("[cyan]Running all jobs: ETL → TTS → Newsletter → GitHub[/cyan]")
     else:
         jobs_to_run = [job_name]
         console.print(f"[cyan]Triggering job: {job_name}[/cyan]")

@@ -9,7 +9,7 @@ from ai_daily.db.seed import seed_sources
 from ai_daily.etl import ETLPipeline
 from ai_daily.etl.extractors.gmail import GmailExtractor
 from ai_daily.orchestrator.types import JobContext
-from ai_daily.outputs import NewsletterOutput, TTSBriefingOutput
+from ai_daily.outputs import GitHubNewsletterOutput, NewsletterOutput, TTSBriefingOutput
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,22 @@ async def run_newsletter(context: JobContext) -> Dict[str, Any]:
         newsletter = NewsletterOutput(gmail_service=gmail_extractor.service)
 
         success = await newsletter.send(session, target_date=date.today())
+
+        return {
+            "sent": success,
+            "date": date.today().isoformat(),
+        }
+
+
+async def run_github_newsletter(context: JobContext) -> Dict[str, Any]:
+    """Generate and send GitHub trending repos newsletter."""
+    logger.info(f"Starting GitHub newsletter job (run_id={context.run_id})")
+
+    with get_session() as session:
+        gmail_extractor = GmailExtractor()
+        github_newsletter = GitHubNewsletterOutput(gmail_service=gmail_extractor.service)
+
+        success = await github_newsletter.send(session)
 
         return {
             "sent": success,
@@ -127,5 +143,6 @@ def _send_audio_email(gmail_service, audio_path, target_date) -> bool:
 JOBS = {
     "etl": run_etl,
     "newsletter": run_newsletter,
+    "github": run_github_newsletter,
     "tts": run_tts,
 }

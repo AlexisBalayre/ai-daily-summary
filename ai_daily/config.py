@@ -79,6 +79,9 @@ class OrchestratorConfig:
     newsletter_schedule: str = field(
         default_factory=lambda: os.getenv("NEWSLETTER_SCHEDULE", "0 14 * * *")
     )
+    github_schedule: str = field(
+        default_factory=lambda: os.getenv("GITHUB_SCHEDULE", "0 10 * * *")
+    )
 
     # Retry configuration
     retry_max_attempts: int = field(

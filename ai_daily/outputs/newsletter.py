@@ -2,13 +2,13 @@
 
 import base64
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from html import escape
-from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ai_daily.config import config
@@ -41,27 +41,28 @@ class NewsletterOutput:
             <ul>{{key_facts}}</ul>
             <h2>Articles</h2>
             {{articles}}
-            {{github_repos}}
         </body>
         </html>
         """
 
-    def _separate_github_articles(self, articles: List[Article], session: Session) -> Tuple[List[Article], List[Article]]:
-        """Separate GitHub repos from regular articles."""
-        # Get GitHub source IDs
-        github_sources = session.query(Source.id).filter(Source.type == "github").all()
-        github_source_ids = {s.id for s in github_sources}
+    def get_newsletter_articles(self, session: Session, hours: int = 24) -> List[Article]:
+        """Get non-GitHub articles from the last N hours."""
+        # Get GitHub source IDs to exclude
+        github_sources = session.execute(
+            select(Source.id).where(Source.type == "github")
+        ).scalars().all()
+        github_source_ids = set(github_sources)
 
-        regular = []
-        github = []
+        cutoff = datetime.utcnow() - timedelta(hours=hours)
 
-        for article in articles:
-            if article.source_id in github_source_ids:
-                github.append(article)
-            else:
-                regular.append(article)
+        stmt = select(Article).where(
+            Article.ingested_at >= cutoff
+        ).order_by(Article.ingested_at.desc())
 
-        return regular, github
+        all_articles = list(session.execute(stmt).scalars().all())
+
+        # Filter out GitHub articles
+        return [a for a in all_articles if a.source_id not in github_source_ids]
 
     def _categorize_articles(self, articles: List[Article]) -> dict:
         """Categorize articles by topic."""
@@ -87,50 +88,7 @@ class NewsletterOutput:
 
         return categories
 
-    def _generate_github_html(self, github_articles: List[Article]) -> str:
-        """Generate HTML for GitHub repos section."""
-        if not github_articles:
-            return ""
-
-        html = """
-        <h2>🔥 Trending on GitHub</h2>
-        <div style="margin: 15px 0;">
-        """
-
-        for article in github_articles[:10]:  # Limit to top 10
-            title = escape(article.title or "Unknown Repo")
-            url = escape(article.url or "#")
-            content = article.content or ""
-
-            # Parse metadata from content (format: "description\n\nLanguage: X\nStars: Y\nForks: Z")
-            lines = content.split("\n")
-            description = lines[0] if lines else ""
-            language = "Unknown"
-            stars = ""
-
-            for line in lines:
-                if line.startswith("Language:"):
-                    language = line.replace("Language:", "").strip()
-                elif line.startswith("Stars:"):
-                    stars = line.replace("Stars:", "").strip()
-
-            html += f"""
-            <div style="border: 1px solid #dddddd; border-left: 4px solid #238636; padding: 12px; margin: 10px 0;">
-                <h4 style="margin: 0 0 8px 0;">
-                    <a href="{url}" style="color: #0066cc; text-decoration: none;">{title}</a>
-                </h4>
-                <p style="margin: 0 0 8px 0; color: #586069; font-size: 14px;">{escape(description[:200])}</p>
-                <div style="font-size: 12px; color: #586069;">
-                    <span style="margin-right: 15px;">📝 {escape(language)}</span>
-                    <span>⭐ {escape(stars)}</span>
-                </div>
-            </div>
-            """
-
-        html += "</div>"
-        return html
-
-    def generate_html(self, summary: DailySummary, articles: List[Article], github_articles: List[Article]) -> str:
+    def generate_html(self, summary: DailySummary, articles: List[Article]) -> str:
         """Generate HTML email content."""
         template = self._load_template()
 
@@ -147,7 +105,7 @@ class NewsletterOutput:
                 key_facts_html += f"<li>{escape(str(fact))}</li>"
         html = html.replace("{{key_facts}}", key_facts_html)
 
-        # Articles by category (excluding GitHub)
+        # Articles by category
         categories = self._categorize_articles(articles)
         articles_html = ""
 
@@ -155,7 +113,6 @@ class NewsletterOutput:
             if cat_articles:
                 articles_html += f"<h3>{escape(category)}</h3>"
                 for article in cat_articles:
-                    # Null coalescing for article fields
                     title = escape(article.title or "Untitled")
                     url = escape(article.url or "#")
                     content = article.content or ""
@@ -168,9 +125,8 @@ class NewsletterOutput:
 
         html = html.replace("{{articles}}", articles_html)
 
-        # GitHub repos section
-        github_html = self._generate_github_html(github_articles)
-        html = html.replace("{{github_repos}}", github_html)
+        # Remove GitHub placeholder if present
+        html = html.replace("{{github_repos}}", "")
 
         return html
 
@@ -205,14 +161,11 @@ class NewsletterOutput:
         # Generate summary
         summary = await self.summary_generator.generate(session, target_date)
 
-        # Get articles (last 24 hours)
-        all_articles = self.summary_generator.get_recent_articles(session, hours=24)
-
-        # Separate GitHub repos from regular articles
-        articles, github_articles = self._separate_github_articles(all_articles, session)
+        # Get articles (excluding GitHub)
+        articles = self.get_newsletter_articles(session, hours=24)
 
         # Generate HTML
-        html_content = self.generate_html(summary, articles, github_articles)
+        html_content = self.generate_html(summary, articles)
 
         # Send to each recipient
         subject = f"AI-Daily Newsletter - {target_date.strftime('%B %d, %Y')}"

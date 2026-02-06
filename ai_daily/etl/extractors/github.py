@@ -22,9 +22,9 @@ class GitHubExtractor(BaseExtractor):
 
     def __init__(self):
         self.session = requests.Session()
+        # Don't use cookies - logged-in view has different HTML structure
         self.session.headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-            "Cookie": os.getenv("GITHUB_COOKIE", ""),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
 
