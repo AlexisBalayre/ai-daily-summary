@@ -2,218 +2,96 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hot GitHub Repositories - By Alexis Balayre</title>
-    <!--[if mso]>
-      <style type="text/css">
-        table {
-          border-collapse: collapse;
-          border-spacing: 0;
-          margin: 0;
-        }
-        div,
-        td {
-          padding: 0;
-        }
-        div {
-          margin: 0 !important;
-        }
-      </style>
-    <![endif]-->
+    <title>GitHub Hot Repos</title>
     <style type="text/css">
-      /* Base styles */
       body {
         margin: 0;
         padding: 0;
         width: 100% !important;
-        -webkit-text-size-adjust: 100%;
-        -ms-text-size-adjust: 100%;
-        font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+        background-color: #0d1117;
       }
-
-      /* Reset styles for email clients */
-      img {
-        -ms-interpolation-mode: bicubic;
-        border: 0;
-        height: auto;
-        line-height: 100%;
-        outline: none;
-        text-decoration: none;
-      }
-
-      table {
-        border-collapse: collapse !important;
-        mso-table-lspace: 0pt;
-        mso-table-rspace: 0pt;
-      }
-
-      /* Main styles */
       .container {
         width: 100%;
         max-width: 600px;
-        background-color: #ffffff;
+        margin: 0 auto;
+        background-color: #161b22;
       }
-
       .content {
-        padding: 30px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        padding: 20px;
+        color: #c9d1d9;
       }
-
-      .header {
-        padding-bottom: 20px;
-        border-bottom: 2px solid #e1e4e8;
-      }
-
-      h1, h2 {
-        color: #24292e;
+      h1 {
+        color: #58a6ff;
         font-size: 24px;
-        font-weight: 600;
-        margin: 0;
-        padding: 0;
+        margin-top: 0;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #30363d;
       }
-
-      .section-title {
-        color: #24292e;
-        font-size: 20px;
-        font-weight: 600;
-        margin: 25px 0 15px 0;
-        padding: 0;
+      h2 {
+        color: #c9d1d9;
+        font-size: 18px;
+        margin-top: 25px;
+        margin-bottom: 15px;
       }
-
-      .repository {
-        padding: 15px;
-        margin: 15px 0;
-        border: 1px solid #e1e4e8;
+      .repo-card {
+        background-color: #0d1117;
+        border: 1px solid #30363d;
         border-radius: 6px;
+        padding: 16px;
+        margin: 12px 0;
       }
-
-      .repository-title {
-        color: #0366d6;
-        font-weight: 600;
+      .repo-name {
         font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 8px 0;
+      }
+      .repo-name a {
+        color: #58a6ff;
         text-decoration: none;
       }
-
-      .repository-description {
-        color: #586069;
+      .repo-desc {
+        color: #8b949e;
         font-size: 14px;
         line-height: 1.5;
-        margin: 8px 0;
+        margin: 0 0 12px 0;
       }
-
-      .repository-stats {
-        color: #586069;
+      .repo-meta {
         font-size: 12px;
+        color: #8b949e;
       }
-
-      .language-tag {
-        display: inline-block;
-        padding: 2px 8px;
-        background-color: #0366d6;
-        color: #ffffff;
-        border-radius: 12px;
-        font-size: 12px;
-        margin: 4px 0;
+      .repo-meta span {
+        margin-right: 16px;
       }
-
-      .stat {
-        display: inline-block;
-        margin-right: 15px;
-        color: #586069;
-      }
-
       .footer {
         margin-top: 30px;
         padding-top: 20px;
-        border-top: 1px solid #e1e4e8;
-        text-align: center;
-        color: #586069;
+        border-top: 1px solid #30363d;
+        color: #8b949e;
         font-size: 12px;
+        text-align: center;
       }
-
-      /* Mobile responsive styles */
-      @media screen and (max-width: 600px) {
-        .content {
-          padding: 15px !important;
-        }
-
-        .repository {
-          padding: 10px !important;
-        }
+      .footer a {
+        color: #58a6ff;
       }
     </style>
   </head>
   <body>
-    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0d1117;">
       <tr>
         <td align="center" style="padding: 20px 0">
-          <table
-            role="presentation"
-            cellpadding="0"
-            cellspacing="0"
-            width="600"
-            class="container"
-          >
+          <table role="presentation" cellpadding="0" cellspacing="0" width="600" class="container">
             <tr>
               <td class="content">
-                <div class="header">
-                  <h1>Hot GitHub Repositories</h1>
-                  <div
-                    style="color: #586069; font-size: 14px; margin-top: 10px"
-                  >
-                    {{date}}
-                  </div>
-                </div>
-
-                <div class="section-title">
-                  <table
-                    role="presentation"
-                    cellpadding="0"
-                    cellspacing="0"
-                    width="100%"
-                  >
-                    <tr>
-                      <td><h2>🔥 Trending Repositories</h2></td>
-                    </tr>
-                  </table>
-                </div>
-                <table
-                  role="presentation"
-                  cellpadding="0"
-                  cellspacing="0"
-                  width="100%"
-                >
-                  <tr>
-                    <td>{{trending_repositories}}</td>
-                  </tr>
-                </table>
-
-                <div class="section-title">
-                  <table
-                    role="presentation"
-                    cellpadding="0"
-                    cellspacing="0"
-                    width="100%"
-                  >
-                    <tr>
-                      <td><h2>⭐ Featured Discoveries</h2></td>
-                    </tr>
-                  </table>
-                </div>
-                <table
-                  role="presentation"
-                  cellpadding="0"
-                  cellspacing="0"
-                  width="100%"
-                >
-                  <tr>
-                    <td>{{explore_repositories}}</td>
-                  </tr>
-                </table>
-
+                <h1>🔥 GitHub Hot Repos - {{date}}</h1>
+                <p style="color: #8b949e; font-size: 14px;">
+                  Today's trending and noteworthy repositories from the developer community.
+                </p>
+                {{repos}}
                 <div class="footer">
-                  &copy; {{year}} Alexis Balayre Hot GitHub Repositories
-                  Newsletter. All rights reserved.
+                  <p>Curated by AI Daily • <a href="https://github.com/trending">View on GitHub</a></p>
+                  <p>&copy; {{year}} Alexis Balayre. All rights reserved.</p>
                 </div>
               </td>
             </tr>
