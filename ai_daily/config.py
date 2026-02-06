@@ -151,6 +151,13 @@ class Config:
             if r.strip()
         ]
     )
+    tts_recipients: List[str] = field(
+        default_factory=lambda: [
+            r.strip()
+            for r in os.getenv("TTS_RECIPIENTS", "").split(",")
+            if r.strip()
+        ]
+    )
 
     def get_newsletter_recipients(self) -> List[str]:
         """Get recipients for AI Daily newsletter (falls back to general recipients)."""
@@ -159,6 +166,10 @@ class Config:
     def get_github_recipients(self) -> List[str]:
         """Get recipients for GitHub newsletter (falls back to general recipients)."""
         return self.github_recipients if self.github_recipients else self.recipients
+
+    def get_tts_recipients(self) -> List[str]:
+        """Get recipients for TTS audio briefing (falls back to general recipients)."""
+        return self.tts_recipients if self.tts_recipients else self.recipients
 
     def __post_init__(self) -> None:
         """Ensure paths are Path objects and directories exist."""

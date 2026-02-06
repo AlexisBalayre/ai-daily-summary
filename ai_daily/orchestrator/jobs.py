@@ -99,14 +99,15 @@ def _send_audio_email(gmail_service, audio_path, target_date) -> bool:
 
     from ai_daily.config import config
 
-    if not config.recipients:
-        logger.warning("No recipients configured, skipping audio email")
+    recipients = config.get_tts_recipients()
+    if not recipients:
+        logger.warning("No TTS recipients configured, skipping audio email")
         return False
 
     subject = f"AI Daily Briefing - {target_date.strftime('%B %d, %Y')}"
     body = "Your daily AI audio briefing is attached."
 
-    for recipient in config.recipients:
+    for recipient in recipients:
         try:
             message = MIMEMultipart()
             message["Subject"] = subject
