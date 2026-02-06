@@ -135,7 +135,7 @@ class GitHubNewsletterOutput:
             raise ValueError("Gmail service not initialized")
 
         if recipients is None:
-            recipients = config.recipients
+            recipients = config.get_github_recipients()
 
         if not recipients:
             raise ValueError("No recipients configured")

@@ -173,7 +173,7 @@ class NewsletterOutput:
             target_date = date.today()
 
         if recipients is None:
-            recipients = config.recipients
+            recipients = config.get_newsletter_recipients()
 
         if not recipients:
             raise ValueError("No recipients configured")
