@@ -140,8 +140,8 @@ class NewsletterOutput:
         # Generate summary
         summary = await self.summary_generator.generate(session, target_date)
 
-        # Get articles
-        articles = self.summary_generator.get_articles_for_date(session, target_date)
+        # Get articles (last 24 hours)
+        articles = self.summary_generator.get_recent_articles(session, hours=24)
 
         # Generate HTML
         html_content = self.generate_html(summary, articles)
