@@ -43,7 +43,7 @@ services:
       # LLM configuration (Google AI Studio)
       LLM_PROVIDER: ${LLM_PROVIDER:-google}
       LLM_MODEL: ${LLM_MODEL:-gemini-2.0-flash-lite}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-004}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-gemini-embedding-001}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
       # Gmail configuration (required for email sending)
       GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID}

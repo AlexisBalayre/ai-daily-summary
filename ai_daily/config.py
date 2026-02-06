@@ -40,7 +40,7 @@ class LLMConfig:
     provider: str = field(default_factory=lambda: os.getenv("LLM_PROVIDER", "google"))
     model: str = field(default_factory=lambda: os.getenv("LLM_MODEL", "gemini-2.0-flash-lite"))
     embedding_model: str = field(
-        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "text-embedding-004")
+        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
     )
     google_api_key: str = field(
         default_factory=lambda: os.getenv("GOOGLE_API_KEY", "")
