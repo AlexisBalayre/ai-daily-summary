@@ -4,36 +4,29 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI News - By Alexis Balayre</title>
+    <title>AI Daily - Intelligence Briefing</title>
     <!--[if mso]>
       <style type="text/css">
-        table {
-          border-collapse: collapse;
-          border-spacing: 0;
-          margin: 0;
-        }
-        div,
-        td {
-          padding: 0;
-        }
-        div {
-          margin: 0 !important;
-        }
+        table { border-collapse: collapse; border-spacing: 0; margin: 0; }
+        div, td { padding: 0; }
+        div { margin: 0 !important; }
       </style>
     <![endif]-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style type="text/css">
-      /* Base styles */
+      /* Reset */
       body {
         margin: 0;
         padding: 0;
         width: 100% !important;
         -webkit-text-size-adjust: 100%;
         -ms-text-size-adjust: 100%;
+        background: linear-gradient(180deg, #f8f6f3 0%, #ebe7e0 100%);
       }
 
-      /* Client-specific resets */
-      table,
-      td {
+      table, td {
         mso-table-lspace: 0pt;
         mso-table-rspace: 0pt;
       }
@@ -43,117 +36,417 @@
         border: 0;
       }
 
-      /* Main styles */
+      /* CSS Variables for theming */
+      :root {
+        --bg-warm: #faf9f7;
+        --bg-cream: #f5f3ef;
+        --bg-paper: #ffffff;
+        --accent-terracotta: #c75b39;
+        --accent-terracotta-light: #e8d5ce;
+        --accent-sage: #6b8f71;
+        --accent-sage-light: #d4e4d6;
+        --accent-navy: #2c3e50;
+        --accent-gold: #b8860b;
+        --text-dark: #1a1a1a;
+        --text-body: #3d3d3d;
+        --text-muted: #7a7a7a;
+        --border-light: #e5e2dc;
+        --border-warm: #d4cfc5;
+      }
+
+      /* Email wrapper */
+      .email-wrapper {
+        background: linear-gradient(180deg, #f8f6f3 0%, #ebe7e0 100%);
+        padding: 40px 20px;
+      }
+
+      /* Container */
       .container {
         width: 100%;
-        max-width: 600px;
+        max-width: 640px;
         margin: 0 auto;
+        background: var(--bg-paper);
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow:
+          0 1px 3px rgba(0, 0, 0, 0.04),
+          0 8px 30px rgba(0, 0, 0, 0.06);
       }
 
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, var(--bg-cream) 0%, var(--bg-warm) 100%);
+        padding: 48px 48px 40px;
+        border-bottom: 1px solid var(--border-light);
+        position: relative;
+      }
+
+      .header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent-terracotta), var(--accent-sage), var(--accent-navy));
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 28px;
+      }
+
+      .brand-icon {
+        width: 44px;
+        height: 44px;
+        background: linear-gradient(135deg, var(--accent-terracotta), #a84832);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(199, 91, 57, 0.25);
+      }
+
+      .brand-text {
+        font-family: 'DM Sans', -apple-system, sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--accent-terracotta);
+      }
+
+      .headline {
+        font-family: 'Crimson Pro', Georgia, serif;
+        font-size: 38px;
+        font-weight: 700;
+        color: var(--text-dark);
+        line-height: 1.15;
+        margin: 0 0 18px;
+        letter-spacing: -0.5px;
+      }
+
+      .date-badge {
+        display: inline-block;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--text-muted);
+        background: var(--bg-paper);
+        padding: 10px 16px;
+        border-radius: 6px;
+        border: 1px solid var(--border-light);
+        letter-spacing: 1px;
+      }
+
+      /* Content area */
       .content {
-        font-family: Arial, sans-serif;
-        padding: 20px;
+        padding: 44px 48px;
       }
 
-      h1,
-      h2,
-      h3,
-      h4 {
-        color: #333333;
-        font-family: Arial, sans-serif;
-        margin-top: 20px;
-        margin-bottom: 10px;
+      /* Summary Section */
+      .summary-section {
+        background: linear-gradient(135deg, var(--accent-terracotta-light) 0%, #f5ebe6 100%);
+        border: 1px solid #e0ccc3;
+        border-radius: 12px;
+        padding: 32px;
+        margin-bottom: 40px;
+        position: relative;
+      }
+
+      .summary-section::before {
+        content: 'BRIEFING';
+        position: absolute;
+        top: -10px;
+        left: 28px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        color: var(--accent-terracotta);
+        background: var(--bg-paper);
+        padding: 4px 12px;
+        border-radius: 4px;
+        border: 1px solid #e0ccc3;
+      }
+
+      .summary-text {
+        font-family: 'Crimson Pro', Georgia, serif;
+        font-size: 19px;
+        line-height: 1.8;
+        color: var(--text-body);
+        margin: 0;
+        font-style: italic;
+      }
+
+      /* Key Facts */
+      .key-facts {
+        margin-bottom: 44px;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 24px;
+        padding-bottom: 14px;
+        border-bottom: 2px solid var(--border-light);
+      }
+
+      .section-icon {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, var(--accent-sage), #5a7a5f);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: white;
+      }
+
+      .section-title {
+        font-family: 'DM Sans', -apple-system, sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin: 0;
+      }
+
+      .facts-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .facts-list li {
+        font-family: 'Crimson Pro', Georgia, serif;
+        font-size: 17px;
+        line-height: 1.65;
+        color: var(--text-body);
+        padding: 16px 0 16px 32px;
+        border-bottom: 1px solid var(--border-light);
+        position: relative;
+      }
+
+      .facts-list li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 10px;
+        height: 10px;
+        background: var(--accent-gold);
+        border-radius: 3px;
+      }
+
+      .facts-list li:last-child {
+        border-bottom: none;
+      }
+
+      /* Articles Section */
+      .articles-section {
+        margin-bottom: 36px;
+      }
+
+      /* Category styling */
+      .category {
+        margin-bottom: 36px;
+      }
+
+      .category-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .category-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--accent-terracotta);
+      }
+
+      .category-title {
+        font-family: 'DM Sans', -apple-system, sans-serif;
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin: 0;
+      }
+
+      /* Article cards */
+      .article-card {
+        background: var(--bg-cream);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 24px;
+        margin-bottom: 14px;
+        transition: all 0.2s ease;
+      }
+
+      .article-card:hover {
+        background: var(--bg-warm);
+        border-color: var(--border-warm);
+      }
+
+      .article-title {
+        font-family: 'DM Sans', -apple-system, sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin: 0 0 12px;
         line-height: 1.4;
       }
 
-      h1 {
-        font-size: 24px;
-        border-bottom: 1px solid #dddddd;
-        padding-bottom: 10px;
+      .article-title a {
+        color: inherit;
+        text-decoration: none;
       }
 
-      h2 {
-        font-size: 20px;
-        border-bottom: 1px solid #dddddd;
-        padding-bottom: 8px;
+      .article-title a:hover {
+        color: var(--accent-terracotta);
       }
 
-      p,
-      li {
-        color: #444444;
+      .article-excerpt {
+        font-family: 'Crimson Pro', Georgia, serif;
         font-size: 16px;
-        line-height: 1.6;
+        line-height: 1.7;
+        color: var(--text-body);
+        margin: 0 0 16px;
+      }
+
+      .read-more {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--accent-terracotta);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        letter-spacing: 0.5px;
+      }
+
+      .read-more:hover {
+        color: var(--accent-navy);
+      }
+
+      .read-more::after {
+        content: '\2192';
+        font-size: 14px;
+      }
+
+      /* Footer */
+      .footer {
+        background: var(--bg-cream);
+        padding: 36px 48px;
+        border-top: 1px solid var(--border-light);
+        text-align: center;
+      }
+
+      .footer-brand {
+        font-family: 'DM Sans', -apple-system, sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--accent-terracotta);
         margin-bottom: 10px;
       }
 
-      ul {
-        padding-left: 20px;
-        margin: 15px 0;
+      .footer-copy {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin: 0;
       }
 
-      li {
-        margin-bottom: 8px;
+      .footer-divider {
+        width: 50px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--border-warm), transparent);
+        margin: 18px auto;
       }
 
-      a {
-        color: #0066cc;
-        text-decoration: underline;
-      }
-
-      .category {
-        border: 1px solid #dddddd;
-        border-left: 4px solid #0066cc;
-        padding: 15px;
-        margin: 15px 0;
-      }
-
-      .footer {
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid #dddddd;
-        color: #666666;
-        font-size: 14px;
-        text-align: center;
+      /* Responsive */
+      @media only screen and (max-width: 600px) {
+        .header { padding: 32px 24px; }
+        .content { padding: 28px 24px; }
+        .headline { font-size: 30px; }
+        .summary-section { padding: 24px; }
+        .footer { padding: 28px 24px; }
       }
     </style>
   </head>
   <body>
-    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-      <tr>
-        <td align="center" style="padding: 20px 0">
-          <table
-            role="presentation"
-            cellpadding="0"
-            cellspacing="0"
-            width="600"
-            class="container"
-          >
-            <tr>
-              <td class="content">
-                <h1>AI Newsletter - {{date}}</h1>
+    <div class="email-wrapper">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+          <td align="center">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="640" class="container">
+              <tr>
+                <td>
+                  <!-- Header -->
+                  <div class="header">
+                    <div class="brand">
+                      <div class="brand-icon">&#x2605;</div>
+                      <span class="brand-text">AI Daily</span>
+                    </div>
+                    <h1 class="headline">Intelligence Briefing</h1>
+                    <span class="date-badge">{{date}}</span>
+                  </div>
 
-                <h2>Summary</h2>
-                <p>{{summary}}</p>
+                  <!-- Content -->
+                  <div class="content">
+                    <!-- Summary -->
+                    <div class="summary-section">
+                      <p class="summary-text">{{summary}}</p>
+                    </div>
 
-                <h2>Key Facts</h2>
-                <ul>
-                  {{key_facts}}
-                </ul>
+                    <!-- Key Facts -->
+                    <div class="key-facts">
+                      <div class="section-header">
+                        <div class="section-icon">&#x26A1;</div>
+                        <h2 class="section-title">Key Insights</h2>
+                      </div>
+                      <ul class="facts-list">
+                        {{key_facts}}
+                      </ul>
+                    </div>
 
-                <h2>Articles</h2>
-                {{articles}}
+                    <!-- Articles -->
+                    <div class="articles-section">
+                      <div class="section-header">
+                        <div class="section-icon" style="background: linear-gradient(135deg, var(--accent-terracotta), #a84832);">&#x1F4F0;</div>
+                        <h2 class="section-title">Today's Stories</h2>
+                      </div>
+                      {{articles}}
+                    </div>
 
-                {{github_repos}}
+                    {{github_repos}}
+                  </div>
 
-                <div class="footer">
-                  &copy; {{year}} Alexis Balayre AI Newsletter. All rights
-                  reserved.
-                </div>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
+                  <!-- Footer -->
+                  <div class="footer">
+                    <div class="footer-brand">Alexis Balayre</div>
+                    <div class="footer-divider"></div>
+                    <p class="footer-copy">&copy; {{year}} AI Daily Newsletter</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
   </body>
 </html>

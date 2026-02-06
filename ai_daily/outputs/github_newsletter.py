@@ -60,12 +60,12 @@ class GitHubNewsletterOutput:
         return list(session.execute(stmt).scalars().all())
 
     def _generate_repos_html(self, articles: List[Article]) -> str:
-        """Generate HTML for repos."""
+        """Generate HTML for repos with modern light theme styling."""
         if not articles:
-            return "<p>No trending repos today.</p>"
+            return '''<p style="font-family: 'DM Sans', sans-serif; font-size: 14px; color: #6e7781; text-align: center; padding: 40px;">No trending repos detected today.</p>'''
 
         html = ""
-        for article in articles[:15]:  # Limit to top 15
+        for idx, article in enumerate(articles[:15], 1):  # Limit to top 15
             title = escape(article.title or "Unknown Repo")
             url = escape(article.url or "#")
             content = article.content or ""
@@ -85,19 +85,23 @@ class GitHubNewsletterOutput:
                 elif line.startswith("Forks:"):
                     forks = line.replace("Forks:", "").strip()
 
-            html += f"""
-            <div class="repo-card">
-                <p class="repo-name">
-                    <a href="{url}">{title}</a>
+            # Truncate description
+            desc_text = escape(description[:200]) + "..." if len(description) > 200 else escape(description)
+
+            html += f'''
+            <div class="repo-card" style="background: #f6f8fa; border: 1px solid #d1d9e0; border-radius: 12px; padding: 24px; margin: 16px 0; position: relative;">
+                <span class="repo-rank" style="position: absolute; top: -10px; right: 20px; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: #8250df; background: #fbefff; padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(130, 80, 223, 0.2); letter-spacing: 1px;">#{idx:02d}</span>
+                <p class="repo-name" style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; margin: 0 0 12px 0; line-height: 1.3;">
+                    <a href="{url}" style="color: #0969da; text-decoration: none;">{title}</a>
                 </p>
-                <p class="repo-desc">{escape(description[:250])}</p>
-                <div class="repo-meta">
-                    <span>📝 {escape(language)}</span>
-                    <span>⭐ {escape(stars)}</span>
-                    {f'<span>🍴 {escape(forks)}</span>' if forks else ''}
+                <p class="repo-desc" style="font-family: 'DM Sans', sans-serif; font-size: 14px; color: #424a53; line-height: 1.65; margin: 0 0 18px 0; padding-left: 14px; border-left: 3px solid #d1d9e0;">{desc_text}</p>
+                <div class="repo-meta" style="display: flex; flex-wrap: wrap; gap: 10px; font-family: 'Fira Code', monospace; font-size: 12px;">
+                    <span class="meta-tag meta-lang" style="display: inline-flex; align-items: center; gap: 6px; color: #0969da; background: #ddf4ff; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(9, 105, 218, 0.15); font-weight: 500;">&#128221; {escape(language)}</span>
+                    <span class="meta-tag meta-stars" style="display: inline-flex; align-items: center; gap: 6px; color: #bf5700; background: #fff8f2; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(191, 87, 0, 0.15); font-weight: 500;">&#11088; {escape(stars)}</span>
+                    {f'<span class="meta-tag meta-forks" style="display: inline-flex; align-items: center; gap: 6px; color: #1a7f37; background: #dafbe1; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(26, 127, 55, 0.15); font-weight: 500;">&#127860; {escape(forks)}</span>' if forks else ''}
                 </div>
             </div>
-            """
+            '''
 
         return html
 

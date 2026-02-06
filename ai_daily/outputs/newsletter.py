@@ -109,19 +109,39 @@ class NewsletterOutput:
         categories = self._categorize_articles(articles)
         articles_html = ""
 
+        # Category colors for visual distinction (light theme)
+        category_colors = {
+            "AI Research and Advances": "#6b8f71",  # sage
+            "AI Products, Tools, and Repositories": "#c75b39",  # terracotta
+            "Data Science Techniques and Tips": "#b8860b",  # gold
+            "Industry News and Trends": "#2c3e50",  # navy
+        }
+
         for category, cat_articles in categories.items():
             if cat_articles:
-                articles_html += f"<h3>{escape(category)}</h3>"
+                color = category_colors.get(category, "#c75b39")
+                articles_html += f'''
+                <div class="category" style="margin-bottom: 36px;">
+                    <div class="category-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <div class="category-dot" style="width: 12px; height: 12px; border-radius: 50%; background: {color};"></div>
+                        <h3 class="category-title" style="font-family: 'DM Sans', -apple-system, sans-serif; font-size: 17px; font-weight: 600; color: #1a1a1a; margin: 0;">{escape(category)}</h3>
+                    </div>
+                '''
                 for article in cat_articles:
                     title = escape(article.title or "Untitled")
                     url = escape(article.url or "#")
                     content = article.content or ""
-                    truncated_content = escape(content[:500]) + "..." if content else ""
-                    articles_html += f"""
-                    <h4>{title}</h4>
-                    <p>{truncated_content}</p>
-                    <p><a href="{url}">Read more</a></p>
-                    """
+                    truncated_content = escape(content[:300]) + "..." if len(content) > 300 else escape(content)
+                    articles_html += f'''
+                    <div class="article-card" style="background: #f5f3ef; border: 1px solid #e5e2dc; border-radius: 10px; padding: 24px; margin-bottom: 14px;">
+                        <h4 class="article-title" style="font-family: 'DM Sans', -apple-system, sans-serif; font-size: 18px; font-weight: 600; color: #1a1a1a; margin: 0 0 12px; line-height: 1.4;">
+                            <a href="{url}" style="color: inherit; text-decoration: none;">{title}</a>
+                        </h4>
+                        <p class="article-excerpt" style="font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; line-height: 1.7; color: #3d3d3d; margin: 0 0 16px;">{truncated_content}</p>
+                        <a href="{url}" class="read-more" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; color: #c75b39; text-decoration: none; letter-spacing: 0.5px;">Read more &rarr;</a>
+                    </div>
+                    '''
+                articles_html += "</div>"
 
         html = html.replace("{{articles}}", articles_html)
 
