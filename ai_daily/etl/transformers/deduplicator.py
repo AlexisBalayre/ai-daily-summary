@@ -71,7 +71,7 @@ class Deduplicator:
 
         similarities = []
         for article in articles:
-            if article.embedding:
+            if article.embedding is not None:
                 sim = cosine_similarity(embedding, list(article.embedding))
                 if sim >= self.SIMILARITY_THRESHOLD:
                     similarities.append((article.id, sim))
@@ -103,7 +103,7 @@ class Deduplicator:
         if self.is_duplicate_by_hash(content_hash):
             return True, None
 
-        if embedding:
+        if embedding is not None:
             similar = self.find_similar_by_embedding(embedding, limit=1)
             if similar:
                 return True, similar[0][0]

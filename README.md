@@ -52,7 +52,7 @@ AI-powered daily summary and newsletter generation platform. Aggregates content 
 
 ```bash
 # Install the recommended models
-ollama pull qwen3:30b-a3b
+ollama pull qwen3:8b
 ollama pull qwen3-embedding:8b
 ```
 

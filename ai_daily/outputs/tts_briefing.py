@@ -1,14 +1,13 @@
 """Text-to-speech briefing generation."""
 
-import json
 import logging
 import os
 import shutil
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from typing import Optional
 
-from openai import AsyncOpenAI, APIError
+import google.generativeai as genai
 from sqlalchemy.orm import Session
 
 from ai_daily.config import config
@@ -51,13 +50,11 @@ Output the script as plain text, ready to be read aloud."""
         tts_output = os.getenv("TTS_OUTPUT_DIR", "")
         self.sync_dir = Path(tts_output) if tts_output else icloud_default
 
-        if config.llm.provider == "ollama":
-            self.llm_client = AsyncOpenAI(
-                base_url=config.llm.ollama_base_url,
-                api_key="ollama"
-            )
-        else:
-            self.llm_client = AsyncOpenAI()
+        genai.configure(api_key=config.llm.google_api_key)
+        self.llm_model = genai.GenerativeModel(
+            model_name=config.llm.model,
+            system_instruction=self.SCRIPT_PROMPT,
+        )
 
         self.tts_model = None
         self.voice_state = None
@@ -86,27 +83,16 @@ Key Facts:
         fallback_script = f"Here is your daily briefing. {summary.summary_text}"
 
         try:
-            response = await self.llm_client.chat.completions.create(
-                model=config.llm.model,
-                messages=[
-                    {"role": "system", "content": self.SCRIPT_PROMPT},
-                    {"role": "user", "content": content}
-                ],
-            )
-        except APIError as e:
-            logger.error(f"OpenAI API error while generating script: {e}")
+            response = await self.llm_model.generate_content_async(content)
+        except Exception as e:
+            logger.error(f"Google API error while generating script: {e}")
             return fallback_script
 
-        if not response.choices:
-            logger.error("LLM response contained no choices")
+        if not response.text:
+            logger.error("LLM response has no text")
             return fallback_script
 
-        message_content = response.choices[0].message.content
-        if message_content is None:
-            logger.error("LLM response message content is None")
-            return fallback_script
-
-        return message_content
+        return response.text
 
     async def generate(
         self,
