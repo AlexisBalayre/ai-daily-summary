@@ -29,3 +29,6 @@ htmlcov/
 logs/
 data/
 .worktrees/
+
+# Built frontend assets
+ai_daily/static/
