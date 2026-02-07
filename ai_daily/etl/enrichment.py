@@ -8,6 +8,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from ai_daily.db.models import Article
+from ai_daily.etl.transformers.embedder import Embedder
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,28 @@ class EnrichmentProcessor:
     BATCH_SIZE = 50
     SIMILARITY_THRESHOLD = 0.92
     LOOKBACK_DAYS = 7
+
+    def __init__(self):
+        """Initialize the enrichment processor."""
+        self._embedder: Optional[Embedder] = None
+
+    @property
+    def embedder(self) -> Embedder:
+        """Lazy initialization of embedder."""
+        if self._embedder is None:
+            self._embedder = Embedder()
+        return self._embedder
+
+    async def generate_embedding(self, content: str) -> List[float]:
+        """Generate embedding vector for content.
+
+        Args:
+            content: Text content to generate embedding for.
+
+        Returns:
+            Vector embedding as list of floats.
+        """
+        return await self.embedder.embed(content)
 
     def get_unenriched_articles(self, session: Session, limit: int = None) -> List[Article]:
         """Get articles that haven't been enriched yet."""
