@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Type
 from sqlalchemy.orm import Session
 
 from ai_daily.db import Article, JobRun, Source, get_session
-from ai_daily.etl.extractors import BaseExtractor, CrawlerExtractor, GitHubExtractor, GmailExtractor
+from ai_daily.etl.extractors import BaseExtractor, CrawlerExtractor, GitHubExtractor, GmailExtractor, RSSExtractor
 from ai_daily.etl.transformers import Deduplicator, Embedder, LLMParser, compute_content_hash
 from ai_daily.etl.types import RawContent
 
@@ -19,6 +19,7 @@ EXTRACTORS: Dict[str, Type[BaseExtractor]] = {
     "newsletter": GmailExtractor,
     "github": GitHubExtractor,
     "crawler": CrawlerExtractor,
+    "rss": RSSExtractor,
 }
 
 
