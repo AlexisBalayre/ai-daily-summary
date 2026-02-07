@@ -154,3 +154,50 @@ class TestEnrichmentFields:
         assert article.enriched_at is None
         assert article.is_duplicate is False  # has default
         assert article.duplicate_of_id is None
+
+
+class TestEnrichmentProcessor:
+    """Test EnrichmentProcessor class and EnrichmentStats dataclass."""
+
+    def test_enrichment_processor_can_be_imported(self):
+        """Test that EnrichmentProcessor can be imported."""
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+        assert EnrichmentProcessor is not None
+
+    def test_enrichment_processor_batch_size_constant(self):
+        """Test that BATCH_SIZE constant is 50."""
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+        assert EnrichmentProcessor.BATCH_SIZE == 50
+
+    def test_enrichment_processor_similarity_threshold_constant(self):
+        """Test that SIMILARITY_THRESHOLD constant is 0.92."""
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+        assert EnrichmentProcessor.SIMILARITY_THRESHOLD == 0.92
+
+    def test_enrichment_processor_lookback_days_constant(self):
+        """Test that LOOKBACK_DAYS constant is 7."""
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+        assert EnrichmentProcessor.LOOKBACK_DAYS == 7
+
+    def test_enrichment_stats_can_be_imported(self):
+        """Test that EnrichmentStats can be imported."""
+        from ai_daily.etl.enrichment import EnrichmentStats
+        assert EnrichmentStats is not None
+
+    def test_enrichment_stats_default_values(self):
+        """Test that EnrichmentStats has correct default values."""
+        from ai_daily.etl.enrichment import EnrichmentStats
+        stats = EnrichmentStats()
+        assert stats.processed == 0
+        assert stats.duplicates == 0
+        assert stats.ai_related == 0
+        assert stats.errors == 0
+
+    def test_enrichment_stats_custom_values(self):
+        """Test that EnrichmentStats accepts custom values."""
+        from ai_daily.etl.enrichment import EnrichmentStats
+        stats = EnrichmentStats(processed=10, duplicates=2, ai_related=8, errors=1)
+        assert stats.processed == 10
+        assert stats.duplicates == 2
+        assert stats.ai_related == 8
+        assert stats.errors == 1

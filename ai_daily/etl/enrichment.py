@@ -1,0 +1,33 @@
+"""Article enrichment processor."""
+
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import List, Optional
+
+from sqlalchemy.orm import Session
+
+from ai_daily.db.models import Article
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class EnrichmentStats:
+    """Statistics from an enrichment run."""
+    processed: int = 0
+    duplicates: int = 0
+    ai_related: int = 0
+    errors: int = 0
+
+
+class EnrichmentProcessor:
+    """Process unenriched articles with LLM classification and deduplication."""
+
+    BATCH_SIZE = 50
+    SIMILARITY_THRESHOLD = 0.92
+    LOOKBACK_DAYS = 7
+
+    async def run(self, session: Session = None) -> EnrichmentStats:
+        """Run enrichment on unenriched articles."""
+        raise NotImplementedError()
