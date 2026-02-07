@@ -380,3 +380,95 @@ class TestEnrichmentProcessor:
         assert result[0].title == "Newest Article"
         assert result[1].title == "Newer Article"
         assert result[2].title == "Old Article"
+
+    def test_enrichment_processor_has_embedder_property(self):
+        """Test that EnrichmentProcessor has embedder property."""
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+        processor = EnrichmentProcessor()
+        assert hasattr(processor, 'embedder')
+        assert hasattr(processor, '_embedder')
+
+    def test_enrichment_processor_has_generate_embedding_method(self):
+        """Test that EnrichmentProcessor has generate_embedding method."""
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+        processor = EnrichmentProcessor()
+        assert hasattr(processor, 'generate_embedding')
+        assert callable(processor.generate_embedding)
+
+    @pytest.mark.asyncio
+    async def test_generate_embedding_calls_embedder(self):
+        """Test that generate_embedding calls the embedder's embed method."""
+        from unittest.mock import AsyncMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create a mock embedding result
+        mock_embedding = [0.1] * 768  # 768-dimensional embedding
+
+        # Mock the Embedder class
+        with patch('ai_daily.etl.enrichment.Embedder') as MockEmbedder:
+            mock_embedder_instance = MockEmbedder.return_value
+            mock_embedder_instance.embed = AsyncMock(return_value=mock_embedding)
+
+            processor = EnrichmentProcessor()
+            content = "This is a test article about AI."
+            result = await processor.generate_embedding(content)
+
+            # Verify the embed method was called with the content
+            mock_embedder_instance.embed.assert_called_once_with(content)
+            # Verify the result is the mock embedding
+            assert result == mock_embedding
+
+    @pytest.mark.asyncio
+    async def test_generate_embedding_returns_list_of_floats(self):
+        """Test that generate_embedding returns a list of floats."""
+        from unittest.mock import AsyncMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create a mock embedding result with proper float values
+        mock_embedding = [0.123, 0.456, 0.789, -0.321, 0.654]
+
+        with patch('ai_daily.etl.enrichment.Embedder') as MockEmbedder:
+            mock_embedder_instance = MockEmbedder.return_value
+            mock_embedder_instance.embed = AsyncMock(return_value=mock_embedding)
+
+            processor = EnrichmentProcessor()
+            result = await processor.generate_embedding("Test content")
+
+            # Verify result is a list of floats
+            assert isinstance(result, list)
+            assert all(isinstance(x, float) for x in result)
+
+    def test_embedder_lazy_initialization(self):
+        """Test that embedder is lazily initialized."""
+        from unittest.mock import patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        with patch('ai_daily.etl.enrichment.Embedder') as MockEmbedder:
+            processor = EnrichmentProcessor()
+
+            # Embedder should not be instantiated yet
+            assert processor._embedder is None
+            MockEmbedder.assert_not_called()
+
+            # Access the embedder property
+            _ = processor.embedder
+
+            # Now Embedder should be instantiated
+            MockEmbedder.assert_called_once()
+            assert processor._embedder is not None
+
+    def test_embedder_only_instantiated_once(self):
+        """Test that embedder is only instantiated once."""
+        from unittest.mock import patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        with patch('ai_daily.etl.enrichment.Embedder') as MockEmbedder:
+            processor = EnrichmentProcessor()
+
+            # Access embedder multiple times
+            _ = processor.embedder
+            _ = processor.embedder
+            _ = processor.embedder
+
+            # Embedder should only be instantiated once
+            MockEmbedder.assert_called_once()
