@@ -21,7 +21,7 @@ class RSSExtractor(BaseExtractor):
     """Extract content from RSS/Atom feeds with full article fetching."""
 
     FETCH_DELAY = 0.5  # Seconds between article fetches
-    MAX_ARTICLES_PER_FEED = 25  # Cap per feed per run
+    MAX_ARTICLES_PER_FEED = 100  # Cap per feed per run
     FETCH_TIMEOUT = 15  # Article fetch timeout
 
     @property
