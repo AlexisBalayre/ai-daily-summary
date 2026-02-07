@@ -1,12 +1,17 @@
 """Article enrichment processor."""
 
+import json
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Optional
 
+from google import genai
+from google.genai.types import GenerateContentConfig
 from sqlalchemy.orm import Session
 
+from ai_daily.config import config
 from ai_daily.db.models import Article
 from ai_daily.etl.transformers.embedder import Embedder
 
@@ -29,6 +34,21 @@ class EnrichmentProcessor:
     SIMILARITY_THRESHOLD = 0.92
     LOOKBACK_DAYS = 7
 
+    ENRICHMENT_PROMPT = '''Analyze this tech news article and provide:
+
+1. CATEGORY: One of: ai, security, cloud, hardware, mobile, software, business, other
+2. IS_AI_RELATED: true/false - Is this primarily about AI, machine learning, LLMs, or related technology?
+3. SUMMARY: 2-3 sentence summary of the key points
+4. TAGS: 3-5 relevant tags (lowercase, hyphenated)
+
+Article Title: {title}
+
+Article Content:
+{content}
+
+Respond ONLY with valid JSON:
+{{"category": "...", "is_ai_related": true/false, "summary": "...", "tags": ["...", "..."]}}'''
+
     def __init__(self):
         """Initialize the enrichment processor."""
         self._embedder: Optional[Embedder] = None
@@ -50,6 +70,44 @@ class EnrichmentProcessor:
             Vector embedding as list of floats.
         """
         return await self.embedder.embed(content)
+
+    async def llm_enrich(self, title: str, content: str) -> dict:
+        """Get LLM enrichment for article.
+
+        Args:
+            title: Article title.
+            content: Article content.
+
+        Returns:
+            Dict with keys: category, is_ai_related, summary, tags.
+
+        Raises:
+            ValueError: If LLM response cannot be parsed as JSON.
+        """
+        # Truncate content to save tokens
+        truncated = content[:4000]
+
+        prompt = self.ENRICHMENT_PROMPT.format(title=title, content=truncated)
+
+        # Use existing LLM infrastructure
+        client = genai.Client(api_key=config.llm.google_api_key)
+        response = await client.aio.models.generate_content(
+            model=config.llm.model,
+            contents=prompt,
+            config=GenerateContentConfig(
+                response_mime_type="application/json",
+            ),
+        )
+
+        # Parse JSON from response
+        try:
+            return json.loads(response.text)
+        except json.JSONDecodeError:
+            # Try to extract JSON from response
+            match = re.search(r'\{.*\}', response.text, re.DOTALL)
+            if match:
+                return json.loads(match.group())
+            raise ValueError(f"Could not parse LLM response: {response.text}")
 
     def get_unenriched_articles(self, session: Session, limit: int = None) -> List[Article]:
         """Get articles that haven't been enriched yet."""
