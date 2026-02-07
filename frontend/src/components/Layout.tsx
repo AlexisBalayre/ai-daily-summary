@@ -4,6 +4,7 @@ const navigation = [
   { name: 'Dashboard', href: '/' },
   { name: 'Articles', href: '/articles' },
   { name: 'Sources', href: '/sources' },
+  { name: 'Whitelist', href: '/whitelist' },
   { name: 'Jobs', href: '/jobs' },
 ]
 

@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import Articles from './pages/Articles'
 import Sources from './pages/Sources'
 import Jobs from './pages/Jobs'
+import Whitelist from './pages/Whitelist'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="articles" element={<Articles />} />
           <Route path="sources" element={<Sources />} />
+          <Route path="whitelist" element={<Whitelist />} />
           <Route path="jobs" element={<Jobs />} />
         </Route>
       </Routes>
