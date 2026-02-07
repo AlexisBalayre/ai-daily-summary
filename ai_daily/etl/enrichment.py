@@ -4,7 +4,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import List, Optional
 
 from google import genai
@@ -133,7 +133,7 @@ Respond ONLY with valid JSON:
         """
         from sqlalchemy import select
 
-        cutoff = datetime.utcnow() - timedelta(days=self.LOOKBACK_DAYS)
+        cutoff = datetime.now(UTC) - timedelta(days=self.LOOKBACK_DAYS)
 
         # Query for the most similar article using pgvector cosine distance
         stmt = (
@@ -162,4 +162,58 @@ Respond ONLY with valid JSON:
 
     async def run(self, session: Session = None) -> EnrichmentStats:
         """Run enrichment on unenriched articles."""
-        raise NotImplementedError()
+        from ai_daily.db import get_session
+
+        stats = EnrichmentStats()
+
+        if session is None:
+            with get_session() as session:
+                return await self._process_batch(session, stats)
+        else:
+            return await self._process_batch(session, stats)
+
+    async def _process_batch(self, session: Session, stats: EnrichmentStats) -> EnrichmentStats:
+        """Process a batch of unenriched articles."""
+        articles = self.get_unenriched_articles(session)
+
+        logger.info(f"Processing {len(articles)} unenriched articles")
+
+        for article in articles:
+            try:
+                # Generate embedding
+                embedding = await self.generate_embedding(article.content)
+
+                # Check for duplicates
+                duplicate = self.find_duplicate(session, article.id, embedding)
+                if duplicate:
+                    article.is_duplicate = True
+                    article.duplicate_of_id = duplicate.id
+                    article.enriched_at = datetime.now(UTC)
+                    stats.duplicates += 1
+                    logger.debug(f"Article {article.id} marked as duplicate of {duplicate.id}")
+                    continue
+
+                # LLM enrichment
+                enrichment = await self.llm_enrich(article.title, article.content)
+
+                # Update article
+                article.embedding = embedding
+                article.category = enrichment.get("category")
+                article.is_ai_related = enrichment.get("is_ai_related", False)
+                article.summary = enrichment.get("summary")
+                article.tags = enrichment.get("tags", [])
+                article.enriched_at = datetime.now(UTC)
+
+                stats.processed += 1
+                if article.is_ai_related:
+                    stats.ai_related += 1
+
+                logger.debug(f"Enriched article {article.id}: category={article.category}, ai_related={article.is_ai_related}")
+
+            except Exception as e:
+                logger.error(f"Error enriching article {article.id}: {e}")
+                stats.errors += 1
+
+        session.commit()
+        logger.info(f"Enrichment complete: {stats.processed} processed, {stats.duplicates} duplicates, {stats.ai_related} AI-related, {stats.errors} errors")
+        return stats
