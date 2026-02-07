@@ -1,0 +1,76 @@
+import type { Article, Source, SourceCreate, Job, Summary, SystemStatus, SourceTestResult } from './types'
+
+const API_BASE = '/api/v1'
+
+async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+  })
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`)
+  }
+  if (response.status === 204) {
+    return undefined as T
+  }
+  return response.json()
+}
+
+export const api = {
+  // Status
+  getStatus: () => fetchJSON<SystemStatus>(`${API_BASE}/status`),
+
+  // Articles
+  getArticles: (params?: { q?: string; topic?: string; limit?: number; offset?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.q) searchParams.set('q', params.q)
+    if (params?.topic) searchParams.set('topic', params.topic)
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    if (params?.offset) searchParams.set('offset', params.offset.toString())
+    const query = searchParams.toString()
+    return fetchJSON<Article[]>(`${API_BASE}/articles${query ? `?${query}` : ''}`)
+  },
+
+  getArticle: (id: number) => fetchJSON<Article>(`${API_BASE}/articles/${id}`),
+
+  // Sources
+  getSources: () => fetchJSON<Source[]>(`${API_BASE}/sources`),
+  getSource: (id: number) => fetchJSON<Source>(`${API_BASE}/sources/${id}`),
+  createSource: (source: SourceCreate) =>
+    fetchJSON<Source>(`${API_BASE}/sources`, {
+      method: 'POST',
+      body: JSON.stringify(source),
+    }),
+  updateSource: (id: number, source: Partial<SourceCreate>) =>
+    fetchJSON<Source>(`${API_BASE}/sources/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(source),
+    }),
+  deleteSource: (id: number) =>
+    fetchJSON<void>(`${API_BASE}/sources/${id}`, { method: 'DELETE' }),
+  toggleSource: (id: number) =>
+    fetchJSON<Source>(`${API_BASE}/sources/${id}/toggle`, { method: 'PATCH' }),
+  testSource: (source: SourceCreate) =>
+    fetchJSON<SourceTestResult>(`${API_BASE}/sources/test`, {
+      method: 'POST',
+      body: JSON.stringify(source),
+    }),
+
+  // Jobs
+  getJobs: (limit?: number) => {
+    const query = limit ? `?limit=${limit}` : ''
+    return fetchJSON<Job[]>(`${API_BASE}/jobs${query}`)
+  },
+
+  // Summaries
+  getSummaries: (params?: { limit?: number; offset?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    if (params?.offset) searchParams.set('offset', params.offset.toString())
+    const query = searchParams.toString()
+    return fetchJSON<Summary[]>(`${API_BASE}/summaries${query ? `?${query}` : ''}`)
+  },
+}
