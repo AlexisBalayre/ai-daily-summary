@@ -201,3 +201,182 @@ class TestEnrichmentProcessor:
         assert stats.duplicates == 2
         assert stats.ai_related == 8
         assert stats.errors == 1
+
+    def test_get_unenriched_articles_returns_only_unenriched(self, session):
+        """Test that get_unenriched_articles returns only articles without enriched_at."""
+        from unittest.mock import patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test")
+        session.add(source)
+        session.commit()
+
+        # Create enriched article
+        enriched_article = SqliteArticle(
+            source_id=source.id,
+            title="Enriched Article",
+            content="Already processed content",
+            enriched_at=datetime.now(UTC),
+        )
+        # Create unenriched articles
+        unenriched_article1 = SqliteArticle(
+            source_id=source.id,
+            title="Unenriched Article 1",
+            content="Not processed yet",
+        )
+        unenriched_article2 = SqliteArticle(
+            source_id=source.id,
+            title="Unenriched Article 2",
+            content="Also not processed",
+        )
+        session.add_all([enriched_article, unenriched_article1, unenriched_article2])
+        session.commit()
+
+        # Mock Article to use SqliteArticle
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            processor = EnrichmentProcessor()
+            result = processor.get_unenriched_articles(session)
+
+        # Should only return unenriched articles
+        assert len(result) == 2
+        titles = [a.title for a in result]
+        assert "Enriched Article" not in titles
+        assert "Unenriched Article 1" in titles
+        assert "Unenriched Article 2" in titles
+
+    def test_get_unenriched_articles_excludes_duplicates(self, session):
+        """Test that get_unenriched_articles excludes duplicate articles."""
+        from unittest.mock import patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test")
+        session.add(source)
+        session.commit()
+
+        # Create normal unenriched article
+        normal_article = SqliteArticle(
+            source_id=source.id,
+            title="Normal Article",
+            content="Normal content",
+        )
+        # Create duplicate article (should be excluded)
+        duplicate_article = SqliteArticle(
+            source_id=source.id,
+            title="Duplicate Article",
+            content="Duplicate content",
+            is_duplicate=True,
+        )
+        session.add_all([normal_article, duplicate_article])
+        session.commit()
+
+        # Mock Article to use SqliteArticle
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            processor = EnrichmentProcessor()
+            result = processor.get_unenriched_articles(session)
+
+        # Should only return non-duplicate articles
+        assert len(result) == 1
+        assert result[0].title == "Normal Article"
+
+    def test_get_unenriched_articles_respects_limit(self, session):
+        """Test that get_unenriched_articles respects the limit parameter."""
+        from unittest.mock import patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test")
+        session.add(source)
+        session.commit()
+
+        # Create multiple unenriched articles
+        for i in range(5):
+            article = SqliteArticle(
+                source_id=source.id,
+                title=f"Article {i}",
+                content=f"Content {i}",
+            )
+            session.add(article)
+        session.commit()
+
+        # Mock Article to use SqliteArticle
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            processor = EnrichmentProcessor()
+            result = processor.get_unenriched_articles(session, limit=3)
+
+        # Should only return 3 articles
+        assert len(result) == 3
+
+    def test_get_unenriched_articles_uses_batch_size_default(self, session):
+        """Test that get_unenriched_articles uses BATCH_SIZE when limit is None."""
+        from unittest.mock import patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test")
+        session.add(source)
+        session.commit()
+
+        # Create just a few articles (less than BATCH_SIZE)
+        for i in range(3):
+            article = SqliteArticle(
+                source_id=source.id,
+                title=f"Article {i}",
+                content=f"Content {i}",
+            )
+            session.add(article)
+        session.commit()
+
+        # Mock Article to use SqliteArticle
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            processor = EnrichmentProcessor()
+            result = processor.get_unenriched_articles(session)  # No limit specified
+
+        # Should return all 3 articles (less than BATCH_SIZE of 50)
+        assert len(result) == 3
+
+    def test_get_unenriched_articles_orders_by_ingested_at_desc(self, session):
+        """Test that get_unenriched_articles orders by ingested_at descending."""
+        from unittest.mock import patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+        from datetime import timedelta
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test")
+        session.add(source)
+        session.commit()
+
+        # Create articles with different ingested_at times
+        now = datetime.now(UTC)
+        old_article = SqliteArticle(
+            source_id=source.id,
+            title="Old Article",
+            content="Old content",
+            ingested_at=now - timedelta(hours=2),
+        )
+        newer_article = SqliteArticle(
+            source_id=source.id,
+            title="Newer Article",
+            content="Newer content",
+            ingested_at=now - timedelta(hours=1),
+        )
+        newest_article = SqliteArticle(
+            source_id=source.id,
+            title="Newest Article",
+            content="Newest content",
+            ingested_at=now,
+        )
+        session.add_all([old_article, newer_article, newest_article])
+        session.commit()
+
+        # Mock Article to use SqliteArticle
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            processor = EnrichmentProcessor()
+            result = processor.get_unenriched_articles(session)
+
+        # Should be ordered by ingested_at descending (newest first)
+        assert len(result) == 3
+        assert result[0].title == "Newest Article"
+        assert result[1].title == "Newer Article"
+        assert result[2].title == "Old Article"
