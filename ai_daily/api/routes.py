@@ -58,6 +58,19 @@ class SourceResponse(BaseModel):
         from_attributes = True
 
 
+class SourceCreate(BaseModel):
+    type: str
+    name: str
+    config: Optional[dict] = None
+    enabled: bool = True
+
+
+class SourceUpdate(BaseModel):
+    name: Optional[str] = None
+    config: Optional[dict] = None
+    enabled: Optional[bool] = None
+
+
 class JobResponse(BaseModel):
     id: int
     job_name: str
@@ -185,6 +198,106 @@ def list_sources(db: Session = Depends(get_db)):
         return db.execute(select(Source)).scalars().all()
     except SQLAlchemyError as e:
         logger.error(f"Database error in list_sources: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
+
+
+@router.get("/sources/{source_id}", response_model=SourceResponse)
+def get_source(source_id: int, db: Session = Depends(get_db)):
+    """Get a single source by ID."""
+    try:
+        source = db.get(Source, source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+        return source
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in get_source: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
+
+
+@router.post("/sources", response_model=SourceResponse, status_code=201)
+def create_source(source_data: SourceCreate, db: Session = Depends(get_db)):
+    """Create a new source."""
+    try:
+        source = Source(
+            type=source_data.type,
+            name=source_data.name,
+            config=source_data.config,
+            enabled=source_data.enabled,
+        )
+        db.add(source)
+        db.commit()
+        db.refresh(source)
+        return source
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in create_source: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error occurred")
+
+
+@router.put("/sources/{source_id}", response_model=SourceResponse)
+def update_source(source_id: int, source_data: SourceUpdate, db: Session = Depends(get_db)):
+    """Update an existing source."""
+    try:
+        source = db.get(Source, source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+
+        if source_data.name is not None:
+            source.name = source_data.name
+        if source_data.config is not None:
+            source.config = source_data.config
+        if source_data.enabled is not None:
+            source.enabled = source_data.enabled
+
+        db.commit()
+        db.refresh(source)
+        return source
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in update_source: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error occurred")
+
+
+@router.delete("/sources/{source_id}", status_code=204)
+def delete_source(source_id: int, db: Session = Depends(get_db)):
+    """Delete a source."""
+    try:
+        source = db.get(Source, source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+
+        db.delete(source)
+        db.commit()
+        return None
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in delete_source: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error occurred")
+
+
+@router.patch("/sources/{source_id}/toggle", response_model=SourceResponse)
+def toggle_source(source_id: int, db: Session = Depends(get_db)):
+    """Toggle a source's enabled/disabled status."""
+    try:
+        source = db.get(Source, source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+
+        source.enabled = not source.enabled
+        db.commit()
+        db.refresh(source)
+        return source
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in toggle_source: {e}")
+        db.rollback()
         raise HTTPException(status_code=500, detail="Database error occurred")
 
 
