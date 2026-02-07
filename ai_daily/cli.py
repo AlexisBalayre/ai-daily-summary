@@ -34,7 +34,7 @@ def seed():
 
 
 @main.command()
-@click.argument("job_type", type=click.Choice(["gmail", "github", "crawlers", "all"]))
+@click.argument("job_type", type=click.Choice(["gmail", "github", "crawlers", "rss", "all"]))
 def run(job_type: str):
     """Run ETL pipeline for specified source type."""
     from ai_daily.etl import ETLPipeline
@@ -45,7 +45,7 @@ def run(job_type: str):
         if job_type == "all":
             metrics = await pipeline.run_all()
         else:
-            type_map = {"gmail": "newsletter", "github": "github", "crawlers": "crawler"}
+            type_map = {"gmail": "newsletter", "github": "github", "crawlers": "crawler", "rss": "rss"}
             metrics = await pipeline.run_all(source_types=[type_map[job_type]])
 
         console.print(f"[green]ETL completed![/green]")
@@ -178,7 +178,7 @@ def source_list():
 
 
 @source.command("add")
-@click.argument("source_type", type=click.Choice(["newsletter", "github", "crawler"]))
+@click.argument("source_type", type=click.Choice(["newsletter", "github", "crawler", "rss"]))
 @click.argument("name")
 @click.option("--config", "-c", help="JSON config string")
 def source_add(source_type: str, name: str, config: str = None):
@@ -202,6 +202,23 @@ def source_add(source_type: str, name: str, config: str = None):
         session.add(src)
         session.commit()
         console.print(f"[green]Added source: {name} (ID: {src.id})[/green]")
+
+
+@source.command("add-rss")
+@click.argument("name")
+@click.argument("url")
+def source_add_rss(name: str, url: str):
+    """Add an RSS feed source (simplified - just name and URL)."""
+    with get_session() as session:
+        src = Source(
+            type="rss",
+            name=name,
+            config={"url": url},
+            enabled=True,
+        )
+        session.add(src)
+        session.commit()
+        console.print(f"[green]Added RSS source: {name} (ID: {src.id})[/green]")
 
 
 @main.group()
