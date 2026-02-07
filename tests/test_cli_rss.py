@@ -59,3 +59,9 @@ def test_source_add_rss_creates_source(mock_get_session, runner):
     assert added_source.name == "Test Feed"
     assert added_source.config == {"url": "https://example.com/feed.xml"}
     assert added_source.enabled is True
+
+
+def test_run_enrichment_in_choices(runner):
+    """'enrichment' should be a valid choice for run command."""
+    result = runner.invoke(main, ["run", "--help"])
+    assert "enrichment" in result.output
