@@ -28,6 +28,20 @@ class EnrichmentProcessor:
     SIMILARITY_THRESHOLD = 0.92
     LOOKBACK_DAYS = 7
 
+    def get_unenriched_articles(self, session: Session, limit: int = None) -> List[Article]:
+        """Get articles that haven't been enriched yet."""
+        from sqlalchemy import select
+
+        limit = limit or self.BATCH_SIZE
+        stmt = (
+            select(Article)
+            .where(Article.enriched_at.is_(None))
+            .where(Article.is_duplicate == False)
+            .order_by(Article.ingested_at.desc())
+            .limit(limit)
+        )
+        return list(session.execute(stmt).scalars().all())
+
     async def run(self, session: Session = None) -> EnrichmentStats:
         """Run enrichment on unenriched articles."""
         raise NotImplementedError()
