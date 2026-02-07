@@ -71,6 +71,12 @@ class SourceUpdate(BaseModel):
     enabled: Optional[bool] = None
 
 
+class SourceTestResult(BaseModel):
+    success: bool
+    message: Optional[str] = None
+    preview: Optional[dict] = None
+
+
 class JobResponse(BaseModel):
     id: int
     job_name: str
@@ -299,6 +305,94 @@ def toggle_source(source_id: int, db: Session = Depends(get_db)):
         logger.error(f"Database error in toggle_source: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail="Database error occurred")
+
+
+def _test_rss_source(config: Optional[dict]) -> SourceTestResult:
+    """Test an RSS source by parsing the feed URL."""
+    if not config or not config.get("url"):
+        return SourceTestResult(success=False, message="Missing URL in config")
+    try:
+        import feedparser
+        feed = feedparser.parse(config["url"])
+        if feed.bozo and not feed.entries:
+            return SourceTestResult(success=False, message=f"Failed to parse feed: {feed.bozo_exception}")
+        return SourceTestResult(
+            success=True,
+            preview={
+                "feed_title": feed.feed.get("title", "Unknown"),
+                "entry_count": len(feed.entries),
+                "sample_titles": [e.get("title", "")[:100] for e in feed.entries[:3]]
+            }
+        )
+    except Exception as e:
+        return SourceTestResult(success=False, message=str(e))
+
+
+def _test_newsletter_source(config: Optional[dict]) -> SourceTestResult:
+    """Test a newsletter source by validating the email format."""
+    if not config or not config.get("email"):
+        return SourceTestResult(success=False, message="Missing email in config")
+    import re
+    email = config["email"]
+    # Basic email validation regex
+    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(email_pattern, email):
+        return SourceTestResult(success=False, message="Invalid email format")
+    return SourceTestResult(
+        success=True,
+        preview={"email": email, "status": "Email format is valid"}
+    )
+
+
+def _test_crawler_source(config: Optional[dict]) -> SourceTestResult:
+    """Test a crawler source by fetching the URL and applying selectors."""
+    if not config or not config.get("url"):
+        return SourceTestResult(success=False, message="Missing URL in config")
+    try:
+        import requests
+        from bs4 import BeautifulSoup
+
+        url = config["url"]
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        preview_data = {
+            "url": url,
+            "status_code": response.status_code,
+            "title": soup.title.string if soup.title else "No title found",
+        }
+
+        # Apply selectors if provided
+        if config.get("selector"):
+            elements = soup.select(config["selector"])
+            preview_data["selector_matches"] = len(elements)
+            preview_data["sample_content"] = [el.get_text()[:100] for el in elements[:3]]
+
+        return SourceTestResult(success=True, preview=preview_data)
+    except requests.RequestException as e:
+        return SourceTestResult(success=False, message=f"Request failed: {e}")
+    except Exception as e:
+        return SourceTestResult(success=False, message=str(e))
+
+
+@router.post("/sources/test", response_model=SourceTestResult)
+def test_source(source_data: SourceCreate):
+    """Test a source configuration without saving it."""
+    source_type = source_data.type.lower()
+
+    if source_type == "rss":
+        return _test_rss_source(source_data.config)
+    elif source_type == "newsletter":
+        return _test_newsletter_source(source_data.config)
+    elif source_type == "crawler":
+        return _test_crawler_source(source_data.config)
+    else:
+        return SourceTestResult(
+            success=False,
+            message=f"Unknown source type: {source_data.type}"
+        )
 
 
 # Job endpoints
