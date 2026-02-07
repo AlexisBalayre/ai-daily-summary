@@ -72,10 +72,12 @@ async def test_rss_extractor_parses_feed_entries(rss_source, sample_feed):
     extractor = RSSExtractor()
 
     with patch("ai_daily.etl.extractors.rss.feedparser.parse", return_value=sample_feed):
-        with patch("ai_daily.etl.extractors.rss.trafilatura.fetch_and_extract") as mock_fetch:
-            mock_fetch.side_effect = ["Full content of article one", None]
+        with patch("ai_daily.etl.extractors.rss.fetch_url") as mock_fetch_url:
+            with patch("ai_daily.etl.extractors.rss.extract") as mock_extract:
+                mock_fetch_url.side_effect = ["<html>content1</html>", None]
+                mock_extract.side_effect = ["Full content of article one", None]
 
-            result = await extractor.extract(rss_source)
+                result = await extractor.extract(rss_source)
 
     assert len(result) == 2
 
@@ -104,8 +106,9 @@ async def test_rss_extractor_skips_entries_without_title(rss_source):
     extractor = RSSExtractor()
 
     with patch("ai_daily.etl.extractors.rss.feedparser.parse", return_value=feed):
-        with patch("ai_daily.etl.extractors.rss.trafilatura.fetch_and_extract", return_value="Content"):
-            result = await extractor.extract(rss_source)
+        with patch("ai_daily.etl.extractors.rss.fetch_url", return_value="<html>content</html>"):
+            with patch("ai_daily.etl.extractors.rss.extract", return_value="Content"):
+                result = await extractor.extract(rss_source)
 
     assert len(result) == 1
     assert result[0].title == "Valid Title"
