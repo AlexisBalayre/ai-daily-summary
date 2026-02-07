@@ -1,7 +1,12 @@
 """FastAPI server configuration."""
 
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from ai_daily.api.routes import router
 
@@ -12,27 +17,34 @@ app = FastAPI(
 )
 
 # CORS middleware
-# TODO: In production, configure allow_origins via environment variable (e.g., CORS_ORIGINS)
-# instead of allowing all origins with "*"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routes
+# Include API routes
 app.include_router(router, prefix="/api/v1")
-
-
-@app.get("/")
-def root():
-    """Health check endpoint."""
-    return {"status": "ok", "service": "ai-daily-summary"}
 
 
 @app.get("/health")
 def health():
     """Health check endpoint."""
     return {"status": "healthy"}
+
+
+# Static files serving for frontend
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    # Serve static assets
+    app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")
+
+    # SPA fallback - serve index.html for all non-API routes
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        index_path = static_dir / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+        return {"error": "Frontend not built"}
