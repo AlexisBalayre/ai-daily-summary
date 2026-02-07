@@ -6,7 +6,7 @@ from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -86,6 +86,15 @@ class JobResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class SystemStatus(BaseModel):
+    database: str
+    total_articles: int
+    articles_today: int
+    active_sources: int
+    last_job: Optional[dict] = None
+    next_runs: Optional[dict] = None
 
 
 # Dependency for DB session
@@ -393,6 +402,64 @@ def test_source(source_data: SourceCreate):
             success=False,
             message=f"Unknown source type: {source_data.type}"
         )
+
+
+# Status endpoint
+@router.get("/status", response_model=SystemStatus)
+def get_status(db: Session = Depends(get_db)):
+    """Get system status and stats."""
+    from datetime import timedelta
+    from croniter import croniter
+    from ai_daily.config import config
+
+    try:
+        total_articles = db.execute(select(func.count(Article.id))).scalar() or 0
+
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        articles_today = db.execute(
+            select(func.count(Article.id)).where(Article.published_at >= today_start)
+        ).scalar() or 0
+
+        active_sources = db.execute(
+            select(func.count(Source.id)).where(Source.enabled == True)
+        ).scalar() or 0
+
+        last_job_obj = db.execute(
+            select(JobRun).order_by(JobRun.started_at.desc()).limit(1)
+        ).scalar_one_or_none()
+
+        last_job = None
+        if last_job_obj:
+            last_job = {
+                "name": last_job_obj.job_name,
+                "status": last_job_obj.status,
+                "started_at": last_job_obj.started_at.isoformat() if last_job_obj.started_at else None
+            }
+
+        now = datetime.utcnow()
+        schedules = {
+            "etl": config.orchestrator.etl_schedule,
+            "newsletter": config.orchestrator.newsletter_schedule,
+        }
+        next_runs = {}
+        for job_name, cron_expr in schedules.items():
+            try:
+                cron = croniter(cron_expr, now)
+                next_runs[job_name] = cron.get_next(datetime).isoformat()
+            except Exception:
+                pass
+
+        return SystemStatus(
+            database="connected",
+            total_articles=total_articles,
+            articles_today=articles_today,
+            active_sources=active_sources,
+            last_job=last_job,
+            next_runs=next_runs if next_runs else None
+        )
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in get_status: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
 
 
 # Job endpoints
