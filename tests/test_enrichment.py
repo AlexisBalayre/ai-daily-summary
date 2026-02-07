@@ -743,3 +743,231 @@ class TestFindDuplicate:
 
         # Verify the constant exists and has expected value
         assert EnrichmentProcessor.SIMILARITY_THRESHOLD == 0.92
+
+
+class TestLLMEnrich:
+    """Test EnrichmentProcessor.llm_enrich method."""
+
+    def test_llm_enrich_method_exists_and_callable(self):
+        """Test that llm_enrich method exists and is callable."""
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        processor = EnrichmentProcessor()
+        assert hasattr(processor, 'llm_enrich')
+        assert callable(processor.llm_enrich)
+
+    def test_enrichment_prompt_constant_exists(self):
+        """Test that ENRICHMENT_PROMPT constant exists."""
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        assert hasattr(EnrichmentProcessor, 'ENRICHMENT_PROMPT')
+        assert isinstance(EnrichmentProcessor.ENRICHMENT_PROMPT, str)
+
+    def test_enrichment_prompt_contains_required_fields(self):
+        """Test that ENRICHMENT_PROMPT asks for all required fields."""
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        prompt = EnrichmentProcessor.ENRICHMENT_PROMPT
+        assert 'CATEGORY' in prompt
+        assert 'IS_AI_RELATED' in prompt
+        assert 'SUMMARY' in prompt
+        assert 'TAGS' in prompt
+        assert '{title}' in prompt
+        assert '{content}' in prompt
+
+    def test_enrichment_prompt_has_valid_categories(self):
+        """Test that ENRICHMENT_PROMPT lists valid categories."""
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        prompt = EnrichmentProcessor.ENRICHMENT_PROMPT
+        categories = ['ai', 'security', 'cloud', 'hardware', 'mobile', 'software', 'business', 'other']
+        for category in categories:
+            assert category in prompt
+
+    @pytest.mark.asyncio
+    async def test_llm_enrich_formats_prompt_correctly(self):
+        """Test that llm_enrich formats the prompt with title and content."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        processor = EnrichmentProcessor()
+
+        mock_response = MagicMock()
+        mock_response.text = '{"category": "ai", "is_ai_related": true, "summary": "Test summary.", "tags": ["test"]}'
+
+        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+            mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+
+            await processor.llm_enrich("Test Title", "Test content about AI.")
+
+            # Verify generate_content was called
+            mock_client.aio.models.generate_content.assert_called_once()
+
+            # Get the prompt that was passed
+            call_args = mock_client.aio.models.generate_content.call_args
+            prompt = call_args.kwargs.get('contents') or call_args.args[0] if call_args.args else None
+            if prompt is None and 'contents' in call_args.kwargs:
+                prompt = call_args.kwargs['contents']
+
+            assert 'Test Title' in prompt
+            assert 'Test content about AI.' in prompt
+
+    @pytest.mark.asyncio
+    async def test_llm_enrich_truncates_content(self):
+        """Test that llm_enrich truncates content to 4000 characters."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        processor = EnrichmentProcessor()
+
+        # Create content longer than 4000 characters
+        long_content = "A" * 5000
+
+        mock_response = MagicMock()
+        mock_response.text = '{"category": "ai", "is_ai_related": true, "summary": "Test.", "tags": ["test"]}'
+
+        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+            mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+
+            await processor.llm_enrich("Title", long_content)
+
+            # Get the prompt that was passed
+            call_args = mock_client.aio.models.generate_content.call_args
+            prompt = call_args.kwargs.get('contents') or call_args.args[0] if call_args.args else None
+            if prompt is None and 'contents' in call_args.kwargs:
+                prompt = call_args.kwargs['contents']
+
+            # Content should be truncated to 4000 chars, not the full 5000
+            assert 'A' * 5000 not in prompt
+            assert 'A' * 4000 in prompt
+
+    @pytest.mark.asyncio
+    async def test_llm_enrich_parses_valid_json(self):
+        """Test that llm_enrich correctly parses valid JSON response."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        processor = EnrichmentProcessor()
+
+        expected_result = {
+            "category": "ai",
+            "is_ai_related": True,
+            "summary": "This is a test summary.",
+            "tags": ["machine-learning", "neural-networks"]
+        }
+
+        mock_response = MagicMock()
+        mock_response.text = '{"category": "ai", "is_ai_related": true, "summary": "This is a test summary.", "tags": ["machine-learning", "neural-networks"]}'
+
+        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+            mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+
+            result = await processor.llm_enrich("Test Title", "Test content")
+
+        assert result == expected_result
+
+    @pytest.mark.asyncio
+    async def test_llm_enrich_extracts_json_from_text(self):
+        """Test that llm_enrich can extract JSON from text with extra content."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        processor = EnrichmentProcessor()
+
+        # Response has extra text around the JSON
+        mock_response = MagicMock()
+        mock_response.text = 'Here is the analysis:\n{"category": "security", "is_ai_related": false, "summary": "Security article.", "tags": ["security"]}\nEnd of response.'
+
+        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+            mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+
+            result = await processor.llm_enrich("Security Update", "Content about security")
+
+        assert result["category"] == "security"
+        assert result["is_ai_related"] is False
+        assert result["summary"] == "Security article."
+        assert result["tags"] == ["security"]
+
+    @pytest.mark.asyncio
+    async def test_llm_enrich_raises_on_invalid_json(self):
+        """Test that llm_enrich raises ValueError when JSON cannot be parsed."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        processor = EnrichmentProcessor()
+
+        # Response with no valid JSON
+        mock_response = MagicMock()
+        mock_response.text = 'This is not valid JSON at all'
+
+        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+            mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+
+            with pytest.raises(ValueError) as exc_info:
+                await processor.llm_enrich("Title", "Content")
+
+            assert "Could not parse LLM response" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_llm_enrich_uses_correct_model(self):
+        """Test that llm_enrich uses the model from config."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        processor = EnrichmentProcessor()
+
+        mock_response = MagicMock()
+        mock_response.text = '{"category": "ai", "is_ai_related": true, "summary": "Test.", "tags": ["test"]}'
+
+        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+            with patch('ai_daily.etl.enrichment.config') as mock_config:
+                mock_config.llm.google_api_key = "test-api-key"
+                mock_config.llm.model = "gemini-2.0-flash-lite"
+
+                mock_client = MagicMock()
+                mock_genai.Client.return_value = mock_client
+                mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+
+                await processor.llm_enrich("Title", "Content")
+
+                # Verify Client was created with API key
+                mock_genai.Client.assert_called_once_with(api_key="test-api-key")
+
+                # Verify model was passed
+                call_args = mock_client.aio.models.generate_content.call_args
+                assert call_args.kwargs.get('model') == "gemini-2.0-flash-lite"
+
+    @pytest.mark.asyncio
+    async def test_llm_enrich_requests_json_response(self):
+        """Test that llm_enrich requests JSON mime type."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+        from google.genai.types import GenerateContentConfig
+
+        processor = EnrichmentProcessor()
+
+        mock_response = MagicMock()
+        mock_response.text = '{"category": "ai", "is_ai_related": true, "summary": "Test.", "tags": ["test"]}'
+
+        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+            mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+
+            await processor.llm_enrich("Title", "Content")
+
+            # Verify config was passed with JSON mime type
+            call_args = mock_client.aio.models.generate_content.call_args
+            config_arg = call_args.kwargs.get('config')
+            assert config_arg is not None
+            assert config_arg.response_mime_type == "application/json"
