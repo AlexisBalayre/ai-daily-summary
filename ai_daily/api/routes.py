@@ -205,6 +205,21 @@ def get_summary(target_date: date, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database error occurred")
 
 
+@router.get("/summaries", response_model=List[SummaryResponse])
+def list_summaries(
+    limit: int = Query(20, le=100),
+    offset: int = Query(0),
+    db: Session = Depends(get_db),
+):
+    """List daily summaries."""
+    try:
+        stmt = select(DailySummary).order_by(DailySummary.date.desc()).offset(offset).limit(limit)
+        return db.execute(stmt).scalars().all()
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in list_summaries: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
+
+
 # Source endpoints
 @router.get("/sources", response_model=List[SourceResponse])
 def list_sources(db: Session = Depends(get_db)):
