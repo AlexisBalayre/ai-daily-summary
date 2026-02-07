@@ -34,7 +34,7 @@ COPY config.json ./
 COPY alembic.ini ./
 
 # Copy built frontend from first stage
-COPY --from=frontend-builder /frontend/../ai_daily/static ./ai_daily/static
+COPY --from=frontend-builder /ai_daily/static ./ai_daily/api/static
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
