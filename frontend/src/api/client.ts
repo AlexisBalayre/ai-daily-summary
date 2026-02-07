@@ -1,4 +1,4 @@
-import type { Article, Source, SourceCreate, Job, Summary, SystemStatus, SourceTestResult } from './types'
+import type { Article, Source, SourceCreate, Job, Summary, SystemStatus, SourceTestResult, WhitelistResponse } from './types'
 
 const API_BASE = '/api/v1'
 
@@ -73,4 +73,16 @@ export const api = {
     const query = searchParams.toString()
     return fetchJSON<Summary[]>(`${API_BASE}/summaries${query ? `?${query}` : ''}`)
   },
+
+  // Whitelist
+  getWhitelist: () => fetchJSON<WhitelistResponse>(`${API_BASE}/whitelist`),
+  addToWhitelist: (email: string) =>
+    fetchJSON<WhitelistResponse>(`${API_BASE}/whitelist`, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  removeFromWhitelist: (email: string) =>
+    fetchJSON<void>(`${API_BASE}/whitelist/${encodeURIComponent(email)}`, {
+      method: 'DELETE',
+    }),
 }

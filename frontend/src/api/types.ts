@@ -62,3 +62,7 @@ export interface SourceTestResult {
     items_found?: number
   }
 }
+
+export interface WhitelistResponse {
+  whitelist: string[]
+}

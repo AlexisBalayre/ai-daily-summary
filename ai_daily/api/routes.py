@@ -1,11 +1,13 @@
 """API route handlers."""
 
+import json
 import logging
 from datetime import date, datetime
+from pathlib import Path
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -475,6 +477,100 @@ def get_status(db: Session = Depends(get_db)):
     except SQLAlchemyError as e:
         logger.error(f"Database error in get_status: {e}")
         raise HTTPException(status_code=500, detail="Database error occurred")
+
+
+# Whitelist endpoints
+class WhitelistResponse(BaseModel):
+    whitelist: List[str]
+
+
+class WhitelistAddRequest(BaseModel):
+    email: str
+
+
+def _get_config_path() -> Path:
+    """Get the config.json path."""
+    from ai_daily.config import config
+    return config.config_file
+
+
+def _read_config() -> dict:
+    """Read config.json file."""
+    config_path = _get_config_path()
+    if not config_path.exists():
+        return {"whitelist": []}
+    with open(config_path, "r") as f:
+        return json.load(f)
+
+
+def _write_config(data: dict) -> None:
+    """Write config.json file."""
+    config_path = _get_config_path()
+    with open(config_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+@router.get("/whitelist", response_model=WhitelistResponse)
+def get_whitelist():
+    """Get the list of whitelisted newsletter senders."""
+    try:
+        config_data = _read_config()
+        return WhitelistResponse(whitelist=config_data.get("whitelist", []))
+    except Exception as e:
+        logger.error(f"Error reading whitelist: {e}")
+        raise HTTPException(status_code=500, detail="Failed to read whitelist")
+
+
+@router.post("/whitelist", response_model=WhitelistResponse, status_code=201)
+def add_to_whitelist(request: WhitelistAddRequest):
+    """Add an email to the whitelist."""
+    try:
+        email = request.email.strip().lower()
+        if not email:
+            raise HTTPException(status_code=400, detail="Email cannot be empty")
+
+        config_data = _read_config()
+        whitelist = config_data.get("whitelist", [])
+
+        if email in [e.lower() for e in whitelist]:
+            raise HTTPException(status_code=409, detail="Email already in whitelist")
+
+        whitelist.append(email)
+        config_data["whitelist"] = whitelist
+        _write_config(config_data)
+
+        return WhitelistResponse(whitelist=whitelist)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding to whitelist: {e}")
+        raise HTTPException(status_code=500, detail="Failed to add to whitelist")
+
+
+@router.delete("/whitelist/{email:path}", status_code=204)
+def remove_from_whitelist(email: str):
+    """Remove an email from the whitelist."""
+    try:
+        email_lower = email.strip().lower()
+        config_data = _read_config()
+        whitelist = config_data.get("whitelist", [])
+
+        # Find and remove (case-insensitive)
+        original_len = len(whitelist)
+        whitelist = [e for e in whitelist if e.lower() != email_lower]
+
+        if len(whitelist) == original_len:
+            raise HTTPException(status_code=404, detail="Email not found in whitelist")
+
+        config_data["whitelist"] = whitelist
+        _write_config(config_data)
+
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing from whitelist: {e}")
+        raise HTTPException(status_code=500, detail="Failed to remove from whitelist")
 
 
 # Job endpoints
