@@ -65,6 +65,43 @@ class EnrichmentProcessor:
         )
         return list(session.execute(stmt).scalars().all())
 
+    def find_duplicate(
+        self, session: Session, article_id: int, embedding: List[float]
+    ) -> Optional[Article]:
+        """Find a semantically duplicate article.
+
+        Returns the duplicate article if similarity >= SIMILARITY_THRESHOLD,
+        otherwise returns None.
+        """
+        from sqlalchemy import select
+
+        cutoff = datetime.utcnow() - timedelta(days=self.LOOKBACK_DAYS)
+
+        # Query for the most similar article using pgvector cosine distance
+        stmt = (
+            select(Article)
+            .where(Article.enriched_at >= cutoff)
+            .where(Article.embedding.isnot(None))
+            .where(Article.id != article_id)
+            .where(Article.is_duplicate == False)
+            .order_by(Article.embedding.cosine_distance(embedding))
+            .limit(1)
+        )
+
+        match = session.execute(stmt).scalar_one_or_none()
+
+        if match:
+            # Calculate similarity (1 - cosine_distance)
+            # For pgvector, cosine_distance returns distance, not similarity
+            distance_stmt = select(Article.embedding.cosine_distance(embedding)).where(Article.id == match.id)
+            distance = session.execute(distance_stmt).scalar()
+            similarity = 1 - distance
+
+            if similarity >= self.SIMILARITY_THRESHOLD:
+                return match
+
+        return None
+
     async def run(self, session: Session = None) -> EnrichmentStats:
         """Run enrichment on unenriched articles."""
         raise NotImplementedError()
