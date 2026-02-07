@@ -34,9 +34,21 @@ def seed():
 
 
 @main.command()
-@click.argument("job_type", type=click.Choice(["gmail", "github", "crawlers", "rss", "all"]))
+@click.argument("job_type", type=click.Choice(["gmail", "github", "crawlers", "rss", "enrichment", "all"]))
 def run(job_type: str):
     """Run ETL pipeline for specified source type."""
+    if job_type == "enrichment":
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        processor = EnrichmentProcessor()
+        stats = asyncio.run(processor.run())
+        console.print("[green]Enrichment complete![/green]")
+        console.print(f"  Processed: {stats.processed}")
+        console.print(f"  Duplicates: {stats.duplicates}")
+        console.print(f"  AI-related: {stats.ai_related}")
+        console.print(f"  Errors: {stats.errors}")
+        return
+
     from ai_daily.etl import ETLPipeline
 
     async def _run():
