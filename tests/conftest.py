@@ -53,6 +53,13 @@ class SqliteArticle(SqliteBase):
     ingested_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     topic: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     content_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    # Enrichment fields
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    is_ai_related: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    enriched_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    is_duplicate: Mapped[bool] = mapped_column(Boolean, default=False)
+    duplicate_of_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
 
 @pytest.fixture(scope="session")

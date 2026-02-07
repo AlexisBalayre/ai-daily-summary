@@ -61,6 +61,15 @@ class Article(Base):
     # 768 dimensions for Google text-embedding-004
     embedding: Mapped[Optional[List[float]]] = mapped_column(Vector(768), nullable=True)
     content_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    # Enrichment fields
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    is_ai_related: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    enriched_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    is_duplicate: Mapped[bool] = mapped_column(Boolean, default=False)
+    duplicate_of_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("articles.id"), nullable=True
+    )
 
     source: Mapped["Source"] = relationship("Source", back_populates="articles")
 
@@ -70,6 +79,9 @@ class Article(Base):
         Index("idx_articles_topic", "topic"),
         Index("idx_articles_content_hash", "content_hash"),
         Index("idx_articles_source", "source_id"),
+        Index("idx_articles_enriched_at", "enriched_at"),
+        Index("idx_articles_is_duplicate", "is_duplicate"),
+        Index("idx_articles_category", "category"),
     )
 
 
