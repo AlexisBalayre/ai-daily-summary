@@ -1382,3 +1382,419 @@ class TestRunAndProcessBatch:
                         # Verify duplicate article was marked
                         assert mock_dup.is_duplicate is True
                         assert mock_dup.duplicate_of_id == 99
+
+
+class TestEnrichmentIntegration:
+    """Integration tests for the full enrichment pipeline."""
+
+    @pytest.mark.asyncio
+    async def test_full_pipeline_processes_articles(self, session):
+        """Full pipeline processes unenriched articles."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test Source")
+        session.add(source)
+        session.commit()
+
+        # Create test articles
+        article1 = SqliteArticle(
+            source_id=source.id,
+            title="New AI Model Released",
+            content="OpenAI has released a new large language model that improves reasoning capabilities.",
+        )
+        article2 = SqliteArticle(
+            source_id=source.id,
+            title="Cloud Computing Growth",
+            content="AWS announced new cloud services for enterprise customers with improved performance.",
+        )
+        article3 = SqliteArticle(
+            source_id=source.id,
+            title="Security Update",
+            content="A critical security vulnerability was patched in popular open source software.",
+        )
+        session.add_all([article1, article2, article3])
+        session.commit()
+
+        # Mock external dependencies
+        mock_embedding = [0.1] * 768
+
+        # Use title-based matching for enrichment responses
+        async def llm_enrich_mock(title, content):
+            if "AI Model" in title:
+                return {"category": "ai", "is_ai_related": True, "summary": "New AI model released.", "tags": ["ai", "llm"]}
+            elif "Cloud" in title:
+                return {"category": "cloud", "is_ai_related": False, "summary": "AWS cloud services.", "tags": ["cloud", "aws"]}
+            else:
+                return {"category": "security", "is_ai_related": False, "summary": "Security patch.", "tags": ["security"]}
+
+        processor = EnrichmentProcessor()
+
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
+                with patch.object(processor, 'find_duplicate', return_value=None):
+                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, side_effect=llm_enrich_mock):
+                        stats = await processor.run(session=session)
+
+        # Verify stats
+        assert stats.processed == 3
+        assert stats.ai_related == 1
+        assert stats.duplicates == 0
+        assert stats.errors == 0
+
+        # Verify articles were enriched
+        session.refresh(article1)
+        session.refresh(article2)
+        session.refresh(article3)
+
+        assert article1.category == "ai"
+        assert article1.is_ai_related is True
+        assert article1.enriched_at is not None
+
+        assert article2.category == "cloud"
+        assert article2.is_ai_related is False
+        assert article2.enriched_at is not None
+
+        assert article3.category == "security"
+        assert article3.is_ai_related is False
+        assert article3.enriched_at is not None
+
+    @pytest.mark.asyncio
+    async def test_full_pipeline_detects_duplicates(self, session):
+        """Full pipeline marks duplicate articles."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test Source")
+        session.add(source)
+        session.commit()
+
+        # Create an already enriched article (the "original")
+        original_article = SqliteArticle(
+            source_id=source.id,
+            title="Original AI Article",
+            content="This is the original content about artificial intelligence.",
+            enriched_at=datetime.now(UTC),
+            category="ai",
+            is_ai_related=True,
+        )
+        session.add(original_article)
+        session.commit()
+
+        # Create two new articles - one will be a duplicate
+        unique_article = SqliteArticle(
+            source_id=source.id,
+            title="Security News",
+            content="Completely different security news content.",
+        )
+        duplicate_article = SqliteArticle(
+            source_id=source.id,
+            title="AI Article Copy",
+            content="This is nearly identical content about artificial intelligence.",
+        )
+        session.add_all([unique_article, duplicate_article])
+        session.commit()
+
+        # Store IDs for later reference
+        original_id = original_article.id
+        unique_id = unique_article.id
+        dup_id = duplicate_article.id
+
+        # Mock external dependencies
+        mock_embedding = [0.1] * 768
+
+        # Create a mock that simulates find_duplicate behavior
+        def find_duplicate_mock(sess, article_id, embedding):
+            # Simulate that the duplicate_article is a duplicate of original
+            if article_id == dup_id:
+                mock_match = MagicMock()
+                mock_match.id = original_id
+                return mock_match
+            return None
+
+        processor = EnrichmentProcessor()
+
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
+                with patch.object(processor, 'find_duplicate', side_effect=find_duplicate_mock):
+                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
+                        "category": "security", "is_ai_related": False, "summary": "Security.", "tags": ["security"]
+                    }):
+                        stats = await processor.run(session=session)
+
+        # Verify stats - one processed, one duplicate
+        assert stats.processed == 1
+        assert stats.duplicates == 1
+        assert stats.errors == 0
+
+        # Verify unique article was enriched
+        session.refresh(unique_article)
+        assert unique_article.is_duplicate is False
+        assert unique_article.enriched_at is not None
+        assert unique_article.category == "security"
+
+        # Verify duplicate article was marked as duplicate
+        session.refresh(duplicate_article)
+        assert duplicate_article.is_duplicate is True
+        assert duplicate_article.duplicate_of_id == original_id
+        assert duplicate_article.enriched_at is not None
+
+    @pytest.mark.asyncio
+    async def test_full_pipeline_classifies_ai_articles(self, session):
+        """Full pipeline correctly identifies AI-related articles."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test Source")
+        session.add(source)
+        session.commit()
+
+        # Create AI article
+        ai_article = SqliteArticle(
+            source_id=source.id,
+            title="GPT-5 Released",
+            content="OpenAI has announced GPT-5 with revolutionary capabilities in reasoning and coding.",
+        )
+        # Create non-AI article
+        non_ai_article = SqliteArticle(
+            source_id=source.id,
+            title="New Database Release",
+            content="PostgreSQL 17 was released with performance improvements and new features.",
+        )
+        session.add_all([ai_article, non_ai_article])
+        session.commit()
+
+        # Store IDs for reference
+        ai_article_id = ai_article.id
+        non_ai_article_id = non_ai_article.id
+
+        # Mock external dependencies
+        mock_embedding = [0.1] * 768
+
+        # LLM responses with proper AI classification
+        enrichment_responses = {
+            ai_article_id: {"category": "ai", "is_ai_related": True, "summary": "GPT-5 released.", "tags": ["ai", "gpt", "openai"]},
+            non_ai_article_id: {"category": "software", "is_ai_related": False, "summary": "PostgreSQL 17.", "tags": ["database", "postgresql"]},
+        }
+
+        # Track which article is being processed
+        call_index = [0]
+        article_ids = [ai_article_id, non_ai_article_id]
+
+        async def llm_enrich_mock(title, content):
+            # Determine which article this is for based on title
+            if "GPT-5" in title:
+                return enrichment_responses[ai_article_id]
+            else:
+                return enrichment_responses[non_ai_article_id]
+
+        processor = EnrichmentProcessor()
+
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
+                with patch.object(processor, 'find_duplicate', return_value=None):
+                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, side_effect=llm_enrich_mock):
+                        stats = await processor.run(session=session)
+
+        # Verify stats
+        assert stats.processed == 2
+        assert stats.ai_related == 1  # Only one AI-related article
+        assert stats.duplicates == 0
+        assert stats.errors == 0
+
+        # Verify AI classification
+        session.refresh(ai_article)
+        session.refresh(non_ai_article)
+
+        assert ai_article.is_ai_related is True
+        assert ai_article.category == "ai"
+
+        assert non_ai_article.is_ai_related is False
+        assert non_ai_article.category == "software"
+
+    @pytest.mark.asyncio
+    async def test_full_pipeline_calculates_stats_correctly(self, session):
+        """Full pipeline calculates statistics correctly with mixed scenarios."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test Source")
+        session.add(source)
+        session.commit()
+
+        # Create enriched article (to serve as duplicate target)
+        enriched_article = SqliteArticle(
+            source_id=source.id,
+            title="Enriched Article",
+            content="Already processed content.",
+            enriched_at=datetime.now(UTC),
+            category="ai",
+            is_ai_related=True,
+        )
+        session.add(enriched_article)
+        session.commit()
+        enriched_id = enriched_article.id
+
+        # Create mix of articles:
+        # - 2 unique AI-related articles
+        # - 1 unique non-AI article
+        # - 2 duplicate articles
+        articles = [
+            SqliteArticle(source_id=source.id, title="AI Article 1", content="AI content 1"),
+            SqliteArticle(source_id=source.id, title="AI Article 2", content="AI content 2"),
+            SqliteArticle(source_id=source.id, title="Security Article", content="Security content"),
+            SqliteArticle(source_id=source.id, title="Duplicate 1", content="Dup 1"),
+            SqliteArticle(source_id=source.id, title="Duplicate 2", content="Dup 2"),
+        ]
+        session.add_all(articles)
+        session.commit()
+
+        # Get article IDs
+        article_ids = [a.id for a in articles]
+
+        mock_embedding = [0.1] * 768
+
+        # Simulate find_duplicate for last two articles
+        def find_duplicate_mock(sess, article_id, embedding):
+            if article_id in article_ids[-2:]:  # Last two are duplicates
+                mock_match = MagicMock()
+                mock_match.id = enriched_id
+                return mock_match
+            return None
+
+        # LLM enrichment based on title
+        async def llm_enrich_mock(title, content):
+            if "AI Article" in title:
+                return {"category": "ai", "is_ai_related": True, "summary": "AI.", "tags": ["ai"]}
+            else:
+                return {"category": "security", "is_ai_related": False, "summary": "Sec.", "tags": ["security"]}
+
+        processor = EnrichmentProcessor()
+
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
+                with patch.object(processor, 'find_duplicate', side_effect=find_duplicate_mock):
+                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, side_effect=llm_enrich_mock):
+                        stats = await processor.run(session=session)
+
+        # Verify stats
+        assert stats.processed == 3  # 2 AI + 1 security
+        assert stats.ai_related == 2  # 2 AI articles
+        assert stats.duplicates == 2  # 2 duplicate articles
+        assert stats.errors == 0
+
+    @pytest.mark.asyncio
+    async def test_full_pipeline_handles_errors_gracefully(self, session):
+        """Full pipeline handles errors gracefully and continues processing."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test Source")
+        session.add(source)
+        session.commit()
+
+        # Create articles - one will cause an error
+        error_article = SqliteArticle(
+            source_id=source.id,
+            title="Error Article",
+            content="This will cause an error.",
+        )
+        success_article = SqliteArticle(
+            source_id=source.id,
+            title="Success Article",
+            content="This will succeed.",
+        )
+        session.add_all([error_article, success_article])
+        session.commit()
+
+        error_article_id = error_article.id
+
+        mock_embedding = [0.1] * 768
+
+        # Simulate error for first article
+        async def generate_embedding_mock(content):
+            if "error" in content.lower():
+                raise Exception("Embedding generation failed")
+            return mock_embedding
+
+        processor = EnrichmentProcessor()
+
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, side_effect=generate_embedding_mock):
+                with patch.object(processor, 'find_duplicate', return_value=None):
+                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
+                        "category": "ai", "is_ai_related": True, "summary": "Success.", "tags": ["test"]
+                    }):
+                        stats = await processor.run(session=session)
+
+        # Verify stats - one error, one success
+        assert stats.errors == 1
+        assert stats.processed == 1
+        assert stats.duplicates == 0
+
+        # Success article should be enriched
+        session.refresh(success_article)
+        assert success_article.enriched_at is not None
+        assert success_article.category == "ai"
+
+    @pytest.mark.asyncio
+    async def test_full_pipeline_skips_already_enriched(self, session):
+        """Full pipeline skips already enriched articles."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        # Create source
+        source = SqliteSource(type="newsletter", name="Test Source")
+        session.add(source)
+        session.commit()
+
+        # Create already enriched article
+        enriched_article = SqliteArticle(
+            source_id=source.id,
+            title="Already Enriched",
+            content="This article is already enriched.",
+            enriched_at=datetime.now(UTC),
+            category="ai",
+            is_ai_related=True,
+            summary="Already has summary.",
+        )
+        # Create unenriched article
+        unenriched_article = SqliteArticle(
+            source_id=source.id,
+            title="Needs Enrichment",
+            content="This article needs enrichment.",
+        )
+        session.add_all([enriched_article, unenriched_article])
+        session.commit()
+
+        mock_embedding = [0.1] * 768
+
+        processor = EnrichmentProcessor()
+
+        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
+            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding) as mock_embed:
+                with patch.object(processor, 'find_duplicate', return_value=None):
+                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
+                        "category": "security", "is_ai_related": False, "summary": "New.", "tags": ["test"]
+                    }) as mock_llm:
+                        stats = await processor.run(session=session)
+
+        # Verify only one article was processed
+        assert stats.processed == 1
+        assert mock_embed.call_count == 1
+        assert mock_llm.call_count == 1
+
+        # Verify already enriched article was not modified
+        session.refresh(enriched_article)
+        assert enriched_article.category == "ai"  # Original category preserved
+        assert enriched_article.summary == "Already has summary."  # Original summary preserved
+
+        # Verify unenriched article was enriched
+        session.refresh(unenriched_article)
+        assert unenriched_article.category == "security"
+        assert unenriched_article.enriched_at is not None
