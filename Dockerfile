@@ -1,6 +1,15 @@
 # AI Daily Summary - Data Platform
-# Python application with orchestrator scheduling for ETL and newsletter generation
+# Multi-stage build: Frontend (Node.js) + Backend (Python)
 
+# Stage 1: Build frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 2: Python application
 FROM python:3.12-slim
 
 # Set environment variables
@@ -23,6 +32,9 @@ COPY ai_daily/ ./ai_daily/
 COPY templates/ ./templates/
 COPY config.json ./
 COPY alembic.ini ./
+
+# Copy built frontend from first stage
+COPY --from=frontend-builder /frontend/../ai_daily/static ./ai_daily/static
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
