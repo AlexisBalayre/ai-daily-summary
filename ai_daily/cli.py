@@ -276,6 +276,7 @@ def orchestrator_start():
         "newsletter": config.orchestrator.newsletter_schedule,
         "github": config.orchestrator.github_schedule,
         "tts": config.orchestrator.tts_schedule,
+        "enrichment": config.orchestrator.enrichment_schedule,
     }
 
     scheduler = Scheduler(
@@ -306,6 +307,7 @@ def orchestrator_status():
         "newsletter": config.orchestrator.newsletter_schedule,
         "github": config.orchestrator.github_schedule,
         "tts": config.orchestrator.tts_schedule,
+        "enrichment": config.orchestrator.enrichment_schedule,
     }
 
     table = Table(title="Scheduled Jobs")
@@ -355,9 +357,9 @@ def orchestrator_status():
 
 
 @orchestrator.command("trigger")
-@click.argument("job_name", type=click.Choice(["etl", "newsletter", "github", "tts", "all"]))
+@click.argument("job_name", type=click.Choice(["etl", "newsletter", "github", "tts", "enrichment", "all"]))
 def orchestrator_trigger(job_name: str):
-    """Manually trigger a job (or 'all' for ETL → TTS → Newsletter)."""
+    """Manually trigger a job (or 'all' for ETL → Enrichment → TTS → Newsletter)."""
     from ai_daily.config import config
     from ai_daily.orchestrator import Executor, JOBS
     from ai_daily.orchestrator.types import RetryConfig
@@ -372,8 +374,8 @@ def orchestrator_trigger(job_name: str):
 
     # Determine which jobs to run
     if job_name == "all":
-        jobs_to_run = ["etl", "tts", "newsletter", "github"]
-        console.print("[cyan]Running all jobs: ETL → TTS → Newsletter → GitHub[/cyan]")
+        jobs_to_run = ["etl", "enrichment", "tts", "newsletter", "github"]
+        console.print("[cyan]Running all jobs: ETL → Enrichment → TTS → Newsletter → GitHub[/cyan]")
     else:
         jobs_to_run = [job_name]
         console.print(f"[cyan]Triggering job: {job_name}[/cyan]")
