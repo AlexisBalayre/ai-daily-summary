@@ -3,9 +3,18 @@ export interface Article {
   title: string
   content: string
   url?: string
+  author?: string
   topic?: string
+  tags?: string[]
   published_at?: string
+  ingested_at?: string
   source_name?: string
+  summary?: string
+  category?: string
+  is_ai_related?: boolean
+  enriched_at?: string
+  is_duplicate: boolean
+  duplicate_of_id?: number
 }
 
 export interface Source {
@@ -14,6 +23,7 @@ export interface Source {
   name: string
   config?: Record<string, unknown>
   enabled: boolean
+  created_at?: string
 }
 
 export interface SourceCreate {
@@ -36,7 +46,9 @@ export interface Job {
 export interface Summary {
   date: string
   summary_text?: string
-  key_facts?: unknown
+  key_facts?: Record<string, unknown> | unknown[]
+  article_ids?: number[]
+  created_at?: string
 }
 
 export interface SystemStatus {
@@ -44,6 +56,9 @@ export interface SystemStatus {
   total_articles: number
   articles_today: number
   active_sources: number
+  enriched_articles: number
+  ai_related_articles: number
+  duplicate_articles: number
   last_job?: {
     name: string
     status: string

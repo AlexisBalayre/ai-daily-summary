@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 const navigation = [
   { name: 'Dashboard', href: '/' },
   { name: 'Articles', href: '/articles' },
+  { name: 'Summaries', href: '/summaries' },
   { name: 'Sources', href: '/sources' },
   { name: 'Whitelist', href: '/whitelist' },
   { name: 'Jobs', href: '/jobs' },
