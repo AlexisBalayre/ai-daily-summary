@@ -33,9 +33,18 @@ class ArticleResponse(BaseModel):
     title: str
     content: str
     url: Optional[str]
+    author: Optional[str]
     topic: Optional[str]
+    tags: Optional[List[str]]
     published_at: Optional[datetime]
+    ingested_at: Optional[datetime]
     source_name: Optional[str] = None
+    summary: Optional[str]
+    category: Optional[str]
+    is_ai_related: Optional[bool]
+    enriched_at: Optional[datetime]
+    is_duplicate: bool = False
+    duplicate_of_id: Optional[int]
 
     class Config:
         from_attributes = True
@@ -45,6 +54,8 @@ class SummaryResponse(BaseModel):
     date: datetime
     summary_text: Optional[str]
     key_facts: Optional[Any]  # JSONB in DB, can be dict or list
+    article_ids: Optional[List[int]]
+    created_at: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -54,7 +65,9 @@ class SourceResponse(BaseModel):
     id: int
     type: str
     name: str
+    config: Optional[dict]
     enabled: bool
+    created_at: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -85,6 +98,8 @@ class JobResponse(BaseModel):
     started_at: datetime
     finished_at: Optional[datetime]
     status: Optional[str]
+    metrics: Optional[dict]
+    error_message: Optional[str]
 
     class Config:
         from_attributes = True
@@ -95,6 +110,9 @@ class SystemStatus(BaseModel):
     total_articles: int
     articles_today: int
     active_sources: int
+    enriched_articles: int = 0
+    ai_related_articles: int = 0
+    duplicate_articles: int = 0
     last_job: Optional[dict] = None
     next_runs: Optional[dict] = None
 
@@ -110,6 +128,11 @@ def get_db():
 def list_articles(
     q: Optional[str] = Query(None, description="Search query"),
     topic: Optional[str] = Query(None, description="Filter by topic"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    is_ai_related: Optional[bool] = Query(None, description="Filter by AI relevance"),
+    is_duplicate: Optional[bool] = Query(None, description="Filter by duplicate status"),
+    source_type: Optional[str] = Query(None, description="Filter by source type (rss, newsletter, github, crawler)"),
+    exclude_source_type: Optional[str] = Query(None, description="Exclude source type"),
     from_date: Optional[date] = Query(None, alias="from"),
     to_date: Optional[date] = Query(None, alias="to"),
     limit: int = Query(20, le=100),
@@ -118,7 +141,7 @@ def list_articles(
 ):
     """List articles with optional filters."""
     try:
-        stmt = select(Article)
+        stmt = select(Article).join(Source, Article.source_id == Source.id)
 
         if q:
             escaped_q = escape_like_wildcards(q)
@@ -130,6 +153,21 @@ def list_articles(
         if topic:
             stmt = stmt.where(Article.topic == topic)
 
+        if category:
+            stmt = stmt.where(Article.category == category)
+
+        if is_ai_related is not None:
+            stmt = stmt.where(Article.is_ai_related == is_ai_related)
+
+        if is_duplicate is not None:
+            stmt = stmt.where(Article.is_duplicate == is_duplicate)
+
+        if source_type:
+            stmt = stmt.where(Source.type == source_type)
+
+        if exclude_source_type:
+            stmt = stmt.where(Source.type != exclude_source_type)
+
         if from_date:
             stmt = stmt.where(Article.published_at >= datetime.combine(from_date, datetime.min.time()))
 
@@ -139,7 +177,15 @@ def list_articles(
         stmt = stmt.order_by(Article.published_at.desc()).offset(offset).limit(limit)
 
         articles = db.execute(stmt).scalars().all()
-        return articles
+
+        # Populate source_name from the relationship
+        results = []
+        for article in articles:
+            resp = ArticleResponse.model_validate(article)
+            if article.source:
+                resp.source_name = article.source.name
+            results.append(resp)
+        return results
     except SQLAlchemyError as e:
         logger.error(f"Database error in list_articles: {e}")
         raise HTTPException(status_code=500, detail="Database error occurred")
@@ -441,6 +487,18 @@ def get_status(db: Session = Depends(get_db)):
             select(func.count(Source.id)).where(Source.enabled == True)
         ).scalar() or 0
 
+        enriched_articles = db.execute(
+            select(func.count(Article.id)).where(Article.enriched_at.isnot(None))
+        ).scalar() or 0
+
+        ai_related_articles = db.execute(
+            select(func.count(Article.id)).where(Article.is_ai_related == True)
+        ).scalar() or 0
+
+        duplicate_articles = db.execute(
+            select(func.count(Article.id)).where(Article.is_duplicate == True)
+        ).scalar() or 0
+
         last_job_obj = db.execute(
             select(JobRun).order_by(JobRun.started_at.desc()).limit(1)
         ).scalar_one_or_none()
@@ -471,6 +529,9 @@ def get_status(db: Session = Depends(get_db)):
             total_articles=total_articles,
             articles_today=articles_today,
             active_sources=active_sources,
+            enriched_articles=enriched_articles,
+            ai_related_articles=ai_related_articles,
+            duplicate_articles=duplicate_articles,
             last_job=last_job,
             next_runs=next_runs if next_runs else None
         )

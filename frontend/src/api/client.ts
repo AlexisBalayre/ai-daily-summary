@@ -24,10 +24,29 @@ export const api = {
   getStatus: () => fetchJSON<SystemStatus>(`${API_BASE}/status`),
 
   // Articles
-  getArticles: (params?: { q?: string; topic?: string; limit?: number; offset?: number }) => {
+  getArticles: (params?: {
+    q?: string
+    topic?: string
+    category?: string
+    is_ai_related?: boolean
+    is_duplicate?: boolean
+    source_type?: string
+    exclude_source_type?: string
+    from?: string
+    to?: string
+    limit?: number
+    offset?: number
+  }) => {
     const searchParams = new URLSearchParams()
     if (params?.q) searchParams.set('q', params.q)
     if (params?.topic) searchParams.set('topic', params.topic)
+    if (params?.category) searchParams.set('category', params.category)
+    if (params?.is_ai_related !== undefined) searchParams.set('is_ai_related', params.is_ai_related.toString())
+    if (params?.is_duplicate !== undefined) searchParams.set('is_duplicate', params.is_duplicate.toString())
+    if (params?.source_type) searchParams.set('source_type', params.source_type)
+    if (params?.exclude_source_type) searchParams.set('exclude_source_type', params.exclude_source_type)
+    if (params?.from) searchParams.set('from', params.from)
+    if (params?.to) searchParams.set('to', params.to)
     if (params?.limit) searchParams.set('limit', params.limit.toString())
     if (params?.offset) searchParams.set('offset', params.offset.toString())
     const query = searchParams.toString()
