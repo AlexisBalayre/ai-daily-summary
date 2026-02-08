@@ -160,6 +160,37 @@ Respond ONLY with valid JSON:
 
         return None
 
+    async def enrich_article(
+        self, session: Session, article: Article, embedding: List[float]
+    ) -> str:
+        """Enrich a single article using a pre-computed embedding.
+
+        Returns: "enriched", "duplicate", or "error".
+        """
+        try:
+            # Check for semantic duplicates
+            duplicate = self.find_duplicate(session, article.id, embedding)
+            if duplicate:
+                article.is_duplicate = True
+                article.duplicate_of_id = duplicate.id
+                article.enriched_at = datetime.now(UTC)
+                return "duplicate"
+
+            # LLM enrichment
+            enrichment = await self.llm_enrich(article.title, article.content)
+
+            article.embedding = embedding
+            article.category = enrichment.get("category")
+            article.is_ai_related = enrichment.get("is_ai_related", False)
+            article.summary = enrichment.get("summary")
+            article.tags = enrichment.get("tags", [])
+            article.enriched_at = datetime.now(UTC)
+            return "enriched"
+
+        except Exception as e:
+            logger.error(f"Error enriching article {article.id}: {e}")
+            return "error"
+
     async def run(self, session: Session = None) -> EnrichmentStats:
         """Run enrichment on unenriched articles."""
         from ai_daily.db import get_session
