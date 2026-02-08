@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Type
 from sqlalchemy.orm import Session
 
 from ai_daily.db import Article, JobRun, Source, get_session
+from ai_daily.etl.enrichment import EnrichmentProcessor
 from ai_daily.etl.extractors import BaseExtractor, CrawlerExtractor, GitHubExtractor, GmailExtractor, RSSExtractor
 from ai_daily.etl.transformers import Deduplicator, Embedder, LLMParser, compute_content_hash
 from ai_daily.etl.types import RawContent
@@ -30,7 +31,7 @@ def track_job(session: Session, job_name: str):
     session.add(job)
     session.commit()
 
-    metrics = {"articles_processed": 0, "articles_created": 0, "duplicates_skipped": 0}
+    metrics = {"articles_processed": 0, "articles_created": 0, "duplicates_skipped": 0, "articles_enriched": 0, "enrichment_duplicates": 0, "enrichment_errors": 0}
 
     try:
         yield job, metrics
@@ -53,6 +54,7 @@ class ETLPipeline:
         self.extractors: Dict[str, BaseExtractor] = {}
         self.llm_parser = LLMParser()
         self.embedder = Embedder()
+        self.enrichment = EnrichmentProcessor()
 
     def _get_extractor(self, source_type: str) -> BaseExtractor:
         """Get or create extractor for source type."""
@@ -136,7 +138,17 @@ class ETLPipeline:
                         content_hash=content_hash,
                     )
                     session.add(article)
+                    session.flush()
                     metrics["articles_created"] += 1
+
+                    # Inline enrichment using already-computed embedding
+                    enrich_result = await self.enrichment.enrich_article(session, article, embedding)
+                    if enrich_result == "enriched":
+                        metrics["articles_enriched"] += 1
+                    elif enrich_result == "duplicate":
+                        metrics["enrichment_duplicates"] += 1
+                    elif enrich_result == "error":
+                        metrics["enrichment_errors"] += 1
 
             session.commit()
             logger.info(f"Created {metrics['articles_created']} articles, skipped {metrics['duplicates_skipped']} duplicates")
@@ -145,7 +157,7 @@ class ETLPipeline:
 
     async def run_all(self, source_types: Optional[List[str]] = None) -> Dict:
         """Run ETL for all enabled sources."""
-        total_metrics = {"articles_processed": 0, "articles_created": 0, "duplicates_skipped": 0}
+        total_metrics = {"articles_processed": 0, "articles_created": 0, "duplicates_skipped": 0, "articles_enriched": 0, "enrichment_duplicates": 0, "enrichment_errors": 0}
 
         with get_session() as session:
             query = session.query(Source).filter(Source.enabled == True)
