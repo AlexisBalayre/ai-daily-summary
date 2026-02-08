@@ -82,10 +82,6 @@ class OrchestratorConfig:
     github_schedule: str = field(
         default_factory=lambda: os.getenv("GITHUB_SCHEDULE", "0 10 * * *")
     )
-    enrichment_schedule: str = field(
-        default_factory=lambda: os.getenv("ENRICHMENT_SCHEDULE", "30 */4 * * *")
-    )
-
     # Retry configuration
     retry_max_attempts: int = field(
         default_factory=lambda: int(os.getenv("RETRY_MAX_ATTEMPTS", "3"))

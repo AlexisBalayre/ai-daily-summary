@@ -34,21 +34,9 @@ def seed():
 
 
 @main.command()
-@click.argument("job_type", type=click.Choice(["gmail", "github", "crawlers", "rss", "enrichment", "all"]))
+@click.argument("job_type", type=click.Choice(["gmail", "github", "crawlers", "rss", "all"]))
 def run(job_type: str):
     """Run ETL pipeline for specified source type."""
-    if job_type == "enrichment":
-        from ai_daily.etl.enrichment import EnrichmentProcessor
-
-        processor = EnrichmentProcessor()
-        stats = asyncio.run(processor.run())
-        console.print("[green]Enrichment complete![/green]")
-        console.print(f"  Processed: {stats.processed}")
-        console.print(f"  Duplicates: {stats.duplicates}")
-        console.print(f"  AI-related: {stats.ai_related}")
-        console.print(f"  Errors: {stats.errors}")
-        return
-
     from ai_daily.etl import ETLPipeline
 
     async def _run():
@@ -276,7 +264,6 @@ def orchestrator_start():
         "newsletter": config.orchestrator.newsletter_schedule,
         "github": config.orchestrator.github_schedule,
         "tts": config.orchestrator.tts_schedule,
-        "enrichment": config.orchestrator.enrichment_schedule,
     }
 
     scheduler = Scheduler(
@@ -307,7 +294,6 @@ def orchestrator_status():
         "newsletter": config.orchestrator.newsletter_schedule,
         "github": config.orchestrator.github_schedule,
         "tts": config.orchestrator.tts_schedule,
-        "enrichment": config.orchestrator.enrichment_schedule,
     }
 
     table = Table(title="Scheduled Jobs")
@@ -357,7 +343,7 @@ def orchestrator_status():
 
 
 @orchestrator.command("trigger")
-@click.argument("job_name", type=click.Choice(["etl", "newsletter", "github", "tts", "enrichment", "all"]))
+@click.argument("job_name", type=click.Choice(["etl", "newsletter", "github", "tts", "all"]))
 def orchestrator_trigger(job_name: str):
     """Manually trigger a job (or 'all' for ETL → Enrichment → TTS → Newsletter)."""
     from ai_daily.config import config
@@ -374,8 +360,8 @@ def orchestrator_trigger(job_name: str):
 
     # Determine which jobs to run
     if job_name == "all":
-        jobs_to_run = ["etl", "enrichment", "tts", "newsletter", "github"]
-        console.print("[cyan]Running all jobs: ETL → Enrichment → TTS → Newsletter → GitHub[/cyan]")
+        jobs_to_run = ["etl", "tts", "newsletter", "github"]
+        console.print("[cyan]Running all jobs: ETL → TTS → Newsletter → GitHub[/cyan]")
     else:
         jobs_to_run = [job_name]
         console.print(f"[cyan]Triggering job: {job_name}[/cyan]")

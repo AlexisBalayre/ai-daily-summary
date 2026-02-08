@@ -140,29 +140,10 @@ def _send_audio_email(gmail_service, audio_path, target_date) -> bool:
     return True
 
 
-async def run_enrichment(context: JobContext) -> Dict[str, Any]:
-    """Enrich unenriched articles with LLM-generated metadata."""
-    logger.info(f"Starting enrichment job (run_id={context.run_id})")
-
-    from ai_daily.etl.enrichment import EnrichmentProcessor
-
-    processor = EnrichmentProcessor()
-    stats = await processor.run()
-
-    logger.info(f"Enrichment complete: {stats}")
-    return {
-        "processed": stats.processed,
-        "duplicates": stats.duplicates,
-        "ai_related": stats.ai_related,
-        "errors": stats.errors,
-    }
-
-
 # Registry of available jobs
 JOBS = {
     "etl": run_etl,
     "newsletter": run_newsletter,
     "github": run_github_newsletter,
     "tts": run_tts,
-    "enrichment": run_enrichment,
 }

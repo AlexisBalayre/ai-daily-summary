@@ -61,7 +61,7 @@ def test_source_add_rss_creates_source(mock_get_session, runner):
     assert added_source.enabled is True
 
 
-def test_run_enrichment_in_choices(runner):
-    """'enrichment' should be a valid choice for run command."""
+def test_enrichment_not_in_run_choices(runner):
+    """'enrichment' should not be a CLI choice (now merged into ETL)."""
     result = runner.invoke(main, ["run", "--help"])
-    assert "enrichment" in result.output
+    assert "enrichment" not in result.output
