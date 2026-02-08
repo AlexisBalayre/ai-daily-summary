@@ -28,8 +28,7 @@ uv run ai-daily api
 uv run ai-daily run gmail      # Gmail newsletters
 uv run ai-daily run rss        # RSS feeds
 uv run ai-daily run github     # GitHub trending
-uv run ai-daily run enrichment # Article enrichment (LLM classification + dedup)
-uv run ai-daily run all        # Full pipeline
+uv run ai-daily run all        # Full pipeline (includes inline enrichment)
 
 # Database migrations
 uv run alembic upgrade head
@@ -53,14 +52,14 @@ Sources (Gmail/RSS/GitHub/Crawler)
     → RawContent objects
     → Transformers (dedup, embeddings, LLM parsing)
     → Articles stored in PostgreSQL + pgvector
-    → Enrichment job (classification, summaries, semantic dedup)
+    → Inline enrichment (LLM classification, summaries, semantic dedup using existing embeddings)
     → Outputs (Newsletter, TTS, API)
 ```
 
 ### Key Modules
 
 - **`ai_daily/etl/extractors/`** - Source-specific extractors (gmail.py, rss.py, github.py, crawler.py) all inherit from `BaseExtractor`
-- **`ai_daily/etl/enrichment.py`** - Post-ingestion enrichment: LLM classification (AI-related or not), summary generation, semantic duplicate detection via embeddings
+- **`ai_daily/etl/enrichment.py`** - Inline enrichment (called during ETL): LLM classification (AI-related or not), summary generation, semantic duplicate detection via pre-computed embeddings
 - **`ai_daily/etl/transformers/`** - Content transformers: `embedder.py` (Google Gemini embeddings), `llm_parser.py` (article parsing), `deduplicator.py` (content hash dedup)
 - **`ai_daily/db/models.py`** - SQLAlchemy models: Source, Article, DailySummary, JobRun
 - **`ai_daily/orchestrator/`** - Job scheduling with cron expressions, retries, and failure notifications
@@ -101,7 +100,6 @@ async def test_something(mocker):
 
 | Job | Schedule | Description |
 |-----|----------|-------------|
-| etl | `0 */4 * * *` | Collect articles from all sources |
-| enrichment | `30 */4 * * *` | Classify and deduplicate articles |
+| etl | `0 */4 * * *` | Collect articles from all sources + inline enrichment (classification, dedup) |
 | newsletter | `0 14 * * *` | Send daily newsletter |
 | tts | `0 9 * * *` | Generate audio briefing |
