@@ -1384,6 +1384,66 @@ class TestRunAndProcessBatch:
                         assert mock_dup.duplicate_of_id == 99
 
 
+    @pytest.mark.asyncio
+    async def test_enrich_article_with_precomputed_embedding(self, session):
+        """Test enrich_article uses provided embedding instead of generating one."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        processor = EnrichmentProcessor()
+
+        mock_article = MagicMock()
+        mock_article.id = 1
+        mock_article.title = "AI Article"
+        mock_article.content = "Content about AI"
+
+        precomputed_embedding = [0.5] * 768
+
+        with patch.object(processor, 'find_duplicate', return_value=None):
+            with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
+                "category": "ai", "is_ai_related": True, "summary": "AI article.", "tags": ["ai"]
+            }):
+                with patch.object(processor, 'generate_embedding', new_callable=AsyncMock) as mock_embed:
+                    result = await processor.enrich_article(session, mock_article, precomputed_embedding)
+
+                    # Should NOT call generate_embedding since we provided one
+                    mock_embed.assert_not_called()
+
+        # Article should be enriched
+        assert mock_article.category == "ai"
+        assert mock_article.is_ai_related is True
+        assert mock_article.summary == "AI article."
+        assert mock_article.enriched_at is not None
+        assert result == "enriched"
+
+    @pytest.mark.asyncio
+    async def test_enrich_article_detects_duplicate(self, session):
+        """Test enrich_article marks duplicates and skips LLM."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from ai_daily.etl.enrichment import EnrichmentProcessor
+
+        processor = EnrichmentProcessor()
+
+        mock_article = MagicMock()
+        mock_article.id = 1
+        mock_article.title = "Dup Article"
+        mock_article.content = "Dup content"
+
+        mock_original = MagicMock()
+        mock_original.id = 99
+
+        precomputed_embedding = [0.5] * 768
+
+        with patch.object(processor, 'find_duplicate', return_value=mock_original):
+            with patch.object(processor, 'llm_enrich', new_callable=AsyncMock) as mock_llm:
+                result = await processor.enrich_article(session, mock_article, precomputed_embedding)
+                mock_llm.assert_not_called()
+
+        assert result == "duplicate"
+        assert mock_article.is_duplicate is True
+        assert mock_article.duplicate_of_id == 99
+
+
 class TestEnrichmentIntegration:
     """Integration tests for the full enrichment pipeline."""
 
