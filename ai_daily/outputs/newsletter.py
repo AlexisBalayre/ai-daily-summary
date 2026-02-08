@@ -56,7 +56,9 @@ class NewsletterOutput:
         cutoff = datetime.utcnow() - timedelta(hours=hours)
 
         stmt = select(Article).where(
-            Article.ingested_at >= cutoff
+            Article.ingested_at >= cutoff,
+            Article.is_ai_related == True,
+            Article.is_duplicate == False,
         ).order_by(Article.ingested_at.desc())
 
         all_articles = list(session.execute(stmt).scalars().all())
