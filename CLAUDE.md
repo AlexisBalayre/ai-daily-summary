@@ -1,105 +1,66 @@
-# CLAUDE.md
+# AI Daily Summary
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+AI-powered news aggregation + newsletter platform. Collects content from Gmail newsletters, GitHub
+trending, RSS feeds, and web crawlers; enriches it with LLMs (Google Gemini / Ollama) and pgvector
+embeddings; and produces a daily email newsletter, an audio briefing, and a REST API + React dashboard.
 
-## Project Overview
+## Role
 
-AI Daily Summary is an AI-powered news aggregation platform that collects content from Gmail newsletters, GitHub trending repos, RSS feeds, and web crawlers, then generates summaries and newsletters using LLMs (Google Gemini or Ollama).
+Expert Python architect working in a strict-convention `uv` project (Python 3.12, FastAPI, SQLAlchemy
+2.0 async, PostgreSQL + pgvector, Alembic, pytest-asyncio) with a React + Tailwind frontend.
 
-## Common Commands
+**Core rule:** Before creating or modifying code, read 2-3 similar files in the same package and match
+their patterns exactly.
 
-```bash
-# Install dependencies (uses uv)
-uv sync
+## Module map
 
-# Run all tests
-uv run pytest
+| Path | What it is |
+| :--- | :--------- |
+| `ai_daily/etl/extractors/` | Source extractors (`gmail`, `rss`, `github`, `crawler`), all subclass `BaseExtractor` |
+| `ai_daily/etl/transformers/` | `embedder` (Gemini), `llm_parser`, `deduplicator` |
+| `ai_daily/etl/enrichment.py` | Inline enrichment during ETL: classify, summarize, semantic dedup |
+| `ai_daily/db/` | SQLAlchemy models (`Source`, `Article`, `DailySummary`, `JobRun`) + pgvector |
+| `ai_daily/outputs/` | Newsletter, GitHub email, daily summary, TTS briefing generation |
+| `ai_daily/api/` | FastAPI server (articles, sources, summaries, search, whitelist); serves the dashboard |
+| `ai_daily/orchestrator/` | Cron-scheduled jobs with retries + failure notifications |
+| `ai_daily/cli.py` | `ai-daily` CLI entrypoint (click + rich) |
+| `frontend/` | React + Tailwind dashboard; builds to `ai_daily/static/` |
+| `alembic/` | Database migrations |
 
-# Run single test file
-uv run pytest tests/test_enrichment.py -v
+## Conventions
 
-# Run specific test
-uv run pytest tests/test_enrichment.py::TestEnrichmentProcessor::test_enrichment_processor_init -v
+Path-scoped rules in `.claude/rules/*.md` auto-load the matching `docs/conventions/<area>.md` when you
+touch a file in that area. `docs/conventions/` is the single source of truth. Highlights that bite
+often here: use `logging` not `print`, **never `datetime.utcnow()`** (use `datetime.now(timezone.utc)`),
+and in `outputs/` consume the enriched `summary`/`category` fields rather than re-deriving them.
 
-# Start API server (port 8000)
-uv run ai-daily api
+## Git workflow (CRITICAL)
 
-# Run ETL jobs
-uv run ai-daily run gmail      # Gmail newsletters
-uv run ai-daily run rss        # RSS feeds
-uv run ai-daily run github     # GitHub trending
-uv run ai-daily run all        # Full pipeline (includes inline enrichment)
+- Trunk is `master`. **NEVER commit or push to `master`.** Feature branches / PRs only.
+- Use a worktree per task: `git worktree add .worktrees/<name> -b feat/<name>`. NEVER `git checkout -b`
+  in the main worktree. (`.worktrees/` is git-ignored.)
+- `git branch --show-current` MUST NOT be `master` before committing. The `git-safety` hook enforces
+  this and blocks force-push / `reset --hard` / `rm -rf` / `DROP TABLE`.
 
-# Database migrations
-uv run alembic upgrade head
-uv run alembic revision --autogenerate -m "description"
+## Key commands
 
-# Orchestrator (scheduled jobs)
-uv run ai-daily orchestrator start
-uv run ai-daily orchestrator status
-uv run ai-daily orchestrator trigger etl
+| Command | Purpose |
+| :------ | :------ |
+| `uv sync` | Install dependencies (incl. dev: pytest, ruff) |
+| `uv run ai-daily api` | Start API server (port 8000) |
+| `uv run ai-daily run all` | Full ETL pipeline (all sources + inline enrichment) |
+| `uv run ai-daily run gmail\|rss\|github` | Single-source ETL |
+| `uv run ai-daily orchestrator start\|status\|trigger etl` | Scheduled jobs |
+| `uv run pytest` | Run tests (`asyncio_mode=auto`) |
+| `uv run alembic revision --autogenerate -m "…"` / `upgrade head` | Migrations |
+| `cd frontend && npm install && npm run build` | Build the dashboard into `ai_daily/static/` |
 
-# Build frontend (React dashboard)
-cd frontend && npm install && npm run build
-```
+**Linting/formatting:** Ruff runs automatically on the `Stop` hook against the files a session touched.
+Don't run it manually or hand-format.
 
-## Architecture
+## Subagents (invoke proactively via Agent tool)
 
-### ETL Pipeline Flow
-```
-Sources (Gmail/RSS/GitHub/Crawler)
-    → Extractors (ai_daily/etl/extractors/)
-    → RawContent objects
-    → Transformers (dedup, embeddings, LLM parsing)
-    → Articles stored in PostgreSQL + pgvector
-    → Inline enrichment (LLM classification, summaries, semantic dedup using existing embeddings)
-    → Outputs (Newsletter, TTS, API)
-```
-
-### Key Modules
-
-- **`ai_daily/etl/extractors/`** - Source-specific extractors (gmail.py, rss.py, github.py, crawler.py) all inherit from `BaseExtractor`
-- **`ai_daily/etl/enrichment.py`** - Inline enrichment (called during ETL): LLM classification (AI-related or not), summary generation, semantic duplicate detection via pre-computed embeddings
-- **`ai_daily/etl/transformers/`** - Content transformers: `embedder.py` (Google Gemini embeddings), `llm_parser.py` (article parsing), `deduplicator.py` (content hash dedup)
-- **`ai_daily/db/models.py`** - SQLAlchemy models: Source, Article, DailySummary, JobRun
-- **`ai_daily/orchestrator/`** - Job scheduling with cron expressions, retries, and failure notifications
-- **`ai_daily/api/`** - FastAPI server with routes for articles, sources, summaries, whitelist management
-- **`ai_daily/outputs/`** - Newsletter and TTS generation
-
-### Database
-
-PostgreSQL with pgvector extension for semantic search. Key tables:
-- `articles` - Content with embeddings (768-dim vectors), enrichment fields (summary, category, is_ai_related)
-- `sources` - Newsletter senders, RSS feeds, crawlers
-- `daily_summaries` - Cached daily summaries
-- `job_runs` - Job execution history
-
-### Frontend
-
-React + Tailwind CSS dashboard at `frontend/`. Built assets go to `ai_daily/api/static/` and are served by FastAPI.
-
-### Configuration
-
-- **`config.json`** - Newsletter sender whitelist
-- **`.env`** - Environment variables (DB, LLM, Gmail credentials)
-- **`ai_daily/config.py`** - Dataclass-based config with env var overrides
-
-## Testing Patterns
-
-Tests use pytest with pytest-asyncio. Mock external services (LLM, embeddings) in tests. Test fixtures in `tests/conftest.py` provide SQLite-based test database sessions.
-
-```python
-# Async test example
-@pytest.mark.asyncio
-async def test_something(mocker):
-    mocker.patch('ai_daily.etl.enrichment.embed_text', return_value=[0.1] * 768)
-    # ... test code
-```
-
-## Scheduled Jobs
-
-| Job | Schedule | Description |
-|-----|----------|-------------|
-| etl | `0 */4 * * *` | Collect articles from all sources + inline enrichment (classification, dedup) |
-| newsletter | `0 14 * * *` | Send daily newsletter |
-| tts | `0 9 * * *` | Generate audio briefing |
+- `convention-checker` — before commit, or after ≥3 files changed across `ai_daily/`.
+- `migration-reviewer` — after editing `ai_daily/db/models.py` or generating an Alembic migration.
+- `security-reviewer` — after editing API routes, Gmail/OAuth handling, or anything touching `.env`/`token.json`.
+- `architecture-explainer` — for *why*/*how* questions about the ETL → enrichment → outputs flow.
