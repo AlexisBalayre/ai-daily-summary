@@ -1,6 +1,7 @@
 """Web crawler extractor for monitoring websites."""
 
 import hashlib
+import re
 from datetime import datetime
 from typing import Any, List, Optional
 from urllib.parse import urljoin
@@ -10,6 +11,9 @@ from bs4 import BeautifulSoup
 from trafilatura import extract, fetch_url
 
 from ai_daily.db.models import Source
+
+# author is VARCHAR(255) in the DB; keep a margin below that.
+MAX_AUTHOR_LEN = 250
 from ai_daily.etl.extractors.base import BaseExtractor
 from ai_daily.etl.types import RawContent
 
@@ -78,6 +82,38 @@ class CrawlerExtractor(BaseExtractor):
             pass
         return ""
 
+    def _trafilatura_extract(self, url: str) -> tuple[str, str]:
+        """Return (clean_title, content) for an article page.
+
+        Used for SSR sources with no CSS content selector: the list-page card
+        text is a noisy blob, so we take the article page's own og:title/title
+        and trafilatura-extracted body.
+        """
+        try:
+            downloaded = fetch_url(url)
+            if not downloaded:
+                return "", ""
+            content = extract(downloaded) or ""
+            title = ""
+            soup = BeautifulSoup(downloaded, "html.parser")
+            og = soup.find("meta", attrs={"property": "og:title"})
+            if og and og.get("content"):
+                title = og["content"].strip()
+            elif soup.title and soup.title.string:
+                title = soup.title.string.strip()
+            # Drop a trailing site suffix like " \ Anthropic" or " | Anthropic".
+            if title:
+                title = re.split(r"\s[\\|]\s", title)[0].strip()
+            return title, content
+        except Exception:
+            return "", ""
+
+    @staticmethod
+    def _title_from_slug(link: str) -> str:
+        """Fallback title from a URL slug: /news/claude-sonnet-5 -> 'Claude Sonnet 5'."""
+        slug = link.rstrip("/").rsplit("/", 1)[-1]
+        return slug.replace("-", " ").replace("_", " ").strip().title()
+
     async def extract(self, source: Source) -> List[RawContent]:
         """Extract content from configured website."""
         if not source.config:
@@ -111,26 +147,40 @@ class CrawlerExtractor(BaseExtractor):
         for item in items:
             try:
                 title = self._extract_attribute(item, title_selector)
-                if not title:
-                    continue
 
                 link = self._extract_attribute(item, link_selector)
                 if link and not link.startswith("http"):
                     link = urljoin(url, link)
 
-                description = self._extract_attribute(item, description_selector)
-                author = self._extract_attribute(item, author_selector)
-                date_str = self._extract_attribute(item, date_selector)
+                # Optional fields come ONLY from an explicit selector. An empty
+                # selector must not fall back to the whole element's text — that
+                # blob overflows author VARCHAR(255) and crashes the ETL insert.
+                description = self._extract_attribute(item, description_selector) if description_selector else ""
+                author = self._extract_attribute(item, author_selector) if author_selector else ""
+                date_str = self._extract_attribute(item, date_selector) if date_selector else ""
 
+                content = ""
+                page_title = ""
                 if content_mode == "fetch_full" and link:
-                    content = self._fetch_full_content(link, content_selector)
-                    if not content:
-                        content = description
-                else:
-                    content = description
+                    if content_selector:
+                        content = self._fetch_full_content(link, content_selector)
+                    else:
+                        page_title, content = self._trafilatura_extract(link)
+
+                # Prefer the article page's clean title when the card gave nothing
+                # or a whole-card text blob; last resort is the URL slug.
+                if page_title and (not title or len(title) > 120):
+                    title = page_title
+                if link and (not title or len(title) > 120):
+                    title = self._title_from_slug(link)
+                if not title:
+                    continue
 
                 if not content:
-                    content = title
+                    content = description or title
+
+                if author and len(author) > MAX_AUTHOR_LEN:
+                    author = author[:MAX_AUTHOR_LEN]
 
                 external_id = hashlib.md5((link or title).encode()).hexdigest()
 

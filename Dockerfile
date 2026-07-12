@@ -40,6 +40,9 @@ COPY --from=frontend-builder /ai_daily/static ./ai_daily/api/static
 RUN pip install --upgrade pip && \
     pip install .
 
+# Headless Chromium for the leaderboard watcher (playwright)
+RUN python -m playwright install --with-deps chromium
+
 # Create directories for data and logs
 RUN mkdir -p /app/data /app/logs
 
