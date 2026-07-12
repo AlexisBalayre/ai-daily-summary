@@ -259,11 +259,12 @@ def orchestrator_start():
         notifier = None
 
     # Build schedules from config
+    # The spoken briefing is attached to the newsletter (run_newsletter), so it
+    # is not scheduled on its own. Use `ai-daily run tts` for a standalone briefing.
     schedules = {
         "etl": config.orchestrator.etl_schedule,
         "newsletter": config.orchestrator.newsletter_schedule,
         "github": config.orchestrator.github_schedule,
-        "tts": config.orchestrator.tts_schedule,
     }
 
     scheduler = Scheduler(
@@ -289,11 +290,12 @@ def orchestrator_status():
     from croniter import croniter
     from ai_daily.config import config
 
+    # The spoken briefing is attached to the newsletter (run_newsletter), so it
+    # is not scheduled on its own. Use `ai-daily run tts` for a standalone briefing.
     schedules = {
         "etl": config.orchestrator.etl_schedule,
         "newsletter": config.orchestrator.newsletter_schedule,
         "github": config.orchestrator.github_schedule,
-        "tts": config.orchestrator.tts_schedule,
     }
 
     table = Table(title="Scheduled Jobs")
@@ -360,7 +362,7 @@ def orchestrator_trigger(job_name: str):
 
     # Determine which jobs to run
     if job_name == "all":
-        jobs_to_run = ["etl", "tts", "newsletter", "github"]
+        jobs_to_run = ["etl", "newsletter", "github"]
         console.print("[cyan]Running all jobs: ETL → TTS → Newsletter → GitHub[/cyan]")
     else:
         jobs_to_run = [job_name]

@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 import shutil
 from datetime import date
 from pathlib import Path
@@ -39,6 +40,15 @@ Guidelines:
 - End with a brief sign-off
 - Keep it concise - aim for about 400-500 words
 
+Output rules (the text is fed directly to a TTS model, which sings or adds
+jingles when it meets anything that isn't plain speech):
+- Plain spoken sentences ONLY. No markdown, no headings, no bullet points,
+  no asterisks, underscores, backticks, or hashes.
+- No emoji, no URLs, no code, no tables.
+- Spell things out: say "version three" not "v3", "and" not "&",
+  "percent" not "%". Expand abbreviations into words.
+- Use normal sentence punctuation (. , ? !) only.
+
 Output the script as plain text, ready to be read aloud."""
 
     def __init__(self):
@@ -57,13 +67,22 @@ Output the script as plain text, ready to be read aloud."""
         self.tts_model = None
         self.voice_state = None
 
-    def _init_tts(self, voice: str = "alba"):
+    def _init_tts(self, voice: Optional[str] = None):
         """Initialize TTS model lazily."""
         if not POCKET_TTS_AVAILABLE:
             raise RuntimeError("Pocket TTS not installed. Run: pip install pocket-tts")
 
+        if voice is None:
+            voice = config.tts.voice
+
         if self.tts_model is None:
-            self.tts_model = TTSModel.load_model()
+            load_kwargs = {
+                "temp": config.tts.temp,
+                "eos_threshold": config.tts.eos_threshold,
+            }
+            if config.tts.noise_clamp is not None:
+                load_kwargs["noise_clamp"] = config.tts.noise_clamp
+            self.tts_model = TTSModel.load_model(**load_kwargs)
             try:
                 self.voice_state = self.tts_model.get_state_for_audio_prompt(voice)
             except Exception as e:
@@ -96,13 +115,47 @@ Key Facts:
             logger.error("LLM response has no text")
             return fallback_script
 
-        return response.text
+        return self._clean_script_for_tts(response.text)
+
+    @staticmethod
+    def _clean_script_for_tts(text: str) -> str:
+        """Strip anything the TTS model vocalizes as noise or a jingle.
+
+        Non-speech tokens (markdown, emoji, URLs, symbols) are the main trigger
+        for hallucinated singing, so we remove them even though the prompt also
+        forbids them — the model occasionally emits them anyway.
+        """
+        # Normalize typographic punctuation to ASCII first, so the symbol strip
+        # below keeps contractions intact — otherwise a curly apostrophe in
+        # "we'll" is removed and it becomes "well", changing how it's spoken.
+        text = text.translate(
+            str.maketrans(
+                {
+                    "’": "'", "‘": "'", "“": '"', "”": '"',
+                    "–": "-", "—": "-", "…": "...",
+                }
+            )
+        )
+        # Drop URLs first (before punctuation stripping splits them).
+        text = re.sub(r"https?://\S+|www\.\S+", "", text)
+        # Remove markdown emphasis/structure characters.
+        text = re.sub(r"[*_`#>|~]", "", text)
+        # Strip leading list markers on any line.
+        text = re.sub(r"(?m)^\s*[-•]\s+", "", text)
+        # Keep letters, digits, whitespace, and plain sentence punctuation; drop
+        # emoji and other symbols (covers the astral emoji planes too).
+        text = re.sub(r"[^\w\s.,;:!?'\"()\-]", "", text, flags=re.UNICODE)
+        text = re.sub(r"[\U0001F000-\U0001FAFF☀-➿]", "", text)
+        # Collapse whitespace runs and blank lines.
+        text = re.sub(r"[ \t]+", " ", text)
+        text = re.sub(r"\n{2,}", "\n", text)
+        return text.strip()
 
     async def generate(
         self,
         session: Session,
         target_date: Optional[date] = None,
-        voice: str = "alba"
+        voice: Optional[str] = None
     ) -> Path:
         """Generate audio briefing.
 
@@ -134,7 +187,9 @@ Key Facts:
         # Generate audio
         self._init_tts(voice)
         try:
-            audio = self.tts_model.generate_audio(self.voice_state, script)
+            audio = self.tts_model.generate_audio(
+                self.voice_state, script, frames_after_eos=config.tts.frames_after_eos
+            )
         except Exception as e:
             logger.error(f"Failed to generate TTS audio: {e}")
             raise
