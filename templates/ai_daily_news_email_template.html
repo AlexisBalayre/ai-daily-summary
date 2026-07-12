@@ -106,30 +106,53 @@
         padding: 32px 40px 40px;
       }
 
-      .summary-section {
-        background: #fafafa;
-        border: 1px solid #e4e4e7;
+      .radar {
+        background: #f0f7ff;
+        border: 1px solid #cfe0f5;
         border-radius: 8px;
-        padding: 24px;
+        padding: 22px 24px;
         margin-bottom: 32px;
       }
-
-      .summary-label {
+      .radar-label {
         font-family: 'Inter', -apple-system, sans-serif;
         font-size: 11px;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: 1px;
         text-transform: uppercase;
-        color: #71717a;
-        margin: 0 0 12px;
+        color: #1d4ed8;
+        margin: 0 0 16px;
       }
-
-      .summary-text {
+      .radar-item {
+        padding: 12px 0;
+        border-top: 1px solid #dbe8fa;
+      }
+      .radar-item:first-of-type {
+        border-top: none;
+        padding-top: 0;
+      }
+      .radar-title {
+        font-family: 'Inter', -apple-system, sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.4;
+        margin: 0 0 4px;
+      }
+      .radar-title a {
+        color: #18181b;
+        text-decoration: none;
+      }
+      .radar-source {
+        font-family: 'Inter', -apple-system, sans-serif;
+        font-size: 12px;
+        color: #1d4ed8;
+        font-weight: 500;
+      }
+      .radar-desc {
         font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 17px;
-        line-height: 1.7;
+        font-size: 14px;
+        line-height: 1.55;
         color: #3f3f46;
-        margin: 0;
+        margin: 6px 0 0;
       }
 
       .section {
@@ -311,11 +334,7 @@
                   </div>
 
                   <div class="content">
-                    <div class="summary-section">
-                      <p class="summary-label">Executive Summary</p>
-                      <p class="summary-text">{{summary}}</p>
-                    </div>
-
+                    {{release_radar}}
                     <div class="section">
                       <div class="section-header">
                         <h2 class="section-title">Key Insights</h2>

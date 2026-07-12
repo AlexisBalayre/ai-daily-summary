@@ -64,6 +64,32 @@ class GmailConfig:
     )
 
 
+@dataclass
+class TTSConfig:
+    """Pocket TTS voice + decoding configuration.
+
+    The decoding knobs curb the model's tendency to hallucinate non-speech
+    ("jingles") around the end of an utterance: a higher (less negative)
+    eos_threshold stops sooner, frames_after_eos=0 suppresses trailing padding
+    the model would otherwise fill with noise, and a lower temp reduces drift.
+    """
+
+    voice: str = field(default_factory=lambda: os.getenv("TTS_VOICE", "alba"))
+    temp: float = field(default_factory=lambda: float(os.getenv("TTS_TEMP", "0.6")))
+    eos_threshold: float = field(
+        default_factory=lambda: float(os.getenv("TTS_EOS_THRESHOLD", "-3.0"))
+    )
+    # Optional noise clamp; unset (None) leaves the model default.
+    noise_clamp: Optional[float] = field(
+        default_factory=lambda: (
+            float(os.environ["TTS_NOISE_CLAMP"]) if os.getenv("TTS_NOISE_CLAMP") else None
+        )
+    )
+    frames_after_eos: int = field(
+        default_factory=lambda: int(os.getenv("TTS_FRAMES_AFTER_EOS", "0"))
+    )
+
+
 
 @dataclass
 class OrchestratorConfig:
@@ -102,6 +128,7 @@ class Config:
     db: DatabaseConfig = field(default_factory=DatabaseConfig)
     llm: LLMConfig = field(default_factory=LLMConfig)
     gmail: GmailConfig = field(default_factory=GmailConfig)
+    tts: TTSConfig = field(default_factory=TTSConfig)
     orchestrator: OrchestratorConfig = field(default_factory=OrchestratorConfig)
 
     # Paths

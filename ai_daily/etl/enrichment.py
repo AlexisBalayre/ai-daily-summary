@@ -38,8 +38,9 @@ class EnrichmentProcessor:
 
 1. CATEGORY: One of: ai, security, cloud, hardware, mobile, software, business, other
 2. IS_AI_RELATED: true/false - Is this primarily about AI, machine learning, LLMs, or related technology?
-3. SUMMARY: 2-3 sentence summary of the key points
-4. TAGS: 3-5 relevant tags (lowercase, hyphenated)
+3. IS_MODEL_RELEASE: true/false - Does this ANNOUNCE a new or updated AI model or a major model version? Includes new LLMs, TTS/STT/speech models, and significant version bumps (e.g. "Introducing X", "X is now available", "We're releasing X"). A benchmark, tutorial, opinion, or funding story is NOT a model release.
+4. SUMMARY: 2-3 sentence summary of the key points
+5. TAGS: 3-5 relevant tags (lowercase, hyphenated)
 
 Article Title: {title}
 
@@ -47,7 +48,11 @@ Article Content:
 {content}
 
 Respond ONLY with valid JSON:
-{{"category": "...", "is_ai_related": true/false, "summary": "...", "tags": ["...", "..."]}}'''
+{{"category": "...", "is_ai_related": true/false, "is_model_release": true/false, "summary": "...", "tags": ["...", "..."]}}'''
+
+    # Tag used to mark model-release articles (drives the newsletter Release Radar
+    # and the instant-alert email). Stored in the existing tags array — no migration.
+    MODEL_RELEASE_TAG = "model-release"
 
     def __init__(self):
         """Initialize the enrichment processor."""
@@ -183,7 +188,10 @@ Respond ONLY with valid JSON:
             article.category = enrichment.get("category")
             article.is_ai_related = enrichment.get("is_ai_related", False)
             article.summary = enrichment.get("summary")
-            article.tags = enrichment.get("tags", [])
+            tags = list(enrichment.get("tags", []) or [])
+            if enrichment.get("is_model_release") and self.MODEL_RELEASE_TAG not in tags:
+                tags.append(self.MODEL_RELEASE_TAG)
+            article.tags = tags
             article.enriched_at = datetime.now(UTC)
             return "enriched"
 

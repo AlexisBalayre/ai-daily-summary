@@ -1,17 +1,44 @@
 """Job definitions for orchestrator."""
 
 import logging
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Any, Dict
 
-from ai_daily.db import get_session, init_db
+from sqlalchemy import select
+
+from ai_daily.db import Article, get_session, init_db
 from ai_daily.db.seed import seed_sources
 from ai_daily.etl import ETLPipeline
 from ai_daily.etl.extractors.gmail import GmailExtractor
 from ai_daily.orchestrator.types import JobContext
 from ai_daily.outputs import GitHubNewsletterOutput, NewsletterOutput, TTSBriefingOutput
+from ai_daily.outputs.newsletter import MODEL_RELEASE_TAG
 
 logger = logging.getLogger(__name__)
+
+
+def _alert_new_releases(since: datetime) -> int:
+    """Email an instant alert for model-release articles ingested since `since`.
+
+    Uses ingested_at (naive UTC, like the rest of the article queries) so it fires
+    once per release — the run that ingests it — and never re-alerts old ones.
+    """
+    with get_session() as session:
+        stmt = (
+            select(Article)
+            .where(
+                Article.ingested_at >= since,
+                Article.is_duplicate == False,
+                Article.tags.any(MODEL_RELEASE_TAG),
+            )
+            .order_by(Article.ingested_at.desc())
+        )
+        releases = list(session.execute(stmt).scalars().all())
+        if not releases:
+            return 0
+        gmail = GmailExtractor()
+        NewsletterOutput(gmail_service=gmail.service).send_release_alert(releases)
+        return len(releases)
 
 
 async def run_etl(context: JobContext) -> Dict[str, Any]:
@@ -22,25 +49,49 @@ async def run_etl(context: JobContext) -> Dict[str, Any]:
     init_db()
     seed_sources()
 
+    # Naive UTC, matching ingested_at's storage, so the release query below lines up.
+    run_start = datetime.now(timezone.utc).replace(tzinfo=None)
+
     pipeline = ETLPipeline()
     metrics = await pipeline.run_all()
 
     logger.info(f"ETL complete: {metrics}")
+
+    # Instant alert for any model releases detected in this run.
+    try:
+        alerted = _alert_new_releases(run_start)
+        if isinstance(metrics, dict):
+            metrics = {**metrics, "releases_alerted": alerted}
+    except Exception as e:
+        logger.warning(f"Release alert step failed (ETL still succeeded): {e}")
+
     return metrics
 
 
 async def run_newsletter(context: JobContext) -> Dict[str, Any]:
-    """Generate and send newsletter."""
+    """Generate and send the newsletter with the spoken briefing attached."""
     logger.info(f"Starting newsletter job (run_id={context.run_id})")
 
     with get_session() as session:
+        # Generate the audio briefing first, but best-effort: a TTS failure must
+        # never block the newsletter itself. On failure we send without audio.
+        audio_path = None
+        try:
+            tts = TTSBriefingOutput()
+            audio_path, _ = await tts.generate(session, target_date=date.today())
+        except Exception as e:
+            logger.warning(f"Briefing audio unavailable, sending newsletter without it: {e}")
+
         gmail_extractor = GmailExtractor()
         newsletter = NewsletterOutput(gmail_service=gmail_extractor.service)
 
-        success = await newsletter.send(session, target_date=date.today())
+        success = await newsletter.send(
+            session, target_date=date.today(), audio_path=audio_path
+        )
 
         return {
             "sent": success,
+            "audio_attached": audio_path is not None,
             "date": date.today().isoformat(),
         }
 
