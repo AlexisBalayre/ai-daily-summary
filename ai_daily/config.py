@@ -108,6 +108,9 @@ class OrchestratorConfig:
     github_schedule: str = field(
         default_factory=lambda: os.getenv("GITHUB_SCHEDULE", "0 10 * * *")
     )
+    leaderboard_schedule: str = field(
+        default_factory=lambda: os.getenv("LEADERBOARD_SCHEDULE", "0 7 * * *")
+    )
     # Retry configuration
     retry_max_attempts: int = field(
         default_factory=lambda: int(os.getenv("RETRY_MAX_ATTEMPTS", "3"))

@@ -98,6 +98,27 @@ class DailySummary(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class LeaderboardSnapshot(Base):
+    """Point-in-time capture of an external model leaderboard.
+
+    `rows` holds normalized entries [{name, rank?, metrics?}]; `content_hash`
+    is over the ordered model names so an unchanged board stores nothing new.
+    """
+
+    __tablename__ = "leaderboard_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    board: Mapped[str] = mapped_column(String(100), nullable=False)
+    captured_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    rows: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
+    row_count: Mapped[int] = mapped_column(Integer, default=0)
+    content_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
+    __table_args__ = (
+        Index("idx_leaderboard_board_captured", "board", "captured_at"),
+    )
+
+
 class JobRun(Base):
     """Job execution tracking for observability."""
 

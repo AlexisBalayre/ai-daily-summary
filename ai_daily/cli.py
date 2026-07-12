@@ -265,6 +265,7 @@ def orchestrator_start():
         "etl": config.orchestrator.etl_schedule,
         "newsletter": config.orchestrator.newsletter_schedule,
         "github": config.orchestrator.github_schedule,
+        "leaderboards": config.orchestrator.leaderboard_schedule,
     }
 
     scheduler = Scheduler(
@@ -296,6 +297,7 @@ def orchestrator_status():
         "etl": config.orchestrator.etl_schedule,
         "newsletter": config.orchestrator.newsletter_schedule,
         "github": config.orchestrator.github_schedule,
+        "leaderboards": config.orchestrator.leaderboard_schedule,
     }
 
     table = Table(title="Scheduled Jobs")
@@ -345,7 +347,7 @@ def orchestrator_status():
 
 
 @orchestrator.command("trigger")
-@click.argument("job_name", type=click.Choice(["etl", "newsletter", "github", "tts", "all"]))
+@click.argument("job_name", type=click.Choice(["etl", "newsletter", "github", "tts", "leaderboards", "all"]))
 def orchestrator_trigger(job_name: str):
     """Manually trigger a job (or 'all' for ETL → Enrichment → TTS → Newsletter)."""
     from ai_daily.config import config

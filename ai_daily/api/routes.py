@@ -1,8 +1,9 @@
 """API route handlers."""
 
+import asyncio
 import json
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, List, Optional
 
@@ -647,3 +648,139 @@ def list_jobs(
     except SQLAlchemyError as e:
         logger.error(f"Database error in list_jobs: {e}")
         raise HTTPException(status_code=500, detail="Database error occurred")
+
+
+# Release radar endpoints
+class ReleaseResponse(BaseModel):
+    id: int
+    title: str
+    url: Optional[str]
+    summary: Optional[str]
+    source_name: Optional[str] = None
+    ingested_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/releases", response_model=List[ReleaseResponse])
+def list_releases(
+    days: int = Query(7, ge=1, le=90),
+    db: Session = Depends(get_db),
+):
+    """Model-release articles from the last N days (the newsletter's Release Radar)."""
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    try:
+        stmt = (
+            select(Article)
+            .where(
+                Article.ingested_at >= cutoff,
+                Article.is_duplicate == False,  # noqa: E712
+                Article.tags.any("model-release"),
+            )
+            .order_by(Article.ingested_at.desc())
+        )
+        articles = db.execute(stmt).scalars().all()
+        return [
+            ReleaseResponse(
+                id=a.id,
+                title=a.title,
+                url=a.url,
+                summary=a.summary,
+                source_name=a.source.name if a.source else None,
+                ingested_at=a.ingested_at,
+            )
+            for a in articles
+        ]
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in list_releases: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
+
+
+class JobTriggerResponse(BaseModel):
+    job: str
+    status: str
+
+
+# Keep task references so background jobs aren't garbage-collected mid-run.
+_background_jobs: set = set()
+
+
+@router.post("/jobs/{job_name}/trigger", response_model=JobTriggerResponse, status_code=202)
+async def trigger_job(job_name: str):
+    """Start a job in the background (same execution path as the CLI trigger)."""
+    from ai_daily.config import config as app_config
+    from ai_daily.orchestrator import JOBS, Executor
+    from ai_daily.orchestrator.types import RetryConfig
+
+    if job_name not in JOBS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unknown job '{job_name}'. Available: {sorted(JOBS)}",
+        )
+
+    executor = Executor(
+        RetryConfig(
+            max_attempts=app_config.orchestrator.retry_max_attempts,
+            base_delay=app_config.orchestrator.retry_base_delay,
+            multiplier=app_config.orchestrator.retry_multiplier,
+        )
+    )
+    task = asyncio.create_task(executor.run(job_name, JOBS[job_name]))
+    _background_jobs.add(task)
+    task.add_done_callback(_background_jobs.discard)
+    return JobTriggerResponse(job=job_name, status="started")
+
+
+# Leaderboard endpoints
+class LeaderboardSummary(BaseModel):
+    board: str
+    captured_at: Optional[datetime]
+    row_count: int
+    top: List[str]
+
+
+@router.get("/leaderboards", response_model=List[LeaderboardSummary])
+def list_leaderboards(db: Session = Depends(get_db)):
+    """Latest snapshot summary for every tracked leaderboard."""
+    from ai_daily.db import LeaderboardSnapshot
+    from ai_daily.etl.leaderboards import BOARDS
+
+    out = []
+    for board in BOARDS:
+        snap = db.execute(
+            select(LeaderboardSnapshot)
+            .where(LeaderboardSnapshot.board == board["key"])
+            .order_by(LeaderboardSnapshot.captured_at.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        out.append(
+            LeaderboardSummary(
+                board=board["key"],
+                captured_at=snap.captured_at if snap else None,
+                row_count=snap.row_count if snap else 0,
+                top=[r["name"] for r in (snap.rows or [])[:10]] if snap else [],
+            )
+        )
+    return out
+
+
+@router.get("/leaderboards/{board}")
+def get_leaderboard(board: str, limit: int = Query(50, le=300), db: Session = Depends(get_db)):
+    """Latest full snapshot of one leaderboard."""
+    from ai_daily.db import LeaderboardSnapshot
+
+    snap = db.execute(
+        select(LeaderboardSnapshot)
+        .where(LeaderboardSnapshot.board == board)
+        .order_by(LeaderboardSnapshot.captured_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    if not snap:
+        raise HTTPException(status_code=404, detail=f"No snapshot for board '{board}'")
+    return {
+        "board": board,
+        "captured_at": snap.captured_at,
+        "row_count": snap.row_count,
+        "rows": (snap.rows or [])[:limit],
+    }
