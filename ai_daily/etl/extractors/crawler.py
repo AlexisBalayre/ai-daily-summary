@@ -7,6 +7,7 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from trafilatura import extract, fetch_url
 
 from ai_daily.db.models import Source
 from ai_daily.etl.extractors.base import BaseExtractor
@@ -55,17 +56,26 @@ class CrawlerExtractor(BaseExtractor):
         return ""
 
     def _fetch_full_content(self, url: str, content_selector: Optional[str]) -> str:
-        """Fetch full article content from URL."""
-        if not content_selector:
-            return ""
+        """Fetch full article content from URL.
 
-        soup = self._fetch_page(url)
-        if not soup:
-            return ""
+        With a CSS content_selector, extract that element. Without one, fall back
+        to trafilatura's generic article extraction — this is what makes SSR pages
+        (e.g. Anthropic news) usable, since hashed CSS-module class names are too
+        brittle to target directly.
+        """
+        if content_selector:
+            soup = self._fetch_page(url)
+            if not soup:
+                return ""
+            content_elem = soup.select_one(content_selector)
+            return content_elem.get_text(strip=True) if content_elem else ""
 
-        content_elem = soup.select_one(content_selector)
-        if content_elem:
-            return content_elem.get_text(strip=True)
+        try:
+            downloaded = fetch_url(url)
+            if downloaded:
+                return extract(downloaded) or ""
+        except Exception:
+            pass
         return ""
 
     async def extract(self, source: Source) -> List[RawContent]:

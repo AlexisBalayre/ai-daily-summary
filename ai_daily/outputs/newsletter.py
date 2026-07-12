@@ -3,9 +3,11 @@
 import base64
 import logging
 from datetime import date, datetime, timedelta
+from email.mime.audio import MIMEAudio
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from html import escape
+from pathlib import Path
 from typing import List, Optional
 
 from sqlalchemy import select
@@ -16,6 +18,10 @@ from ai_daily.db import Article, DailySummary, Source
 from ai_daily.outputs.summary_generator import SummaryGenerator
 
 logger = logging.getLogger(__name__)
+
+# Mirror of EnrichmentProcessor.MODEL_RELEASE_TAG (kept local to avoid importing
+# the enrichment module, which pulls in the LLM/embedding clients).
+MODEL_RELEASE_TAG = "model-release"
 
 
 class NewsletterOutput:
@@ -66,6 +72,24 @@ class NewsletterOutput:
         # Filter out GitHub articles
         return [a for a in all_articles if a.source_id not in github_source_ids]
 
+    def get_release_radar_articles(self, session: Session, hours: int = 168) -> List[Article]:
+        """Get model-release articles from the last N hours (default: 7 days).
+
+        Relies on the `model-release` tag written by enrichment
+        (EnrichmentProcessor.MODEL_RELEASE_TAG). No dedicated column, so no migration.
+        """
+        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        stmt = (
+            select(Article)
+            .where(
+                Article.ingested_at >= cutoff,
+                Article.is_duplicate == False,
+                Article.tags.any(MODEL_RELEASE_TAG),
+            )
+            .order_by(Article.ingested_at.desc())
+        )
+        return list(session.execute(stmt).scalars().all())
+
     def _categorize_articles(self, articles: List[Article]) -> dict:
         """Categorize articles by topic."""
         categories = {
@@ -90,14 +114,41 @@ class NewsletterOutput:
 
         return categories
 
-    def generate_html(self, summary: DailySummary, articles: List[Article]) -> str:
+    def _render_release_radar(self, articles: List[Article]) -> str:
+        """Render the 'New model releases' block, or '' when there are none."""
+        if not articles:
+            return ""
+        items = ""
+        for a in articles:
+            title = escape(a.title or "Untitled")
+            url = escape(a.url or "#")
+            source = escape(a.source.name if a.source else "")
+            desc = escape(a.summary or "")
+            items += f'''
+                    <div class="radar-item">
+                      <p class="radar-title"><a href="{url}">{title}</a></p>
+                      <span class="radar-source">{source}</span>
+                      <p class="radar-desc">{desc}</p>
+                    </div>'''
+        return f'''
+                    <div class="radar">
+                      <p class="radar-label">🚀 New model releases</p>
+                      {items}
+                    </div>'''
+
+    def generate_html(
+        self,
+        summary: DailySummary,
+        articles: List[Article],
+        release_articles: Optional[List[Article]] = None,
+    ) -> str:
         """Generate HTML email content."""
         template = self._load_template()
 
         # Replace placeholders
         html = template.replace("{{date}}", datetime.now().strftime("%B %d, %Y"))
-        html = html.replace("{{summary}}", escape(summary.summary_text or ""))
         html = html.replace("{{year}}", str(datetime.now().year))
+        html = html.replace("{{release_radar}}", self._render_release_radar(release_articles or []))
 
         # Key facts - handle both list and other types
         key_facts_html = ""
@@ -140,11 +191,61 @@ class NewsletterOutput:
 
         return html
 
+    def _build_plaintext(
+        self, articles: List[Article], release_articles: Optional[List[Article]] = None
+    ) -> str:
+        """Plain-text alternative: article titles, links, and excerpts by section."""
+        lines = ["AI Daily Briefing", ""]
+        if release_articles:
+            lines.append("NEW MODEL RELEASES")
+            for a in release_articles:
+                lines.append(f"- {a.title or 'Untitled'}")
+                if a.url:
+                    lines.append(f"  {a.url}")
+            lines.append("")
+        for category, cat_articles in self._categorize_articles(articles).items():
+            if not cat_articles:
+                continue
+            lines.append(category.upper())
+            for article in cat_articles:
+                lines.append(f"- {article.title or 'Untitled'}")
+                if article.url:
+                    lines.append(f"  {article.url}")
+            lines.append("")
+        return "\n".join(lines).strip() + "\n"
+
+    def _build_message(
+        self, subject: str, recipient: str, html_content: str,
+        text_content: str, audio_path: Optional[Path]
+    ) -> MIMEMultipart:
+        """Assemble the email: text+html alternative, plus the audio attachment
+        as a `mixed` wrapper when a briefing was generated."""
+        alternative = MIMEMultipart("alternative")
+        alternative.attach(MIMEText(text_content, "plain"))
+        alternative.attach(MIMEText(html_content, "html"))
+
+        if audio_path and Path(audio_path).exists():
+            message = MIMEMultipart("mixed")
+            message.attach(alternative)
+            audio = MIMEAudio(Path(audio_path).read_bytes(), _subtype="wav")
+            audio.add_header(
+                "Content-Disposition", "attachment", filename=Path(audio_path).name
+            )
+            message.attach(audio)
+        else:
+            message = alternative
+
+        message["Subject"] = subject
+        message["To"] = recipient
+        message["From"] = "me"
+        return message
+
     async def send(
         self,
         session: Session,
         target_date: Optional[date] = None,
-        recipients: Optional[List[str]] = None
+        recipients: Optional[List[str]] = None,
+        audio_path: Optional[Path] = None,
     ) -> bool:
         """Generate and send newsletter.
 
@@ -152,6 +253,7 @@ class NewsletterOutput:
             session: Database session.
             target_date: Date to send newsletter for.
             recipients: List of email addresses. Defaults to config.
+            audio_path: Optional spoken-briefing WAV to attach to the email.
 
         Returns:
             True if sent successfully.
@@ -171,11 +273,13 @@ class NewsletterOutput:
         # Generate summary
         summary = await self.summary_generator.generate(session, target_date)
 
-        # Get articles (excluding GitHub)
+        # Get articles (excluding GitHub) + the week's model releases for the radar
         articles = self.get_newsletter_articles(session, hours=24)
+        release_articles = self.get_release_radar_articles(session)
 
-        # Generate HTML
-        html_content = self.generate_html(summary, articles)
+        # Generate HTML + plain-text alternative
+        html_content = self.generate_html(summary, articles, release_articles)
+        text_content = self._build_plaintext(articles, release_articles)
 
         # Send to each recipient
         subject = f"AI-Daily Newsletter - {target_date.strftime('%B %d, %Y')}"
@@ -184,13 +288,9 @@ class NewsletterOutput:
         failure_count = 0
 
         for recipient in recipients:
-            message = MIMEMultipart("alternative")
-            message["Subject"] = subject
-            message["To"] = recipient
-            message["From"] = "me"
-
-            part = MIMEText(html_content, "html")
-            message.attach(part)
+            message = self._build_message(
+                subject, recipient, html_content, text_content, audio_path
+            )
 
             raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
             try:
@@ -207,3 +307,68 @@ class NewsletterOutput:
 
         logger.info(f"Newsletter send complete: {success_count} succeeded, {failure_count} failed")
         return success_count > 0
+
+    def send_release_alert(
+        self, articles: List[Article], recipients: Optional[List[str]] = None
+    ) -> bool:
+        """Send an immediate alert email for freshly detected model releases.
+
+        Used by the ETL job the moment new `model-release` articles are enriched,
+        so important releases don't wait for the daily newsletter.
+        """
+        if not self.gmail_service:
+            raise ValueError("Gmail service not initialized")
+        if not articles:
+            return False
+        if recipients is None:
+            recipients = config.get_newsletter_recipients()
+        if not recipients:
+            logger.warning("No recipients configured for release alert")
+            return False
+
+        if len(articles) == 1:
+            subject = f"🚀 New AI model release: {articles[0].title or 'Untitled'}"
+        else:
+            subject = f"🚀 {len(articles)} new AI model releases"
+
+        cards = ""
+        text_lines = ["New AI model releases:", ""]
+        for a in articles:
+            title = escape(a.title or "Untitled")
+            url = escape(a.url or "#")
+            source = escape(a.source.name if a.source else "")
+            desc = escape(a.summary or "")
+            cards += (
+                f'<div style="margin:0 0 20px;padding:16px 18px;border:1px solid #cfe0f5;'
+                f'border-radius:8px;background:#f0f7ff;font-family:Inter,-apple-system,sans-serif;">'
+                f'<div style="font-size:16px;font-weight:600;margin:0 0 4px;">'
+                f'<a href="{url}" style="color:#18181b;text-decoration:none;">{title}</a></div>'
+                f'<div style="font-size:12px;color:#1d4ed8;font-weight:500;">{source}</div>'
+                f'<p style="font-size:14px;color:#3f3f46;line-height:1.55;margin:8px 0 0;">{desc}</p>'
+                f'</div>'
+            )
+            text_lines.append(f"- {a.title or 'Untitled'}")
+            if a.url:
+                text_lines.append(f"  {a.url}")
+        html = (
+            f'<div style="max-width:600px;margin:0 auto;padding:24px;">'
+            f'<h2 style="font-family:Inter,-apple-system,sans-serif;font-size:18px;">🚀 New model release</h2>{cards}</div>'
+        )
+        text = "\n".join(text_lines)
+
+        sent = 0
+        for recipient in recipients:
+            message = MIMEMultipart("alternative")
+            message["Subject"] = subject
+            message["To"] = recipient
+            message["From"] = "me"
+            message.attach(MIMEText(text, "plain"))
+            message.attach(MIMEText(html, "html"))
+            raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+            try:
+                self.gmail_service.users().messages().send(userId="me", body={"raw": raw}).execute()
+                sent += 1
+            except Exception as e:
+                logger.error(f"Failed to send release alert to {recipient}: {e}")
+        logger.info(f"Release alert sent to {sent}/{len(recipients)} recipients for {len(articles)} release(s)")
+        return sent > 0
