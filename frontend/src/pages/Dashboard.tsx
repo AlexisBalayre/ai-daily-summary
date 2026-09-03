@@ -1,29 +1,36 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
-import type { Article, SystemStatus, Job, Summary } from '../api/types'
+import type { Article, SystemStatus, Job, Summary, Release, LeaderboardSummary } from '../api/types'
 
 export default function Dashboard() {
   const [status, setStatus] = useState<SystemStatus | null>(null)
   const [recentJobs, setRecentJobs] = useState<Job[]>([])
   const [latestSummary, setLatestSummary] = useState<Summary | null>(null)
   const [githubRepos, setGithubRepos] = useState<Article[]>([])
+  const [releases, setReleases] = useState<Release[]>([])
+  const [boards, setBoards] = useState<LeaderboardSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statusData, jobsData, summariesData, reposData] = await Promise.all([
-          api.getStatus(),
-          api.getJobs(5),
-          api.getSummaries({ limit: 1 }),
-          api.getArticles({ source_type: 'github', is_duplicate: false, limit: 20 }),
-        ])
+        const [statusData, jobsData, summariesData, reposData, releasesData, boardsData] =
+          await Promise.all([
+            api.getStatus(),
+            api.getJobs(5),
+            api.getSummaries({ limit: 1 }),
+            api.getArticles({ source_type: 'github', is_duplicate: false, limit: 20 }),
+            api.getReleases(7).catch(() => [] as Release[]),
+            api.getLeaderboards().catch(() => [] as LeaderboardSummary[]),
+          ])
         setStatus(statusData)
         setRecentJobs(jobsData)
         if (summariesData.length > 0) setLatestSummary(summariesData[0])
         setGithubRepos(reposData)
+        setReleases(releasesData)
+        setBoards(boardsData.filter((b) => b.row_count > 0))
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load')
       } finally {
@@ -71,6 +78,60 @@ export default function Dashboard() {
           subtitle={`${enrichedPct}% enriched`}
           color="amber"
         />
+      </div>
+
+      {/* Release Radar + Leaderboard highlights */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="bg-white shadow rounded-lg p-5">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium text-gray-900">🚀 Release Radar (7d)</h2>
+            <Link to="/releases" className="text-sm text-indigo-600 hover:underline">View all</Link>
+          </div>
+          {releases.length === 0 ? (
+            <p className="text-sm text-gray-400">No model releases detected this week</p>
+          ) : (
+            <ul className="space-y-2">
+              {releases.slice(0, 6).map((r) => (
+                <li key={r.id} className="flex items-start justify-between gap-2">
+                  <a
+                    href={r.url ?? '#'}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-gray-800 hover:text-blue-600 line-clamp-1"
+                  >
+                    {r.title}
+                  </a>
+                  {r.source_name && (
+                    <span className="shrink-0 px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700">
+                      {r.source_name}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="bg-white shadow rounded-lg p-5">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium text-gray-900">📊 Leaderboards</h2>
+            <Link to="/leaderboards" className="text-sm text-indigo-600 hover:underline">View all</Link>
+          </div>
+          {boards.length === 0 ? (
+            <p className="text-sm text-gray-400">No snapshots captured yet</p>
+          ) : (
+            <div className="space-y-3">
+              {boards.slice(0, 4).map((b) => (
+                <div key={b.board} className="flex items-baseline justify-between gap-3">
+                  <span className="text-sm font-medium text-gray-700">{b.board}</span>
+                  <span className="text-sm text-gray-500 truncate">
+                    {b.top.slice(0, 3).join(' · ')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import re
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, List, Optional
@@ -208,29 +209,40 @@ def get_article(article_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/search", response_model=List[ArticleResponse])
-def semantic_search(
+async def semantic_search(
     q: str = Query(..., description="Search query"),
     limit: int = Query(10, le=50),
     db: Session = Depends(get_db),
 ):
-    """Semantic search using embeddings.
+    """Semantic search: embed the query and rank by pgvector cosine distance.
 
-    Note: Full vector search requires embedding the query.
-    This is a placeholder that falls back to keyword search.
+    Falls back to keyword ILIKE search if embedding fails (e.g. LLM API down).
     """
     try:
-        # TODO: Implement proper vector search
-        # For now, fall back to keyword search
+        from ai_daily.etl.transformers.embedder import Embedder
+
+        embedding = await Embedder().embed(q)
+        stmt = (
+            select(Article)
+            .where(
+                Article.embedding.isnot(None),
+                Article.is_duplicate == False,  # noqa: E712
+            )
+            .order_by(Article.embedding.cosine_distance(embedding))
+            .limit(limit)
+        )
+        return db.execute(stmt).scalars().all()
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in semantic_search: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except Exception as e:
+        logger.warning(f"Embedding failed, keyword fallback for search: {e}")
         escaped_q = escape_like_wildcards(q)
         stmt = select(Article).where(or_(
             Article.title.ilike(f"%{escaped_q}%", escape="\\"),
             Article.content.ilike(f"%{escaped_q}%", escape="\\"),
         )).order_by(Article.published_at.desc()).limit(limit)
-
         return db.execute(stmt).scalars().all()
-    except SQLAlchemyError as e:
-        logger.error(f"Database error in semantic_search: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
 
 
 # Summary endpoints
@@ -784,3 +796,61 @@ def get_leaderboard(board: str, limit: int = Query(50, le=300), db: Session = De
         "row_count": snap.row_count,
         "rows": (snap.rows or [])[:limit],
     }
+
+
+# Audio briefing endpoints
+_DAY_RE = r"^\d{4}-\d{2}-\d{2}$"
+
+
+class BriefingInfo(BaseModel):
+    date: str
+    size_bytes: int
+    has_script: bool
+
+
+def _briefings_dir() -> Path:
+    from ai_daily.config import config as app_config
+
+    return app_config.data_dir / "briefings"
+
+
+@router.get("/briefings", response_model=List[BriefingInfo])
+def list_briefings(limit: int = Query(30, le=100)):
+    """Generated audio briefings, newest first."""
+    d = _briefings_dir()
+    items = []
+    if d.exists():
+        for wav in sorted(d.glob("*_briefing.wav"), reverse=True)[:limit]:
+            day = wav.name.split("_")[0]
+            items.append(
+                BriefingInfo(
+                    date=day,
+                    size_bytes=wav.stat().st_size,
+                    has_script=(d / f"{day}_script.txt").exists(),
+                )
+            )
+    return items
+
+
+@router.get("/briefings/{day}/audio")
+def briefing_audio(day: str):
+    """Stream one briefing WAV (day: YYYY-MM-DD)."""
+    from fastapi.responses import FileResponse
+
+    if not re.match(_DAY_RE, day):
+        raise HTTPException(status_code=400, detail="day must be YYYY-MM-DD")
+    path = _briefings_dir() / f"{day}_briefing.wav"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"No briefing for {day}")
+    return FileResponse(path, media_type="audio/wav", filename=path.name)
+
+
+@router.get("/briefings/{day}/script")
+def briefing_script(day: str):
+    """The spoken script of one briefing."""
+    if not re.match(_DAY_RE, day):
+        raise HTTPException(status_code=400, detail="day must be YYYY-MM-DD")
+    path = _briefings_dir() / f"{day}_script.txt"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"No script for {day}")
+    return {"date": day, "script": path.read_text()}
