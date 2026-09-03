@@ -38,7 +38,7 @@ class EnrichmentProcessor:
 
 1. CATEGORY: One of: ai, security, cloud, hardware, mobile, software, business, other
 2. IS_AI_RELATED: true/false - Is this primarily about AI, machine learning, LLMs, or related technology?
-3. IS_MODEL_RELEASE: true/false - Does this ANNOUNCE a new or updated AI model or a major model version? Includes new LLMs, TTS/STT/speech models, and significant version bumps (e.g. "Introducing X", "X is now available", "We're releasing X"). A benchmark, tutorial, opinion, or funding story is NOT a model release.
+3. IS_MODEL_RELEASE: true/false - True ONLY when the article's primary news is the organization that BUILT an AI model announcing that NEW model or a major new version (e.g. "Introducing Claude Sonnet 5", "GPT-5.6 is here", a new TTS/STT/speech or open-weight model). False for everything else, including: a platform adding support/availability/fine-tuning for an EXISTING model (e.g. "Fine-tune X on SageMaker", "X now available on Bedrock/Azure"), product features built on top of models, memory/context upgrades to an app, API/tooling changes, benchmarks, tutorials, case studies, opinion, or funding news.
 4. SUMMARY: 2-3 sentence summary of the key points
 5. TAGS: 3-5 relevant tags (lowercase, hyphenated)
 

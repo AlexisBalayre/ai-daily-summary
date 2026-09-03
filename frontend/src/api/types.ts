@@ -81,3 +81,38 @@ export interface SourceTestResult {
 export interface WhitelistResponse {
   whitelist: string[]
 }
+
+export interface Release {
+  id: number
+  title: string
+  url: string | null
+  summary: string | null
+  source_name: string | null
+  ingested_at: string | null
+}
+
+export interface LeaderboardSummary {
+  board: string
+  captured_at: string | null
+  row_count: number
+  top: string[]
+}
+
+export interface LeaderboardRow {
+  name: string
+  rank: number
+  metrics?: Record<string, number>
+}
+
+export interface LeaderboardDetail {
+  board: string
+  captured_at: string
+  row_count: number
+  rows: LeaderboardRow[]
+}
+
+export interface BriefingInfo {
+  date: string
+  size_bytes: number
+  has_script: boolean
+}

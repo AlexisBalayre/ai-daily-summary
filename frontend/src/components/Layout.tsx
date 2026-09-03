@@ -2,8 +2,12 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 
 const navigation = [
   { name: 'Dashboard', href: '/' },
+  { name: 'Chat', href: '/chat' },
   { name: 'Articles', href: '/articles' },
   { name: 'Summaries', href: '/summaries' },
+  { name: 'Releases', href: '/releases' },
+  { name: 'Leaderboards', href: '/leaderboards' },
+  { name: 'Briefings', href: '/briefings' },
   { name: 'Sources', href: '/sources' },
   { name: 'Whitelist', href: '/whitelist' },
   { name: 'Jobs', href: '/jobs' },
