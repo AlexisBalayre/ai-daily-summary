@@ -1,6 +1,7 @@
 """Newsletter email generation and sending."""
 
 import base64
+import json
 import logging
 from datetime import date, datetime, timedelta
 from email.mime.audio import MIMEAudio
@@ -72,11 +73,11 @@ class NewsletterOutput:
         # Filter out GitHub articles
         return [a for a in all_articles if a.source_id not in github_source_ids]
 
-    def get_release_radar_articles(self, session: Session, hours: int = 168) -> List[Article]:
-        """Get model-release articles from the last N hours (default: 7 days).
+    def get_release_radar_articles(self, session: Session, hours: int = 24) -> List[Article]:
+        """Get model-release articles from the last N hours (default: 24h).
 
-        Relies on the `model-release` tag written by enrichment
-        (EnrichmentProcessor.MODEL_RELEASE_TAG). No dedicated column, so no migration.
+        The newsletter shows only the freshest releases — the full history lives
+        on the dashboard's Releases page and arrives as instant alerts.
         """
         cutoff = datetime.utcnow() - timedelta(hours=hours)
         stmt = (
@@ -89,6 +90,47 @@ class NewsletterOutput:
             .order_by(Article.ingested_at.desc())
         )
         return list(session.execute(stmt).scalars().all())
+
+    TOP_STORIES_COUNT = 10
+
+    TOP_SELECTION_PROMPT = """You curate a daily AI newsletter for a busy reader who only wants
+the essential news. From the numbered list of today's articles, select the {n} most important:
+major model releases, significant research results, and big industry moves. Prefer primary
+announcements over commentary or tutorials, and skip near-duplicate stories.
+
+{listing}
+
+Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}"""
+
+    async def _select_top_articles(self, articles: List[Article]) -> List[Article]:
+        """LLM curation: keep only the day's most essential stories.
+
+        Falls back to the most recent TOP_STORIES_COUNT articles when the
+        selection call fails — the newsletter must always go out.
+        """
+        n = self.TOP_STORIES_COUNT
+        if len(articles) <= n:
+            return articles
+
+        listing = "\n".join(
+            f"{i}. {a.title or 'Untitled'} — {(a.summary or a.content or '')[:150]}"
+            for i, a in enumerate(articles)
+        )
+        try:
+            from google.genai.types import GenerateContentConfig
+
+            response = await self.summary_generator.client.aio.models.generate_content(
+                model=self.summary_generator.model,
+                contents=self.TOP_SELECTION_PROMPT.format(n=n, listing=listing),
+                config=GenerateContentConfig(response_mime_type="application/json"),
+            )
+            indices = json.loads(response.text).get("selected", [])
+            picked = [articles[i] for i in indices if isinstance(i, int) and 0 <= i < len(articles)]
+            if picked:
+                return picked[:n]
+        except Exception as e:
+            logger.warning(f"Top-story selection failed, falling back to recency: {e}")
+        return articles[:n]
 
     def _categorize_articles(self, articles: List[Article]) -> dict:
         """Categorize articles by topic."""
@@ -114,25 +156,25 @@ class NewsletterOutput:
 
         return categories
 
+    RADAR_MAX_ITEMS = 5
+
     def _render_release_radar(self, articles: List[Article]) -> str:
-        """Render the 'New model releases' block, or '' when there are none."""
+        """Compact one-line-per-release block, or '' when there are none."""
         if not articles:
             return ""
         items = ""
-        for a in articles:
+        for a in articles[: self.RADAR_MAX_ITEMS]:
             title = escape(a.title or "Untitled")
             url = escape(a.url or "#")
             source = escape(a.source.name if a.source else "")
-            desc = escape(a.summary or "")
             items += f'''
                     <div class="radar-item">
-                      <p class="radar-title"><a href="{url}">{title}</a></p>
-                      <span class="radar-source">{source}</span>
-                      <p class="radar-desc">{desc}</p>
+                      <p class="radar-title"><a href="{url}">{title}</a>
+                        <span class="radar-source">&nbsp;— {source}</span></p>
                     </div>'''
         return f'''
                     <div class="radar">
-                      <p class="radar-label">🚀 New model releases</p>
+                      <p class="radar-label">🚀 Released in the last 24h</p>
                       {items}
                     </div>'''
 
@@ -154,7 +196,7 @@ class NewsletterOutput:
         key_facts_html = ""
         if summary.key_facts:
             facts = summary.key_facts if isinstance(summary.key_facts, list) else [summary.key_facts]
-            for fact in facts:
+            for fact in facts[:6]:
                 key_facts_html += f"<li>{escape(str(fact))}</li>"
         html = html.replace("{{key_facts}}", key_facts_html)
 
@@ -171,8 +213,8 @@ class NewsletterOutput:
                 for article in cat_articles:
                     title = escape(article.title or "Untitled")
                     url = escape(article.url or "#")
-                    content = article.content or ""
-                    truncated_content = escape(content[:250]) + "..." if len(content) > 250 else escape(content)
+                    excerpt = article.summary or (article.content or "")
+                    truncated_content = escape(excerpt[:280]) + "..." if len(excerpt) > 280 else escape(excerpt)
                     articles_html += f'''
                     <div class="article-card" style="background: #fafafa; border: 1px solid #e4e4e7; border-radius: 6px; padding: 20px; margin-bottom: 12px;">
                         <h4 class="article-title" style="font-family: 'Inter', -apple-system, sans-serif; font-size: 15px; font-weight: 600; color: #18181b; margin: 0 0 8px; line-height: 1.4;">
@@ -197,8 +239,8 @@ class NewsletterOutput:
         """Plain-text alternative: article titles, links, and excerpts by section."""
         lines = ["AI Daily Briefing", ""]
         if release_articles:
-            lines.append("NEW MODEL RELEASES")
-            for a in release_articles:
+            lines.append("RELEASED IN THE LAST 24H")
+            for a in release_articles[: self.RADAR_MAX_ITEMS]:
                 lines.append(f"- {a.title or 'Untitled'}")
                 if a.url:
                     lines.append(f"  {a.url}")
@@ -273,8 +315,10 @@ class NewsletterOutput:
         # Generate summary
         summary = await self.summary_generator.generate(session, target_date)
 
-        # Get articles (excluding GitHub) + the week's model releases for the radar
-        articles = self.get_newsletter_articles(session, hours=24)
+        # Essentials only: curate the day's top stories + last-24h releases
+        articles = await self._select_top_articles(
+            self.get_newsletter_articles(session, hours=24)
+        )
         release_articles = self.get_release_radar_articles(session)
 
         # Generate HTML + plain-text alternative

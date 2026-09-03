@@ -1,4 +1,4 @@
-import type { Article, Source, SourceCreate, Job, Summary, SystemStatus, SourceTestResult, WhitelistResponse } from './types'
+import type { Article, Source, SourceCreate, Job, Summary, SystemStatus, SourceTestResult, WhitelistResponse, Release, LeaderboardSummary, LeaderboardDetail, BriefingInfo } from './types'
 
 const API_BASE = '/api/v1'
 
@@ -92,6 +92,17 @@ export const api = {
     const query = searchParams.toString()
     return fetchJSON<Summary[]>(`${API_BASE}/summaries${query ? `?${query}` : ''}`)
   },
+
+  // Releases & leaderboards & briefings
+  getReleases: (days = 7) => fetchJSON<Release[]>(`${API_BASE}/releases?days=${days}`),
+  getLeaderboards: () => fetchJSON<LeaderboardSummary[]>(`${API_BASE}/leaderboards`),
+  getLeaderboard: (board: string, limit = 50) =>
+    fetchJSON<LeaderboardDetail>(`${API_BASE}/leaderboards/${board}?limit=${limit}`),
+  getBriefings: () => fetchJSON<BriefingInfo[]>(`${API_BASE}/briefings`),
+  getBriefingScript: (day: string) =>
+    fetchJSON<{ date: string; script: string }>(`${API_BASE}/briefings/${day}/script`),
+  triggerJob: (job: string) =>
+    fetchJSON<{ job: string; status: string }>(`${API_BASE}/jobs/${job}/trigger`, { method: 'POST' }),
 
   // Whitelist
   getWhitelist: () => fetchJSON<WhitelistResponse>(`${API_BASE}/whitelist`),

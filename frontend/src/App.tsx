@@ -6,6 +6,10 @@ import Sources from './pages/Sources'
 import Jobs from './pages/Jobs'
 import Whitelist from './pages/Whitelist'
 import Summaries from './pages/Summaries'
+import Releases from './pages/Releases'
+import Leaderboards from './pages/Leaderboards'
+import Briefings from './pages/Briefings'
+import Chat from './pages/Chat'
 
 function App() {
   return (
@@ -16,6 +20,10 @@ function App() {
           <Route path="articles" element={<Articles />} />
           <Route path="sources" element={<Sources />} />
           <Route path="summaries" element={<Summaries />} />
+          <Route path="releases" element={<Releases />} />
+          <Route path="leaderboards" element={<Leaderboards />} />
+          <Route path="briefings" element={<Briefings />} />
+          <Route path="chat" element={<Chat />} />
           <Route path="whitelist" element={<Whitelist />} />
           <Route path="jobs" element={<Jobs />} />
         </Route>
