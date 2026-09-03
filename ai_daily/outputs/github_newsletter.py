@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from ai_daily.config import config
 from ai_daily.db import Article, Source
+from ai_daily.outputs.html_utils import safe_href
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,7 @@ class GitHubNewsletterOutput:
         html = ""
         for idx, article in enumerate(articles[:15], 1):  # Limit to top 15
             title = escape(article.title or "Unknown Repo")
-            url = escape(article.url or "#")
+            url = safe_href(article.url)
             content = article.content or ""
 
             # Parse metadata from content

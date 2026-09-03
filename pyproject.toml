@@ -46,12 +46,14 @@ dependencies = [
     "uvicorn>=0.27.0",
     "click>=8.1.0",
     "rich>=13.7.0",
-    # Leaderboard watcher (headless browser for client-rendered boards)
-    "playwright>=1.40",
-    # TTS
-    "pocket-tts>=0.1.0",
-    "scipy>=1.12.0",
 ]
+
+[project.optional-dependencies]
+# Headless browser for client-rendered leaderboards (pulls Chromium via `playwright install`).
+leaderboards = ["playwright>=1.40"]
+# Spoken audio briefing.
+tts = ["pocket-tts>=0.1.0", "scipy>=1.12.0"]
+all = ["ai-daily-summary[leaderboards,tts]"]
 
 [project.urls]
 Homepage = "https://github.com/AlexisBalayre/ai-daily-summary"

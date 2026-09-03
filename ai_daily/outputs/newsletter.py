@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from ai_daily.config import config
 from ai_daily.db import Article, DailySummary, Source
+from ai_daily.outputs.html_utils import safe_href
 from ai_daily.outputs.summary_generator import SummaryGenerator
 
 logger = logging.getLogger(__name__)
@@ -172,7 +173,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
         items = ""
         for a in articles[: self.RADAR_MAX_ITEMS]:
             title = escape(a.title or "Untitled")
-            url = escape(a.url or "#")
+            url = safe_href(a.url)
             source = escape(a.source.name if a.source else "")
             items += f'''
                     <div class="radar-item">
@@ -222,7 +223,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
                 """
                 for article in cat_articles:
                     title = escape(article.title or "Untitled")
-                    url = escape(article.url or "#")
+                    url = safe_href(article.url)
                     excerpt = article.summary or (article.content or "")
                     truncated_content = (
                         escape(excerpt[:280]) + "..." if len(excerpt) > 280 else escape(excerpt)
@@ -388,7 +389,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
         text_lines = ["New AI model releases:", ""]
         for a in articles:
             title = escape(a.title or "Untitled")
-            url = escape(a.url or "#")
+            url = safe_href(a.url)
             source = escape(a.source.name if a.source else "")
             desc = escape(a.summary or "")
             cards += (

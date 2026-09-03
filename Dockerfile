@@ -38,7 +38,7 @@ COPY --from=frontend-builder /ai_daily/static ./ai_daily/static
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
-    pip install .
+    pip install ".[leaderboards,tts]"
 
 # Headless Chromium for the leaderboard watcher (playwright)
 RUN python -m playwright install --with-deps chromium
