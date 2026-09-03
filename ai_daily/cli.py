@@ -160,11 +160,14 @@ def search(query: str):
 
 
 @main.command()
-def serve():
-    """Start the API server."""
+@click.option("--host", default="127.0.0.1", show_default=True, help="Interface to bind.")
+@click.option("--port", default=8000, show_default=True, type=int)
+@click.option("--reload", is_flag=True, help="Restart on code changes (development).")
+def serve(host: str, port: int, reload: bool) -> None:
+    """Start the API server (no authentication unless API_TOKEN is set)."""
     import uvicorn
 
-    uvicorn.run("ai_daily.api.server:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("ai_daily.api.server:app", host=host, port=port, reload=reload)
 
 
 @main.command("run-daily")

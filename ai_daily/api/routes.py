@@ -3,18 +3,21 @@
 import asyncio
 import json
 import logging
+import os
 import re
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from ai_daily.api.auth import require_api_token
 from ai_daily.db import Article, DailySummary, JobRun, Source, get_session
+from ai_daily.etl.urlcheck import ensure_public_http_url
 
 logger = logging.getLogger(__name__)
 
@@ -319,7 +322,12 @@ def get_source(source_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
-@router.post("/sources", response_model=SourceResponse, status_code=201)
+@router.post(
+    "/sources",
+    response_model=SourceResponse,
+    status_code=201,
+    dependencies=[Depends(require_api_token)],
+)
 def create_source(source_data: SourceCreate, db: Session = Depends(get_db)):
     """Create a new source."""
     try:
@@ -339,7 +347,9 @@ def create_source(source_data: SourceCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
-@router.put("/sources/{source_id}", response_model=SourceResponse)
+@router.put(
+    "/sources/{source_id}", response_model=SourceResponse, dependencies=[Depends(require_api_token)]
+)
 def update_source(source_id: int, source_data: SourceUpdate, db: Session = Depends(get_db)):
     """Update an existing source."""
     try:
@@ -365,7 +375,7 @@ def update_source(source_id: int, source_data: SourceUpdate, db: Session = Depen
         raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
-@router.delete("/sources/{source_id}", status_code=204)
+@router.delete("/sources/{source_id}", status_code=204, dependencies=[Depends(require_api_token)])
 def delete_source(source_id: int, db: Session = Depends(get_db)):
     """Delete a source."""
     try:
@@ -384,7 +394,11 @@ def delete_source(source_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
-@router.patch("/sources/{source_id}/toggle", response_model=SourceResponse)
+@router.patch(
+    "/sources/{source_id}/toggle",
+    response_model=SourceResponse,
+    dependencies=[Depends(require_api_token)],
+)
 def toggle_source(source_id: int, db: Session = Depends(get_db)):
     """Toggle a source's enabled/disabled status."""
     try:
@@ -411,6 +425,7 @@ def _test_rss_source(config: dict | None) -> SourceTestResult:
     try:
         import feedparser
 
+        ensure_public_http_url(config["url"])
         feed = feedparser.parse(config["url"])
         if feed.bozo and not feed.entries:
             return SourceTestResult(
@@ -453,10 +468,13 @@ def _test_crawler_source(config: dict | None) -> SourceTestResult:
         from bs4 import BeautifulSoup
 
         url = config["url"]
-        response = requests.get(url, timeout=10)
+        ensure_public_http_url(url)
+        response = requests.get(url, timeout=10, allow_redirects=False, stream=True)
         response.raise_for_status()
+        # Preview only: cap what an arbitrary page can push into the process.
+        body = response.raw.read(2_000_000, decode_content=True)
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(body, "html.parser")
 
         preview_data = {
             "url": url,
@@ -473,11 +491,15 @@ def _test_crawler_source(config: dict | None) -> SourceTestResult:
         return SourceTestResult(success=True, preview=preview_data)
     except requests.RequestException as e:
         return SourceTestResult(success=False, message=f"Request failed: {e}")
+    except ValueError as e:
+        return SourceTestResult(success=False, message=str(e))
     except Exception as e:
         return SourceTestResult(success=False, message=str(e))
 
 
-@router.post("/sources/test", response_model=SourceTestResult)
+@router.post(
+    "/sources/test", response_model=SourceTestResult, dependencies=[Depends(require_api_token)]
+)
 def test_source(source_data: SourceCreate):
     """Test a source configuration without saving it."""
     source_type = source_data.type.lower()
@@ -585,8 +607,11 @@ class WhitelistResponse(BaseModel):
     whitelist: list[str]
 
 
+EMAIL_PATTERN = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+
+
 class WhitelistAddRequest(BaseModel):
-    email: str
+    email: str = Field(max_length=254, pattern=EMAIL_PATTERN)
 
 
 def _get_config_path() -> Path:
@@ -608,10 +633,15 @@ def _read_config() -> dict:
 
 
 def _write_config(data: dict) -> None:
-    """Write config.json file."""
+    """Atomically write the personal config file (never the shipped example)."""
+    from ai_daily.config import config
+
     config_path = _get_config_path()
-    with open(config_path, "w") as f:
-        json.dump(data, f, indent=2)
+    if config_path.resolve() == config.config_example_file.resolve():
+        raise HTTPException(status_code=409, detail="CONFIG_FILE points at config.example.json")
+    tmp_path = config_path.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(data, indent=2) + "\n")
+    os.replace(tmp_path, config_path)
 
 
 @router.get("/whitelist", response_model=WhitelistResponse)
@@ -625,7 +655,12 @@ def get_whitelist():
         raise HTTPException(status_code=500, detail="Failed to read whitelist") from e
 
 
-@router.post("/whitelist", response_model=WhitelistResponse, status_code=201)
+@router.post(
+    "/whitelist",
+    response_model=WhitelistResponse,
+    status_code=201,
+    dependencies=[Depends(require_api_token)],
+)
 def add_to_whitelist(request: WhitelistAddRequest):
     """Add an email to the whitelist."""
     try:
@@ -651,7 +686,9 @@ def add_to_whitelist(request: WhitelistAddRequest):
         raise HTTPException(status_code=500, detail="Failed to add to whitelist") from e
 
 
-@router.delete("/whitelist/{email:path}", status_code=204)
+@router.delete(
+    "/whitelist/{email:path}", status_code=204, dependencies=[Depends(require_api_token)]
+)
 def remove_from_whitelist(email: str):
     """Remove an email from the whitelist."""
     try:
@@ -747,7 +784,12 @@ class JobTriggerResponse(BaseModel):
 _background_jobs: set = set()
 
 
-@router.post("/jobs/{job_name}/trigger", response_model=JobTriggerResponse, status_code=202)
+@router.post(
+    "/jobs/{job_name}/trigger",
+    response_model=JobTriggerResponse,
+    status_code=202,
+    dependencies=[Depends(require_api_token)],
+)
 async def trigger_job(job_name: str):
     """Start a job in the background (same execution path as the CLI trigger)."""
     from ai_daily.config import config as app_config

@@ -45,11 +45,9 @@ class GmailExtractor(BaseExtractor):
                         "web": {
                             "client_id": config.gmail.client_id,
                             "project_id": config.gmail.project_id,
-                            "auth_uri": os.getenv("GOOGLE_AUTH_URI"),
-                            "token_uri": os.getenv("GOOGLE_TOKEN_URI"),
-                            "auth_provider_x509_cert_url": os.getenv(
-                                "GOOGLE_AUTH_PROVIDER_X509_CERT_URL"
-                            ),
+                            "auth_uri": config.gmail.auth_uri,
+                            "token_uri": config.gmail.token_uri,
+                            "auth_provider_x509_cert_url": config.gmail.auth_provider_x509_cert_url,
                             "client_secret": config.gmail.client_secret,
                             "redirect_uris": [f"http://localhost:{config.gmail.oauth_port}/"],
                         }
@@ -58,8 +56,11 @@ class GmailExtractor(BaseExtractor):
                 )
                 creds = flow.run_local_server(port=config.gmail.oauth_port)
 
-            with open(token_path, "w") as token:
+            # The refresh token grants read + send on the mailbox: keep it owner-only.
+            fd = os.open(token_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w") as token:
                 token.write(creds.to_json())
+            os.chmod(token_path, 0o600)
 
         return build("gmail", "v1", credentials=creds)
 

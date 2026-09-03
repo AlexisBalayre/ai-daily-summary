@@ -9,12 +9,13 @@ final text answer.
 import logging
 from datetime import UTC, date, datetime, timedelta
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from google import genai
 from google.genai.types import Content, GenerateContentConfig, Part
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from ai_daily.api.auth import require_api_token
 from ai_daily.config import config
 from ai_daily.db import Article, DailySummary, JobRun, LeaderboardSnapshot, get_session
 
@@ -220,7 +221,7 @@ class ChatResponse(BaseModel):
     tools_used: list[str]
 
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat", response_model=ChatResponse, dependencies=[Depends(require_api_token)])
 async def chat(req: ChatRequest):
     """One chat turn: full message history in, grounded answer out."""
     if not req.messages or req.messages[-1].role != "user":

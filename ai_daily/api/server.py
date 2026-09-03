@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from ai_daily.api.chat import router as chat_router
 from ai_daily.api.routes import router
+from ai_daily.config import config
 
 app = FastAPI(
     title="AI Daily Summary API",
@@ -16,14 +17,15 @@ app = FastAPI(
     version="0.2.0",
 )
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# The dashboard is served from this app, so cross-origin access is opt-in (CORS_ORIGINS).
+if config.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=config.cors_origins,
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Include API routes
 app.include_router(router, prefix="/api/v1")

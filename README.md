@@ -96,18 +96,10 @@ The app reads newsletters and sends email through one Gmail account, using OAuth
 2. Configure the OAuth consent screen and add your Gmail address as a test user.
 3. Create an OAuth client ID of type **Desktop app**. Copy the client ID, client secret and project
    ID into `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_PROJECT_ID`.
-4. Set the standard Google endpoints in `.env` (the code reads them from the environment):
-
-   ```
-   GOOGLE_AUTH_URI=https://accounts.google.com/o/oauth2/auth
-   GOOGLE_TOKEN_URI=https://oauth2.googleapis.com/token
-   GOOGLE_AUTH_PROVIDER_X509_CERT_URL=https://www.googleapis.com/oauth2/v1/certs
-   ```
-
-5. The consent flow uses a loopback redirect on `http://localhost:<GMAIL_OAUTH_PORT>/`
+4. The consent flow uses a loopback redirect on `http://localhost:<GMAIL_OAUTH_PORT>/`
    (default port `56450`). Desktop clients accept any loopback port; if you registered explicit
    redirect URIs, they must include that one.
-6. Run the flow once on a machine with a browser (command in Quick start). Scopes requested are
+5. Run the flow once on a machine with a browser (command in Quick start). Scopes requested are
    `gmail.readonly` and `gmail.send`. The refresh token is saved to `GMAIL_TOKEN_PATH`
    (default `token.json`) and rotated in place afterwards.
 
@@ -170,7 +162,8 @@ ai-daily run {gmail|github|crawlers|rss|all}
 ai-daily run-daily                  ETL, then newsletter, then briefing, in one process
 ai-daily status                     Job runs from the last 24 hours
 ai-daily search <query>             Keyword search over titles and content
-ai-daily serve                      Dev API server on 0.0.0.0:8000 with auto-reload
+ai-daily serve [--host] [--port] [--reload]
+                                    API server, 127.0.0.1:8000 by default
 ai-daily source list
 ai-daily source add {newsletter|github|crawler|rss} <name> [--config '<json>']
 ai-daily source add-rss <name> <url>
@@ -260,6 +253,7 @@ Read from the environment and `.env` by `ai_daily/config.py` unless noted.
 | :-- | :-- | :-- | :-- |
 | Database | `DB_HOST` | `localhost` | Compose sets `postgres` inside the container |
 | | `DB_PORT` | `5432` | |
+| | `DB_BIND` | `127.0.0.1` | Host interface compose publishes Postgres on (compose only) |
 | | `DB_NAME` | `ai_daily` | |
 | | `DB_USER` | `postgres` | |
 | | `DB_PASSWORD` | empty (`postgres` in Compose) | |
@@ -272,9 +266,7 @@ Read from the environment and `.env` by `ai_daily/config.py` unless noted.
 | | `GMAIL_PROJECT_ID` | none | Required |
 | | `GMAIL_TOKEN_PATH` | `token.json` | Refresh token location; also the Compose mount source |
 | | `GMAIL_OAUTH_PORT` | `56450` | Loopback port for the one-time consent flow |
-| | `GOOGLE_AUTH_URI` | none | Read in `ai_daily/etl/extractors/gmail.py`; use Google's standard value |
-| | `GOOGLE_TOKEN_URI` | none | Same |
-| | `GOOGLE_AUTH_PROVIDER_X509_CERT_URL` | none | Same |
+| | `GOOGLE_AUTH_URI`, `GOOGLE_TOKEN_URI`, `GOOGLE_AUTH_PROVIDER_X509_CERT_URL` | Google's standard endpoints | Only override for a custom OAuth setup |
 | Email | `NEWSLETTER_BRAND` | `AI Daily` | Subject lines and footers |
 | | `RECIPIENTS` | empty | Comma-separated fallback for all emails and failure alerts |
 | | `NEWSLETTER_RECIPIENTS` | empty | Overrides `RECIPIENTS` for the newsletter and leaderboard alerts |
@@ -297,6 +289,8 @@ Read from the environment and `.env` by `ai_daily/config.py` unless noted.
 | | `LOGS_DIR` | `<repo>/logs` | |
 | | `TEMPLATES_DIR` | `<repo>/templates` | Email templates |
 | | `CONFIG_FILE` | `<repo>/config.json` | Falls back to `config.example.json`; also the Compose mount source |
+| API | `API_TOKEN` | empty | Bearer token required on mutating routes (sources, whitelist, job triggers, chat). Empty disables auth |
+| | `CORS_ORIGINS` | empty | Comma-separated browser origins allowed cross-site; the bundled dashboard needs none |
 | Compose | `API_BIND` | `127.0.0.1` | Host interface the API port is published on (compose only) |
 
 ## Local development
@@ -308,7 +302,7 @@ cp .env.example .env                     # point DB_* at localhost
 uv run alembic upgrade head              # migrations live in ai_daily/db/migrations
 uv run ai-daily seed
 uv run ai-daily run rss                  # or gmail / github / crawlers / all
-uv run ai-daily serve                    # API on http://localhost:8000 with reload
+uv run ai-daily serve --reload           # API on http://127.0.0.1:8000
 
 uv run pytest                            # asyncio_mode=auto; external services are mocked
 uv run ruff check . && uv run ruff format --check .
@@ -353,13 +347,19 @@ Dockerfile, docker-compose.yml, docker-entrypoint.sh
 
 ## Security notes
 
-- **The API has no authentication.** Anyone who can reach port 8000 can read everything, edit
-  sources and the whitelist, and trigger jobs. Compose binds it to `127.0.0.1`; only change
-  `API_BIND` behind an authenticating reverse proxy or a private network such as Tailscale.
+- **Reads are open; writes are gated by `API_TOKEN`.** Anyone who can reach port 8000 can read
+  every article and summary. Set `API_TOKEN` before exposing the port: sources, whitelist, job
+  triggers and chat then require `Authorization: Bearer <token>` (the dashboard asks for it once
+  and keeps it in the browser's localStorage). Compose binds the API and Postgres to `127.0.0.1`;
+  only change `API_BIND`/`DB_BIND` behind an authenticating reverse proxy or a private network
+  such as Tailscale.
+- Cross-origin browser access is off unless `CORS_ORIGINS` lists the origins. The source-test
+  endpoint only fetches public http(s) hosts, so it cannot be used to probe your network.
 - The MCP server is unauthenticated too and listens on loopback. `MCP_PUBLIC_HOST` is meant for a
   Tailscale-published name, not the public internet.
 - `.env`, `token.json` and `config.json` hold your API key, a Gmail refresh token with send
-  permission, and your sender list. They are gitignored; never commit them. Gitleaks runs in CI as a
+  permission, and your sender list. They are gitignored; never commit them. `token.json` is
+  written with mode 0600. Gitleaks runs in CI as a
   backstop. If the token leaks, revoke the app from your Google account.
 - Crawled pages and whitelisted newsletters are untrusted input that is fed to the LLM.
 

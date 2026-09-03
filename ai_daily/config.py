@@ -62,6 +62,19 @@ class GmailConfig:
     # Loopback port for the one-time OAuth consent flow; must match the redirect URI
     # registered on the Google Cloud OAuth client.
     oauth_port: int = field(default_factory=lambda: int(os.getenv("GMAIL_OAUTH_PORT", "56450")))
+    auth_uri: str = field(
+        default_factory=lambda: os.getenv(
+            "GOOGLE_AUTH_URI", "https://accounts.google.com/o/oauth2/auth"
+        )
+    )
+    token_uri: str = field(
+        default_factory=lambda: os.getenv("GOOGLE_TOKEN_URI", "https://oauth2.googleapis.com/token")
+    )
+    auth_provider_x509_cert_url: str = field(
+        default_factory=lambda: os.getenv(
+            "GOOGLE_AUTH_PROVIDER_X509_CERT_URL", "https://www.googleapis.com/oauth2/v1/certs"
+        )
+    )
     scopes: list[str] = field(
         default_factory=lambda: [
             "https://www.googleapis.com/auth/gmail.readonly",
@@ -131,6 +144,15 @@ class Config:
     gmail: GmailConfig = field(default_factory=GmailConfig)
     tts: TTSConfig = field(default_factory=TTSConfig)
     orchestrator: OrchestratorConfig = field(default_factory=OrchestratorConfig)
+
+    # Bearer token required on mutating API routes; empty disables the check.
+    api_token: str = field(default_factory=lambda: os.getenv("API_TOKEN", ""))
+    # Browser origins allowed to call the API cross-site; the bundled dashboard is same-origin.
+    cors_origins: list[str] = field(
+        default_factory=lambda: [
+            o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()
+        ]
+    )
 
     # Name shown in newsletter footers and email subjects.
     brand: str = field(default_factory=lambda: os.getenv("NEWSLETTER_BRAND", "AI Daily"))
