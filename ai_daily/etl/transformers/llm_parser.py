@@ -2,7 +2,6 @@
 
 import json
 import logging
-from typing import Dict, List, Optional
 
 from google import genai
 from google.genai.types import GenerateContentConfig
@@ -45,7 +44,7 @@ You MUST output valid JSON with this exact structure:
         self.client = genai.Client(api_key=config.llm.google_api_key)
         self.model = config.llm.model
 
-    def _validate_articles(self, articles: List[Dict]) -> Optional[str]:
+    def _validate_articles(self, articles: list[dict]) -> str | None:
         """Validate that all articles have required fields.
 
         Returns None if valid, or an error description if invalid.
@@ -63,7 +62,7 @@ You MUST output valid JSON with this exact structure:
                     return f"Article {i} has empty or non-string '{field}'"
         return None
 
-    async def _call_llm(self, content: str) -> Dict:
+    async def _call_llm(self, content: str) -> dict:
         """Make a single LLM call and parse the JSON response."""
         response = await self.client.aio.models.generate_content(
             model=self.model,
@@ -75,7 +74,7 @@ You MUST output valid JSON with this exact structure:
         )
         return json.loads(response.text)
 
-    async def parse(self, raw_content: RawContent) -> List[Dict]:
+    async def parse(self, raw_content: RawContent) -> list[dict]:
         """Parse raw content into structured articles with retry on bad format."""
         try:
             content = raw_content.content[:8000]
@@ -86,7 +85,9 @@ You MUST output valid JSON with this exact structure:
             for attempt in range(self.MAX_RETRIES):
                 if error is None:
                     break
-                logger.warning(f"LLM output invalid ({error}), retry {attempt + 1}/{self.MAX_RETRIES}")
+                logger.warning(
+                    f"LLM output invalid ({error}), retry {attempt + 1}/{self.MAX_RETRIES}"
+                )
                 result = await self._call_llm(content)
                 articles = result.get("articles", [])
                 error = self._validate_articles(articles)
@@ -106,13 +107,15 @@ You MUST output valid JSON with this exact structure:
             logger.warning(f"LLM parse failed ({e}), using fallback")
             return self._fallback(raw_content)
 
-    def _fallback(self, raw_content: RawContent) -> List[Dict]:
+    def _fallback(self, raw_content: RawContent) -> list[dict]:
         """Return raw content as a single article when LLM fails."""
-        return [{
-            "title": raw_content.title,
-            "content": raw_content.content[:1000],
-            "topic": "Industry News and Trends",
-            "url": raw_content.url,
-            "source_name": raw_content.source_name,
-            "external_id": raw_content.external_id,
-        }]
+        return [
+            {
+                "title": raw_content.title,
+                "content": raw_content.content[:1000],
+                "topic": "Industry News and Trends",
+                "url": raw_content.url,
+                "source_name": raw_content.source_name,
+                "external_id": raw_content.external_id,
+            }
+        ]

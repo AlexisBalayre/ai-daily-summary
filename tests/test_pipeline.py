@@ -1,12 +1,10 @@
 """Tests for ETL pipeline components."""
 
-import pytest
-
 from ai_daily.etl.transformers import compute_content_hash
 from ai_daily.etl.types import RawContent
 
 # Import simplified SQLite-compatible models from conftest
-from tests.conftest import SqliteSource, SqliteArticle
+from tests.conftest import SqliteArticle, SqliteSource
 
 
 def test_compute_content_hash():

@@ -1,8 +1,9 @@
 """Tests for RSS CLI commands."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from click.testing import CliRunner
-from unittest.mock import patch, MagicMock
 
 from ai_daily.cli import main
 
@@ -42,13 +43,10 @@ def test_source_add_rss_creates_source(mock_get_session, runner):
     # Mock the source to have an ID after add
     def set_id(src):
         src.id = 42
+
     mock_session.add.side_effect = set_id
 
-    result = runner.invoke(main, [
-        "source", "add-rss",
-        "Test Feed",
-        "https://example.com/feed.xml"
-    ])
+    result = runner.invoke(main, ["source", "add-rss", "Test Feed", "https://example.com/feed.xml"])
 
     assert result.exit_code == 0
     assert "Added RSS source: Test Feed" in result.output

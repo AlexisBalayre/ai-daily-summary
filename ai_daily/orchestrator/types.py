@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass
@@ -15,7 +14,7 @@ class RetryConfig:
 
     def get_delay(self, attempt: int) -> float:
         """Calculate delay for given attempt number (0-indexed)."""
-        return self.base_delay * (self.multiplier ** attempt)
+        return self.base_delay * (self.multiplier**attempt)
 
 
 @dataclass
@@ -26,4 +25,4 @@ class JobContext:
     run_id: int
     attempt: int
     scheduled_at: datetime
-    error: Optional[str] = None
+    error: str | None = None

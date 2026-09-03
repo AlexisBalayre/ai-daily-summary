@@ -12,7 +12,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-ai_daily}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Only the app needs the database; expose it to the host on loopback for local tooling.
+      - "${DB_BIND:-127.0.0.1}:${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -51,18 +52,31 @@ services:
       GMAIL_PROJECT_ID: ${GMAIL_PROJECT_ID}
       # Newsletter configuration
       RECIPIENTS: ${RECIPIENTS}
+      # Security
+      API_TOKEN: ${API_TOKEN:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      NEWSLETTER_RECIPIENTS: ${NEWSLETTER_RECIPIENTS:-}
+      GITHUB_RECIPIENTS: ${GITHUB_RECIPIENTS:-}
+      TTS_RECIPIENTS: ${TTS_RECIPIENTS:-}
+      NEWSLETTER_BRAND: ${NEWSLETTER_BRAND:-AI Daily}
+      # Audio briefings are written under DATA_DIR/briefings; TTS_OUTPUT_DIR adds an optional copy
+      TTS_OUTPUT_DIR: ${TTS_OUTPUT_DIR:-}
       # Path configuration
       DATA_DIR: /app/data
       LOGS_DIR: /app/logs
       TEMPLATES_DIR: /app/templates
       CONFIG_FILE: /app/config.json
     ports:
-      - "8000:8000"
+      # The API has no authentication: keep it on loopback unless you put a proxy in front.
+      - "${API_BIND:-127.0.0.1}:8000:8000"
     volumes:
       - app_data:/app/data
       - app_logs:/app/logs
-      # Mount Gmail token (read-write so OAuth can refresh)
-      - ./token.json:/app/token.json
+      # Gmail OAuth token (read-write so the refresh token can rotate). Run the OAuth flow
+      # on the host first so this file exists; otherwise Docker creates an empty directory.
+      - ${GMAIL_TOKEN_PATH:-./token.json}:/app/token.json
+      # Your newsletter whitelist / RSS feeds / crawlers (copy config.example.json to start)
+      - ${CONFIG_FILE:-./config.json}:/app/config.json
     networks:
       - ai-daily-network
 

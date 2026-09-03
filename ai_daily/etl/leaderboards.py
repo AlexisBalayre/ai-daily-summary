@@ -13,7 +13,7 @@ import hashlib
 import json
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import requests
 from sqlalchemy import select
@@ -28,13 +28,29 @@ USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
 # kind: "rsc" = data present in the server-rendered flight payload;
 # "browser" = data fetched client-side, needs headless Chromium;
 # "hf-api" = plain JSON API.
-BOARDS: List[Dict[str, str]] = [
-    {"key": "aa-speech-to-speech", "kind": "browser", "url": "https://artificialanalysis.ai/speech-to-speech"},
-    {"key": "aa-stt-streaming", "kind": "browser", "url": "https://artificialanalysis.ai/speech-to-text/streaming"},
-    {"key": "aa-tts-models", "kind": "browser", "url": "https://artificialanalysis.ai/text-to-speech/models"},
+BOARDS: list[dict[str, str]] = [
+    {
+        "key": "aa-speech-to-speech",
+        "kind": "browser",
+        "url": "https://artificialanalysis.ai/speech-to-speech",
+    },
+    {
+        "key": "aa-stt-streaming",
+        "kind": "browser",
+        "url": "https://artificialanalysis.ai/speech-to-text/streaming",
+    },
+    {
+        "key": "aa-tts-models",
+        "kind": "browser",
+        "url": "https://artificialanalysis.ai/text-to-speech/models",
+    },
     {"key": "arena-text", "kind": "rsc", "url": "https://arena.ai/leaderboard/text"},
     {"key": "arena-agent", "kind": "browser", "url": "https://arena.ai/leaderboard/agent"},
-    {"key": "hf-open-llm", "kind": "hf-api", "url": "https://open-llm-leaderboard-open-llm-leaderboard.hf.space/api/leaderboard/formatted"},
+    {
+        "key": "hf-open-llm",
+        "kind": "hf-api",
+        "url": "https://open-llm-leaderboard-open-llm-leaderboard.hf.space/api/leaderboard/formatted",
+    },
     {"key": "coval-tts", "kind": "browser", "url": "https://benchmarks.coval.ai/tts"},
     {"key": "coval-stt", "kind": "browser", "url": "https://benchmarks.coval.ai/stt"},
 ]
@@ -55,12 +71,13 @@ MAX_ROWS_STORED = 300
 # ---------- normalization ----------
 
 
-def _name_key(items: List[dict]) -> Optional[str]:
+def _name_key(items: list[dict]) -> str | None:
     """Key most items share holding a string name, or None."""
+
     def coverage(key: str) -> float:
-        return sum(
-            1 for it in items if isinstance(it.get(key), str) and it[key].strip()
-        ) / len(items)
+        return sum(1 for it in items if isinstance(it.get(key), str) and it[key].strip()) / len(
+            items
+        )
 
     for key in NAME_KEYS:
         if coverage(key) >= 0.8:
@@ -72,9 +89,9 @@ def _name_key(items: List[dict]) -> Optional[str]:
     return None
 
 
-def _numeric_keys(items: List[dict]) -> List[str]:
+def _numeric_keys(items: list[dict]) -> list[str]:
     """Keys carrying numbers in most items (the board's metrics)."""
-    counts: Dict[str, int] = {}
+    counts: dict[str, int] = {}
     for it in items:
         for k, v in it.items():
             if isinstance(v, (int, float)) and not isinstance(v, bool):
@@ -82,10 +99,10 @@ def _numeric_keys(items: List[dict]) -> List[str]:
     return [k for k, n in counts.items() if n >= 0.5 * len(items)]
 
 
-def _normalize(items: List[dict], name_key: str, metric_keys: List[str]) -> List[dict]:
+def _normalize(items: list[dict], name_key: str, metric_keys: list[str]) -> list[dict]:
     rows = []
     seen = set()
-    for i, it in enumerate(items):
+    for it in items:
         if len(rows) >= MAX_ROWS_STORED:
             break
         name = str(it.get(name_key, "")).strip()
@@ -93,7 +110,7 @@ def _normalize(items: List[dict], name_key: str, metric_keys: List[str]) -> List
         if not name or name in seen:
             continue
         seen.add(name)
-        row: Dict[str, Any] = {"name": name}
+        row: dict[str, Any] = {"name": name}
         rank = it.get("rank")
         row["rank"] = rank if isinstance(rank, int) else len(rows) + 1
         metrics = {k: it[k] for k in metric_keys[:8] if isinstance(it.get(k), (int, float))}
@@ -103,10 +120,10 @@ def _normalize(items: List[dict], name_key: str, metric_keys: List[str]) -> List
     return rows
 
 
-def _candidate_arrays(blob: str) -> List[List[dict]]:
+def _candidate_arrays(blob: str) -> list[list[dict]]:
     """All JSON arrays-of-objects embedded in a text blob."""
     decoder = json.JSONDecoder()
-    out: List[List[dict]] = []
+    out: list[list[dict]] = []
     consumed_until = -1
     for m in re.finditer(r'\[\{"', blob):
         start = m.start()
@@ -122,14 +139,14 @@ def _candidate_arrays(blob: str) -> List[List[dict]]:
     return out
 
 
-def _best_rows(arrays: List[List[dict]]) -> List[dict]:
+def _best_rows(arrays: list[list[dict]]) -> list[dict]:
     """Pick the most leaderboard-like array: named rows carrying numbers.
 
     Falls back to a model *roster* (membership only, no metrics) for boards
     like Artificial Analysis that embed their model lists but stream chart
     numbers separately — added/removed models still diff correctly.
     """
-    best: List[dict] = []
+    best: list[dict] = []
     for items in arrays:
         name_key = _name_key(items)
         if not name_key:
@@ -145,7 +162,7 @@ def _best_rows(arrays: List[List[dict]]) -> List[dict]:
         return best
 
     # Roster fallback: union every plausible model list on the page.
-    roster: List[dict] = []
+    roster: list[dict] = []
     seen: set = set()
     for items in arrays:
         if not (10 <= len(items) <= 300):
@@ -171,7 +188,7 @@ def _best_rows(arrays: List[List[dict]]) -> List[dict]:
 # ---------- fetchers ----------
 
 
-def fetch_rsc(url: str) -> List[dict]:
+def fetch_rsc(url: str) -> list[dict]:
     """Rows from a Next.js RSC flight payload (server-rendered page)."""
     resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=30)
     resp.raise_for_status()
@@ -185,7 +202,7 @@ def fetch_rsc(url: str) -> List[dict]:
     return _best_rows(_candidate_arrays(blob))
 
 
-def fetch_hf_api(url: str) -> List[dict]:
+def fetch_hf_api(url: str) -> list[dict]:
     """Rows from the Hugging Face leaderboard space JSON API."""
     resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=60)
     resp.raise_for_status()
@@ -214,7 +231,7 @@ def fetch_hf_api(url: str) -> List[dict]:
     return _normalize(items, "name", metric_keys)
 
 
-async def fetch_browser(url: str) -> List[dict]:
+async def fetch_browser(url: str) -> list[dict]:
     """Rows via headless Chromium: capture the JSON the page fetches at runtime."""
     try:
         from playwright.async_api import async_playwright
@@ -222,8 +239,8 @@ async def fetch_browser(url: str) -> List[dict]:
         logger.warning("playwright not installed; skipping browser board %s", url)
         return []
 
-    payloads: List[Any] = []
-    flight_texts: List[str] = []
+    payloads: list[Any] = []
+    flight_texts: list[str] = []
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch()
@@ -249,7 +266,8 @@ async def fetch_browser(url: str) -> List[dict]:
         html = await page.content()
         await browser.close()
 
-    arrays: List[List[dict]] = []
+    arrays: list[list[dict]] = []
+
     def collect(node):
         if isinstance(node, list) and len(node) >= 5 and all(isinstance(x, dict) for x in node):
             arrays.append(node)
@@ -259,6 +277,7 @@ async def fetch_browser(url: str) -> List[dict]:
         elif isinstance(node, list):
             for v in node:
                 collect(v)
+
     for p in payloads:
         collect(p)
 
@@ -282,12 +301,12 @@ async def fetch_browser(url: str) -> List[dict]:
 # ---------- capture + diff ----------
 
 
-def _hash_rows(rows: List[dict]) -> str:
+def _hash_rows(rows: list[dict]) -> str:
     names = json.dumps([r["name"] for r in rows], sort_keys=False)
     return hashlib.sha256(names.encode()).hexdigest()
 
 
-def _latest_snapshot(session: Session, board: str) -> Optional[LeaderboardSnapshot]:
+def _latest_snapshot(session: Session, board: str) -> LeaderboardSnapshot | None:
     stmt = (
         select(LeaderboardSnapshot)
         .where(LeaderboardSnapshot.board == board)
@@ -297,7 +316,7 @@ def _latest_snapshot(session: Session, board: str) -> Optional[LeaderboardSnapsh
     return session.execute(stmt).scalar_one_or_none()
 
 
-def _diff(old_rows: List[dict], new_rows: List[dict]) -> Dict[str, list]:
+def _diff(old_rows: list[dict], new_rows: list[dict]) -> dict[str, list]:
     old = {r["name"]: r for r in old_rows}
     new = {r["name"]: r for r in new_rows}
     added = [n for n in new if n not in old]
@@ -311,9 +330,9 @@ def _diff(old_rows: List[dict], new_rows: List[dict]) -> Dict[str, list]:
     return {"added": added[:15], "removed": removed[:15], "moves": moves[:15]}
 
 
-async def capture_all(session: Session) -> Dict[str, Any]:
+async def capture_all(session: Session) -> dict[str, Any]:
     """Capture every board; store changed snapshots; return per-board changes."""
-    changes: Dict[str, Any] = {}
+    changes: dict[str, Any] = {}
     captured = errors = unchanged = 0
 
     for board in BOARDS:

@@ -17,7 +17,6 @@ Boundaries:
 
 - A missed opportunity for simplification is never a finding on its own. When a regression is real, the suggested fix may well be the dramatically simpler structure; ambition belongs in the remedy, not in the finding.
 - Pre-existing mess is context, not a finding: flag the change that worsens the structure, not the state it found.
-- A single-caller split a change makes to satisfy a CI-enforced gate (e.g. a SonarQube S3776 cognitive-complexity refactor, read from the stated intent) is the mechanism the PR uses, not a regression; flag it only when inlining it back would not re-trip the gate.
 - A high-confidence "newly introduced" finding (duplication, a split guard, two-sources-of-truth params) must be verified against the diff's +/- prefixes: a construct sitting on an unprefixed context line pre-exists the change and is not yours to flag.
 - `important` claims a structural regression that should block the merge, and it must be verified end to end: you read the mechanism you name (the hook, guard, or helper itself, not just its name) and the harm is reachable. When your own reasoning concedes the current behavior is equivalent, the trigger unreachable, or the consequence theoretical, tag `nit` no matter how displeasing the structure; a summary tag that contradicts its own prose is a false positive, not prudence.
-- If a documented rule or ADR decides the question, it is the conventions reviewer's, not yours.
+- If a documented rule decides the question, it is the conventions reviewer's, not yours.

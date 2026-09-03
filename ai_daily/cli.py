@@ -1,7 +1,7 @@
 """CLI entry point for AI Daily Summary."""
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import click
 from rich.console import Console
@@ -29,6 +29,7 @@ def init():
 def seed():
     """Seed database with initial sources from config.json."""
     from ai_daily.db.seed import seed_sources
+
     seed_sources()
     console.print("[green]Database seeded successfully![/green]")
 
@@ -45,10 +46,15 @@ def run(job_type: str):
         if job_type == "all":
             metrics = await pipeline.run_all()
         else:
-            type_map = {"gmail": "newsletter", "github": "github", "crawlers": "crawler", "rss": "rss"}
+            type_map = {
+                "gmail": "newsletter",
+                "github": "github",
+                "crawlers": "crawler",
+                "rss": "rss",
+            }
             metrics = await pipeline.run_all(source_types=[type_map[job_type]])
 
-        console.print(f"[green]ETL completed![/green]")
+        console.print("[green]ETL completed![/green]")
         console.print(f"  Processed: {metrics['articles_processed']}")
         console.print(f"  Created: {metrics['articles_created']}")
         console.print(f"  Duplicates: {metrics['duplicates_skipped']}")
@@ -57,17 +63,21 @@ def run(job_type: str):
         asyncio.run(_run())
     except Exception as e:
         console.print(f"[red]ETL pipeline failed: {e}[/red]")
-        raise SystemExit(1)
+        raise SystemExit(1) from e
 
 
 @main.command()
 def status():
     """Show recent job runs."""
     with get_session() as session:
-        yesterday = datetime.utcnow() - timedelta(days=1)
-        jobs = session.query(JobRun).filter(
-            JobRun.started_at >= yesterday
-        ).order_by(JobRun.started_at.desc()).limit(20).all()
+        yesterday = datetime.now(UTC) - timedelta(days=1)
+        jobs = (
+            session.query(JobRun)
+            .filter(JobRun.started_at >= yesterday)
+            .order_by(JobRun.started_at.desc())
+            .limit(20)
+            .all()
+        )
 
         if not jobs:
             console.print("[yellow]No jobs in the last 24 hours[/yellow]")
@@ -82,8 +92,16 @@ def status():
 
         for job in jobs:
             job_status = job.status or "unknown"
-            status_icon = "+" if job_status == "success" else "x" if job_status == "failed" else "..."
-            status_color = "green" if job_status == "success" else "red" if job_status == "failed" else "yellow"
+            status_icon = (
+                "+" if job_status == "success" else "x" if job_status == "failed" else "..."
+            )
+            status_color = (
+                "green"
+                if job_status == "success"
+                else "red"
+                if job_status == "failed"
+                else "yellow"
+            )
 
             duration = ""
             if job.finished_at and job.started_at:
@@ -91,9 +109,8 @@ def status():
                 duration = f"{delta.total_seconds():.1f}s"
 
             metrics_str = ""
-            if job.metrics:
-                if "articles_created" in job.metrics:
-                    metrics_str = f"{job.metrics['articles_created']} articles"
+            if job.metrics and "articles_created" in job.metrics:
+                metrics_str = f"{job.metrics['articles_created']} articles"
 
             started_str = job.started_at.strftime("%H:%M") if job.started_at else "N/A"
 
@@ -115,12 +132,18 @@ def search(query: str):
     from sqlalchemy import or_
 
     with get_session() as session:
-        articles = session.query(Article).filter(
-            or_(
-                Article.title.ilike(f"%{query}%"),
-                Article.content.ilike(f"%{query}%"),
+        articles = (
+            session.query(Article)
+            .filter(
+                or_(
+                    Article.title.ilike(f"%{query}%"),
+                    Article.content.ilike(f"%{query}%"),
+                )
             )
-        ).order_by(Article.published_at.desc()).limit(10).all()
+            .order_by(Article.published_at.desc())
+            .limit(10)
+            .all()
+        )
 
         if not articles:
             console.print(f"[yellow]No articles found for '{query}'[/yellow]")
@@ -129,23 +152,47 @@ def search(query: str):
         for article in articles:
             console.print(f"\n[bold cyan]{article.title}[/bold cyan]")
             console.print(f"[dim]{article.topic} | {article.published_at}[/dim]")
-            console.print(article.content[:200] + "..." if len(article.content) > 200 else article.content)
+            console.print(
+                article.content[:200] + "..." if len(article.content) > 200 else article.content
+            )
             if article.url:
                 console.print(f"[blue]{article.url}[/blue]")
 
 
 @main.command()
-def serve():
-    """Start the API server."""
+@click.option("--host", default="127.0.0.1", show_default=True, help="Interface to bind.")
+@click.option("--port", default=8000, show_default=True, type=int)
+@click.option("--reload", is_flag=True, help="Restart on code changes (development).")
+def serve(host: str, port: int, reload: bool) -> None:
+    """Start the API server (no authentication unless API_TOKEN is set)."""
     import uvicorn
-    uvicorn.run("ai_daily.api.server:app", host="0.0.0.0", port=8000, reload=True)
+
+    uvicorn.run("ai_daily.api.server:app", host=host, port=port, reload=reload)
 
 
 @main.command("run-daily")
 def run_daily():
     """Run the complete daily pipeline (ETL + newsletter + TTS)."""
     from ai_daily.main import run_daily_pipeline
+
     asyncio.run(run_daily_pipeline())
+
+
+@main.group()
+def gmail():
+    """Gmail account setup."""
+    pass
+
+
+@gmail.command("auth")
+def gmail_auth() -> None:
+    """Run the one-time Google OAuth consent flow and store the refresh token."""
+    from ai_daily.config import config
+    from ai_daily.etl.extractors.gmail import GmailExtractor
+
+    console.print("[cyan]Opening the Google consent screen in your browser...[/cyan]")
+    GmailExtractor()
+    console.print(f"[green]Gmail authorised. Token saved to {config.gmail.token_path}[/green]")
 
 
 @main.group()
@@ -190,7 +237,7 @@ def source_add(source_type: str, name: str, config: str = None):
         try:
             parsed_config = json.loads(config)
         except json.JSONDecodeError as e:
-            raise click.BadParameter(f"Invalid JSON config: {e}")
+            raise click.BadParameter(f"Invalid JSON config: {e}") from e
 
     with get_session() as session:
         src = Source(
@@ -232,7 +279,7 @@ def orchestrator_start():
     """Start the orchestrator scheduler."""
     from ai_daily.config import config
     from ai_daily.etl.extractors.gmail import GmailExtractor
-    from ai_daily.orchestrator import Executor, JOBS, Notifier, Scheduler
+    from ai_daily.orchestrator import JOBS, Executor, Notifier, Scheduler
     from ai_daily.orchestrator.types import RetryConfig
 
     console.print("[cyan]Starting orchestrator...[/cyan]")
@@ -260,7 +307,7 @@ def orchestrator_start():
 
     # Build schedules from config
     # The spoken briefing is attached to the newsletter (run_newsletter), so it
-    # is not scheduled on its own. Use `ai-daily run tts` for a standalone briefing.
+    # is not scheduled on its own. Use `ai-daily orchestrator trigger tts` for a standalone briefing.
     schedules = {
         "etl": config.orchestrator.etl_schedule,
         "newsletter": config.orchestrator.newsletter_schedule,
@@ -275,7 +322,7 @@ def orchestrator_start():
         jobs=JOBS,
     )
 
-    console.print(f"[green]Schedules:[/green]")
+    console.print("[green]Schedules:[/green]")
     for job, cron in schedules.items():
         console.print(f"  {job}: {cron}")
 
@@ -289,10 +336,11 @@ def orchestrator_start():
 def orchestrator_status():
     """Show orchestrator status and next scheduled runs."""
     from croniter import croniter
+
     from ai_daily.config import config
 
     # The spoken briefing is attached to the newsletter (run_newsletter), so it
-    # is not scheduled on its own. Use `ai-daily run tts` for a standalone briefing.
+    # is not scheduled on its own. Use `ai-daily orchestrator trigger tts` for a standalone briefing.
     schedules = {
         "etl": config.orchestrator.etl_schedule,
         "newsletter": config.orchestrator.newsletter_schedule,
@@ -305,7 +353,7 @@ def orchestrator_status():
     table.add_column("Schedule", style="magenta")
     table.add_column("Next Run", style="green")
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     for job_name, cron_expr in schedules.items():
         cron = croniter(cron_expr, now)
         next_run = cron.get_next(datetime)
@@ -315,10 +363,14 @@ def orchestrator_status():
 
     # Also show recent job runs
     with get_session() as session:
-        yesterday = datetime.utcnow() - timedelta(days=1)
-        jobs = session.query(JobRun).filter(
-            JobRun.started_at >= yesterday
-        ).order_by(JobRun.started_at.desc()).limit(10).all()
+        yesterday = datetime.now(UTC) - timedelta(days=1)
+        jobs = (
+            session.query(JobRun)
+            .filter(JobRun.started_at >= yesterday)
+            .order_by(JobRun.started_at.desc())
+            .limit(10)
+            .all()
+        )
 
         if jobs:
             runs_table = Table(title="Recent Runs (Last 24h)")
@@ -328,8 +380,16 @@ def orchestrator_status():
             runs_table.add_column("Duration")
 
             for job in jobs:
-                status_icon = "+" if job.status == "success" else "x" if job.status == "failed" else "..."
-                status_color = "green" if job.status == "success" else "red" if job.status == "failed" else "yellow"
+                status_icon = (
+                    "+" if job.status == "success" else "x" if job.status == "failed" else "..."
+                )
+                status_color = (
+                    "green"
+                    if job.status == "success"
+                    else "red"
+                    if job.status == "failed"
+                    else "yellow"
+                )
 
                 duration = ""
                 if job.finished_at and job.started_at:
@@ -347,11 +407,13 @@ def orchestrator_status():
 
 
 @orchestrator.command("trigger")
-@click.argument("job_name", type=click.Choice(["etl", "newsletter", "github", "tts", "leaderboards", "all"]))
+@click.argument(
+    "job_name", type=click.Choice(["etl", "newsletter", "github", "tts", "leaderboards", "all"])
+)
 def orchestrator_trigger(job_name: str):
-    """Manually trigger a job (or 'all' for ETL → Enrichment → TTS → Newsletter)."""
+    """Manually trigger a job (or 'all' for ETL → Newsletter → GitHub)."""
     from ai_daily.config import config
-    from ai_daily.orchestrator import Executor, JOBS
+    from ai_daily.orchestrator import JOBS, Executor
     from ai_daily.orchestrator.types import RetryConfig
 
     retry_config = RetryConfig(
@@ -365,7 +427,7 @@ def orchestrator_trigger(job_name: str):
     # Determine which jobs to run
     if job_name == "all":
         jobs_to_run = ["etl", "newsletter", "github"]
-        console.print("[cyan]Running all jobs: ETL → TTS → Newsletter → GitHub[/cyan]")
+        console.print("[cyan]Running all jobs: ETL → Newsletter → GitHub[/cyan]")
     else:
         jobs_to_run = [job_name]
         console.print(f"[cyan]Triggering job: {job_name}[/cyan]")
@@ -410,7 +472,7 @@ def orchestrator_trigger(job_name: str):
         raise
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
-        raise SystemExit(1)
+        raise SystemExit(1) from e
 
 
 if __name__ == "__main__":

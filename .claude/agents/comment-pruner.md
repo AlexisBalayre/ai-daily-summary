@@ -22,7 +22,7 @@ git ls-files --others --exclude-standard -- <files>
 
 Never touch a comment that already existed on `HEAD` in a file you are only editing. Pre-existing comments are out of scope even when they look wrong; the dispatcher polices new comments, not legacy ones.
 
-Skip entirely: anything under `.venv/`, `__pycache__/`, `node_modules/`, Alembic migrations under `alembic/versions/`, and compiled `*.pyc`.
+Skip entirely: anything under `.venv/`, `__pycache__/`, `node_modules/`, Alembic migrations under `ai_daily/db/migrations/versions/`, and compiled `*.pyc`.
 
 ## The hard floor (never delete, regardless of policy)
 

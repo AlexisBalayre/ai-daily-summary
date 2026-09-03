@@ -3,7 +3,6 @@
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
 from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
@@ -17,7 +16,11 @@ class DatabaseConfig:
     """Database connection configuration."""
 
     host: str = field(default_factory=lambda: os.getenv("DB_HOST", "localhost"))
-    port: int = field(default_factory=lambda: int(os.getenv("DB_PORT", "5432")) if os.getenv("DB_PORT", "5432").isdigit() else 5432)
+    port: int = field(
+        default_factory=lambda: (
+            int(os.getenv("DB_PORT", "5432")) if os.getenv("DB_PORT", "5432").isdigit() else 5432
+        )
+    )
     name: str = field(default_factory=lambda: os.getenv("DB_NAME", "ai_daily"))
     user: str = field(default_factory=lambda: os.getenv("DB_USER", "postgres"))
     password: str = field(default_factory=lambda: os.getenv("DB_PASSWORD", ""))
@@ -42,9 +45,7 @@ class LLMConfig:
     embedding_model: str = field(
         default_factory=lambda: os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
     )
-    google_api_key: str = field(
-        default_factory=lambda: os.getenv("GOOGLE_API_KEY", "")
-    )
+    google_api_key: str = field(default_factory=lambda: os.getenv("GOOGLE_API_KEY", ""))
 
 
 @dataclass
@@ -52,11 +53,29 @@ class GmailConfig:
     """Gmail API configuration."""
 
     client_id: str = field(default_factory=lambda: os.getenv("GMAIL_CLIENT_ID", ""))
-    client_secret: str = field(
-        default_factory=lambda: os.getenv("GMAIL_CLIENT_SECRET", "")
-    )
+    client_secret: str = field(default_factory=lambda: os.getenv("GMAIL_CLIENT_SECRET", ""))
     project_id: str = field(default_factory=lambda: os.getenv("GMAIL_PROJECT_ID", ""))
-    scopes: List[str] = field(
+    # Where the OAuth refresh token is persisted after the first interactive login.
+    token_path: Path = field(
+        default_factory=lambda: Path(os.getenv("GMAIL_TOKEN_PATH", "token.json"))
+    )
+    # Loopback port for the one-time OAuth consent flow; must match the redirect URI
+    # registered on the Google Cloud OAuth client.
+    oauth_port: int = field(default_factory=lambda: int(os.getenv("GMAIL_OAUTH_PORT", "56450")))
+    auth_uri: str = field(
+        default_factory=lambda: os.getenv(
+            "GOOGLE_AUTH_URI", "https://accounts.google.com/o/oauth2/auth"
+        )
+    )
+    token_uri: str = field(
+        default_factory=lambda: os.getenv("GOOGLE_TOKEN_URI", "https://oauth2.googleapis.com/token")
+    )
+    auth_provider_x509_cert_url: str = field(
+        default_factory=lambda: os.getenv(
+            "GOOGLE_AUTH_PROVIDER_X509_CERT_URL", "https://www.googleapis.com/oauth2/v1/certs"
+        )
+    )
+    scopes: list[str] = field(
         default_factory=lambda: [
             "https://www.googleapis.com/auth/gmail.readonly",
             "https://www.googleapis.com/auth/gmail.send",
@@ -80,7 +99,7 @@ class TTSConfig:
         default_factory=lambda: float(os.getenv("TTS_EOS_THRESHOLD", "-3.0"))
     )
     # Optional noise clamp; unset (None) leaves the model default.
-    noise_clamp: Optional[float] = field(
+    noise_clamp: float | None = field(
         default_factory=lambda: (
             float(os.environ["TTS_NOISE_CLAMP"]) if os.getenv("TTS_NOISE_CLAMP") else None
         )
@@ -90,24 +109,16 @@ class TTSConfig:
     )
 
 
-
 @dataclass
 class OrchestratorConfig:
     """Orchestrator scheduling and retry configuration."""
 
     # Cron schedules
-    etl_schedule: str = field(
-        default_factory=lambda: os.getenv("ETL_SCHEDULE", "0 */4 * * *")
-    )
-    tts_schedule: str = field(
-        default_factory=lambda: os.getenv("TTS_SCHEDULE", "0 9 * * *")
-    )
+    etl_schedule: str = field(default_factory=lambda: os.getenv("ETL_SCHEDULE", "0 */4 * * *"))
     newsletter_schedule: str = field(
         default_factory=lambda: os.getenv("NEWSLETTER_SCHEDULE", "0 14 * * *")
     )
-    github_schedule: str = field(
-        default_factory=lambda: os.getenv("GITHUB_SCHEDULE", "0 10 * * *")
-    )
+    github_schedule: str = field(default_factory=lambda: os.getenv("GITHUB_SCHEDULE", "0 10 * * *"))
     leaderboard_schedule: str = field(
         default_factory=lambda: os.getenv("LEADERBOARD_SCHEDULE", "0 7 * * *")
     )
@@ -134,69 +145,77 @@ class Config:
     tts: TTSConfig = field(default_factory=TTSConfig)
     orchestrator: OrchestratorConfig = field(default_factory=OrchestratorConfig)
 
+    # Bearer token required on mutating API routes; empty disables the check.
+    api_token: str = field(default_factory=lambda: os.getenv("API_TOKEN", ""))
+    # Browser origins allowed to call the API cross-site; the bundled dashboard is same-origin.
+    cors_origins: list[str] = field(
+        default_factory=lambda: [
+            o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()
+        ]
+    )
+
+    # Name shown in newsletter footers and email subjects.
+    brand: str = field(default_factory=lambda: os.getenv("NEWSLETTER_BRAND", "AI Daily"))
+
     # Paths
     data_dir: Path = field(
-        default_factory=lambda: Path(
-            os.getenv("DATA_DIR", Path(__file__).parent.parent / "data")
-        )
+        default_factory=lambda: Path(os.getenv("DATA_DIR", Path(__file__).parent.parent / "data"))
     )
     logs_dir: Path = field(
-        default_factory=lambda: Path(
-            os.getenv("LOGS_DIR", Path(__file__).parent.parent / "logs")
-        )
+        default_factory=lambda: Path(os.getenv("LOGS_DIR", Path(__file__).parent.parent / "logs"))
     )
     templates_dir: Path = field(
         default_factory=lambda: Path(
             os.getenv("TEMPLATES_DIR", Path(__file__).parent.parent / "templates")
         )
     )
+    # Per-user sources/whitelist (gitignored). Falls back to the example until it exists.
     config_file: Path = field(
         default_factory=lambda: Path(
             os.getenv("CONFIG_FILE", Path(__file__).parent.parent / "config.json")
         )
     )
+    config_example_file: Path = field(
+        default_factory=lambda: Path(__file__).parent.parent / "config.example.json"
+    )
 
     # Recipients for newsletters (fallback for all)
-    recipients: List[str] = field(
+    recipients: list[str] = field(
         default_factory=lambda: [
-            r.strip()
-            for r in os.getenv("RECIPIENTS", "").split(",")
-            if r.strip()
+            r.strip() for r in os.getenv("RECIPIENTS", "").split(",") if r.strip()
         ]
     )
 
     # Per-newsletter recipient lists (fall back to recipients if not set)
-    newsletter_recipients: List[str] = field(
+    newsletter_recipients: list[str] = field(
         default_factory=lambda: [
-            r.strip()
-            for r in os.getenv("NEWSLETTER_RECIPIENTS", "").split(",")
-            if r.strip()
+            r.strip() for r in os.getenv("NEWSLETTER_RECIPIENTS", "").split(",") if r.strip()
         ]
     )
-    github_recipients: List[str] = field(
+    github_recipients: list[str] = field(
         default_factory=lambda: [
-            r.strip()
-            for r in os.getenv("GITHUB_RECIPIENTS", "").split(",")
-            if r.strip()
+            r.strip() for r in os.getenv("GITHUB_RECIPIENTS", "").split(",") if r.strip()
         ]
     )
-    tts_recipients: List[str] = field(
+    tts_recipients: list[str] = field(
         default_factory=lambda: [
-            r.strip()
-            for r in os.getenv("TTS_RECIPIENTS", "").split(",")
-            if r.strip()
+            r.strip() for r in os.getenv("TTS_RECIPIENTS", "").split(",") if r.strip()
         ]
     )
 
-    def get_newsletter_recipients(self) -> List[str]:
+    def get_newsletter_recipients(self) -> list[str]:
         """Get recipients for AI Daily newsletter (falls back to general recipients)."""
         return self.newsletter_recipients if self.newsletter_recipients else self.recipients
 
-    def get_github_recipients(self) -> List[str]:
+    def get_github_recipients(self) -> list[str]:
         """Get recipients for GitHub newsletter (falls back to general recipients)."""
         return self.github_recipients if self.github_recipients else self.recipients
 
-    def get_tts_recipients(self) -> List[str]:
+    def resolve_config_file(self) -> Path:
+        """The config file to read: the personal one if present, else the example."""
+        return self.config_file if self.config_file.exists() else self.config_example_file
+
+    def get_tts_recipients(self) -> list[str]:
         """Get recipients for TTS audio briefing (falls back to general recipients)."""
         return self.tts_recipients if self.tts_recipients else self.recipients
 

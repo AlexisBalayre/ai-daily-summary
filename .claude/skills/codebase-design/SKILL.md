@@ -81,27 +81,29 @@ Good interfaces make testing natural:
 
 1. **Accept dependencies, don't create them.**
 
-   ```typescript
-   // Testable
-   function processOrder(order, paymentGateway) {}
+   ```python
+   # Testable: the LLM client crosses the seam as a parameter
+   async def enrich_article(article: Article, llm: LLMClient) -> Enrichment: ...
 
-   // Hard to test
-   function processOrder(order) {
-     const gateway = new StripeGateway();
-   }
+   # Hard to test: the module reaches for the network itself
+   async def enrich_article(article: Article) -> Enrichment:
+       client = genai.Client(api_key=config.llm.google_api_key)
+       ...
    ```
+
+   The repo's `EnrichmentProcessor` sits in between: it builds its `Embedder` lazily, so tests patch `ai_daily.etl.enrichment.Embedder` at the point of use rather than injecting it. That works, but it is a patch-shaped seam, not a parameter-shaped one.
 
 2. **Return results, don't produce side effects.**
 
-   ```typescript
-   // Testable
-   function calculateDiscount(cart): Discount {}
+   ```python
+   # Testable: BaseExtractor.extract() returns RawContent and touches nothing
+   async def extract(self, source: Source) -> list[RawContent]: ...
 
-   // Hard to test
-   function applyDiscount(cart): void {
-     cart.total -= discount;
-   }
+   # Hard to test: the extractor also writes rows and calls the LLM
+   async def extract_and_store(self, source: Source, session: Session) -> None: ...
    ```
+
+   This is why `docs/conventions/etl.md` forbids extractors from touching the DB or the LLM: the pipeline owns the side effects, so an extractor is testable against a fixture feed.
 
 3. **Small surface area.** Fewer methods = fewer tests needed. Fewer params = simpler test setup.
 
@@ -116,7 +118,7 @@ Good interfaces make testing natural:
 ## Rejected framings
 
 - **Depth as ratio of implementation-lines to interface-lines** (Ousterhout): rewards padding the implementation. We use depth-as-leverage instead.
-- **"Interface" as the TypeScript `interface` keyword or a class's public methods**: too narrow — interface here includes every fact a caller must know.
+- **"Interface" as a `typing.Protocol` / ABC or a class's public methods**: too narrow — interface here includes every fact a caller must know (`BaseExtractor` says `extract()` returns `list[RawContent]`; the convention doc adds that it must not touch the DB, must be async, and must skip bad items instead of raising).
 - **"Boundary"**: overloaded with DDD's bounded context. Say **seam** or **interface**.
 
 ## Going deeper

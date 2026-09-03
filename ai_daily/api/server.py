@@ -1,15 +1,15 @@
 """FastAPI server configuration."""
 
-import os
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from ai_daily.api.chat import router as chat_router
 from ai_daily.api.routes import router
+from ai_daily.config import config
 
 app = FastAPI(
     title="AI Daily Summary API",
@@ -17,14 +17,15 @@ app = FastAPI(
     version="0.2.0",
 )
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# The dashboard is served from this app, so cross-origin access is opt-in (CORS_ORIGINS).
+if config.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=config.cors_origins,
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Include API routes
 app.include_router(router, prefix="/api/v1")
@@ -38,7 +39,7 @@ def health():
 
 
 # Static files serving for frontend
-static_dir = Path(__file__).parent / "static"
+static_dir = Path(__file__).parent.parent / "static"
 if static_dir.exists():
     # Serve static assets
     app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")

@@ -4,9 +4,8 @@ import logging
 import os
 import re
 import shutil
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Optional
 
 from google import genai
 from google.genai.types import GenerateContentConfig
@@ -20,8 +19,9 @@ logger = logging.getLogger(__name__)
 
 # Pocket TTS import (may not be available)
 try:
-    from pocket_tts import TTSModel
     import scipy.io.wavfile
+    from pocket_tts import TTSModel
+
     POCKET_TTS_AVAILABLE = True
 except ImportError:
     POCKET_TTS_AVAILABLE = False
@@ -56,10 +56,9 @@ Output the script as plain text, ready to be read aloud."""
         self.output_dir = config.data_dir / "briefings"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        # iCloud sync directory for phone access
-        icloud_default = Path.home() / "Library" / "Mobile Documents" / "com~apple~CloudDocs" / "AI Daily Briefings"
+        # Optional second copy of each briefing (e.g. a folder synced to a phone).
         tts_output = os.getenv("TTS_OUTPUT_DIR", "")
-        self.sync_dir = Path(tts_output) if tts_output else icloud_default
+        self.sync_dir: Path | None = Path(tts_output) if tts_output else None
 
         self.client = genai.Client(api_key=config.llm.google_api_key)
         self.model = config.llm.model
@@ -67,7 +66,7 @@ Output the script as plain text, ready to be read aloud."""
         self.tts_model = None
         self.voice_state = None
 
-    def _init_tts(self, voice: Optional[str] = None):
+    def _init_tts(self, voice: str | None = None):
         """Initialize TTS model lazily."""
         if not POCKET_TTS_AVAILABLE:
             raise RuntimeError("Pocket TTS not installed. Run: pip install pocket-tts")
@@ -95,7 +94,7 @@ Output the script as plain text, ready to be read aloud."""
         content = f"""Summary: {summary.summary_text}
 
 Key Facts:
-{chr(10).join(f'- {fact}' for fact in (summary.key_facts or []))}"""
+{chr(10).join(f"- {fact}" for fact in (summary.key_facts or []))}"""
 
         fallback_script = f"Here is your daily briefing. {summary.summary_text}"
 
@@ -131,8 +130,13 @@ Key Facts:
         text = text.translate(
             str.maketrans(
                 {
-                    "’": "'", "‘": "'", "“": '"', "”": '"',
-                    "–": "-", "—": "-", "…": "...",
+                    "’": "'",
+                    "‘": "'",
+                    "“": '"',
+                    "”": '"',
+                    "–": "-",
+                    "—": "-",
+                    "…": "...",
                 }
             )
         )
@@ -152,10 +156,7 @@ Key Facts:
         return text.strip()
 
     async def generate(
-        self,
-        session: Session,
-        target_date: Optional[date] = None,
-        voice: Optional[str] = None
+        self, session: Session, target_date: date | None = None, voice: str | None = None
     ) -> Path:
         """Generate audio briefing.
 
@@ -168,7 +169,7 @@ Key Facts:
             Path to generated audio file.
         """
         if target_date is None:
-            target_date = date.today()
+            target_date = datetime.now(UTC).date()
 
         # Get or generate summary
         summary = await self.summary_generator.generate(session, target_date)
@@ -202,13 +203,14 @@ Key Facts:
             logger.error(f"Failed to write audio file to {audio_path}: {e}")
             raise
 
-        # Copy to iCloud sync directory
         sync_path = self._copy_to_sync_dir(audio_path, target_date)
 
         return audio_path, sync_path
 
-    def _copy_to_sync_dir(self, audio_path: Path, target_date: date) -> Optional[Path]:
-        """Copy audio to cloud sync directory for phone access."""
+    def _copy_to_sync_dir(self, audio_path: Path, target_date: date) -> Path | None:
+        """Copy audio to the configured sync directory, if any."""
+        if self.sync_dir is None:
+            return None
         try:
             self.sync_dir.mkdir(parents=True, exist_ok=True)
             sync_path = self.sync_dir / f"briefing_{target_date.isoformat()}.wav"

@@ -1,15 +1,31 @@
 import type { Article, Source, SourceCreate, Job, Summary, SystemStatus, SourceTestResult, WhitelistResponse, Release, LeaderboardSummary, LeaderboardDetail, BriefingInfo } from './types'
 
 const API_BASE = '/api/v1'
+const TOKEN_KEY = 'ai_daily_api_token'
 
-async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
+// When the server sets API_TOKEN, mutating calls need a bearer token. It is asked for
+// once (on the first 401) and kept in localStorage for this browser.
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem(TOKEN_KEY)
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+async function fetchJSON<T>(url: string, options?: RequestInit, retried = false): Promise<T> {
   const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders(),
       ...options?.headers,
     },
   })
+  if (response.status === 401 && !retried) {
+    const token = window.prompt('This action requires the API token (API_TOKEN on the server):')
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token.trim())
+      return fetchJSON<T>(url, options, true)
+    }
+  }
   if (!response.ok) {
     throw new Error(`API error: ${response.status}`)
   }

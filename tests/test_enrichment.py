@@ -1,11 +1,11 @@
 """Tests for article enrichment fields."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 import pytest
 
 # Import simplified SQLite-compatible models from conftest
-from tests.conftest import SqliteSource, SqliteArticle
+from tests.conftest import SqliteArticle, SqliteSource
 
 
 class TestEnrichmentFields:
@@ -162,31 +162,37 @@ class TestEnrichmentProcessor:
     def test_enrichment_processor_can_be_imported(self):
         """Test that EnrichmentProcessor can be imported."""
         from ai_daily.etl.enrichment import EnrichmentProcessor
+
         assert EnrichmentProcessor is not None
 
     def test_enrichment_processor_batch_size_constant(self):
         """Test that BATCH_SIZE constant is 50."""
         from ai_daily.etl.enrichment import EnrichmentProcessor
+
         assert EnrichmentProcessor.BATCH_SIZE == 50
 
     def test_enrichment_processor_similarity_threshold_constant(self):
         """Test that SIMILARITY_THRESHOLD constant is 0.92."""
         from ai_daily.etl.enrichment import EnrichmentProcessor
+
         assert EnrichmentProcessor.SIMILARITY_THRESHOLD == 0.92
 
     def test_enrichment_processor_lookback_days_constant(self):
         """Test that LOOKBACK_DAYS constant is 7."""
         from ai_daily.etl.enrichment import EnrichmentProcessor
+
         assert EnrichmentProcessor.LOOKBACK_DAYS == 7
 
     def test_enrichment_stats_can_be_imported(self):
         """Test that EnrichmentStats can be imported."""
         from ai_daily.etl.enrichment import EnrichmentStats
+
         assert EnrichmentStats is not None
 
     def test_enrichment_stats_default_values(self):
         """Test that EnrichmentStats has correct default values."""
         from ai_daily.etl.enrichment import EnrichmentStats
+
         stats = EnrichmentStats()
         assert stats.processed == 0
         assert stats.duplicates == 0
@@ -196,6 +202,7 @@ class TestEnrichmentProcessor:
     def test_enrichment_stats_custom_values(self):
         """Test that EnrichmentStats accepts custom values."""
         from ai_daily.etl.enrichment import EnrichmentStats
+
         stats = EnrichmentStats(processed=10, duplicates=2, ai_related=8, errors=1)
         assert stats.processed == 10
         assert stats.duplicates == 2
@@ -205,6 +212,7 @@ class TestEnrichmentProcessor:
     def test_get_unenriched_articles_returns_only_unenriched(self, session):
         """Test that get_unenriched_articles returns only articles without enriched_at."""
         from unittest.mock import patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
@@ -248,6 +256,7 @@ class TestEnrichmentProcessor:
     def test_get_unenriched_articles_excludes_duplicates(self, session):
         """Test that get_unenriched_articles excludes duplicate articles."""
         from unittest.mock import patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
@@ -283,6 +292,7 @@ class TestEnrichmentProcessor:
     def test_get_unenriched_articles_respects_limit(self, session):
         """Test that get_unenriched_articles respects the limit parameter."""
         from unittest.mock import patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
@@ -311,6 +321,7 @@ class TestEnrichmentProcessor:
     def test_get_unenriched_articles_uses_batch_size_default(self, session):
         """Test that get_unenriched_articles uses BATCH_SIZE when limit is None."""
         from unittest.mock import patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
@@ -338,9 +349,10 @@ class TestEnrichmentProcessor:
 
     def test_get_unenriched_articles_orders_by_ingested_at_desc(self, session):
         """Test that get_unenriched_articles orders by ingested_at descending."""
-        from unittest.mock import patch
-        from ai_daily.etl.enrichment import EnrichmentProcessor
         from datetime import timedelta
+        from unittest.mock import patch
+
+        from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
         source = SqliteSource(type="newsletter", name="Test")
@@ -382,30 +394,38 @@ class TestEnrichmentProcessor:
         assert result[2].title == "Old Article"
 
     def test_enrichment_processor_has_embedder_property(self):
-        """Test that EnrichmentProcessor has embedder property."""
+        """The embedder is built lazily, on first access, from the Embedder class."""
+        from unittest.mock import patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
+
         processor = EnrichmentProcessor()
-        assert hasattr(processor, 'embedder')
-        assert hasattr(processor, '_embedder')
+        assert processor._embedder is None
+        with patch("ai_daily.etl.enrichment.Embedder") as embedder_cls:
+            assert processor.embedder is embedder_cls.return_value
+            assert processor.embedder is embedder_cls.return_value
+        embedder_cls.assert_called_once_with()
 
     def test_enrichment_processor_has_generate_embedding_method(self):
         """Test that EnrichmentProcessor has generate_embedding method."""
         from ai_daily.etl.enrichment import EnrichmentProcessor
+
         processor = EnrichmentProcessor()
-        assert hasattr(processor, 'generate_embedding')
+        assert hasattr(processor, "generate_embedding")
         assert callable(processor.generate_embedding)
 
     @pytest.mark.asyncio
     async def test_generate_embedding_calls_embedder(self):
         """Test that generate_embedding calls the embedder's embed method."""
         from unittest.mock import AsyncMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create a mock embedding result
         mock_embedding = [0.1] * 768  # 768-dimensional embedding
 
         # Mock the Embedder class
-        with patch('ai_daily.etl.enrichment.Embedder') as MockEmbedder:
+        with patch("ai_daily.etl.enrichment.Embedder") as MockEmbedder:
             mock_embedder_instance = MockEmbedder.return_value
             mock_embedder_instance.embed = AsyncMock(return_value=mock_embedding)
 
@@ -422,12 +442,13 @@ class TestEnrichmentProcessor:
     async def test_generate_embedding_returns_list_of_floats(self):
         """Test that generate_embedding returns a list of floats."""
         from unittest.mock import AsyncMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create a mock embedding result with proper float values
         mock_embedding = [0.123, 0.456, 0.789, -0.321, 0.654]
 
-        with patch('ai_daily.etl.enrichment.Embedder') as MockEmbedder:
+        with patch("ai_daily.etl.enrichment.Embedder") as MockEmbedder:
             mock_embedder_instance = MockEmbedder.return_value
             mock_embedder_instance.embed = AsyncMock(return_value=mock_embedding)
 
@@ -441,9 +462,10 @@ class TestEnrichmentProcessor:
     def test_embedder_lazy_initialization(self):
         """Test that embedder is lazily initialized."""
         from unittest.mock import patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
-        with patch('ai_daily.etl.enrichment.Embedder') as MockEmbedder:
+        with patch("ai_daily.etl.enrichment.Embedder") as MockEmbedder:
             processor = EnrichmentProcessor()
 
             # Embedder should not be instantiated yet
@@ -460,9 +482,10 @@ class TestEnrichmentProcessor:
     def test_embedder_only_instantiated_once(self):
         """Test that embedder is only instantiated once."""
         from unittest.mock import patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
-        with patch('ai_daily.etl.enrichment.Embedder') as MockEmbedder:
+        with patch("ai_daily.etl.enrichment.Embedder") as MockEmbedder:
             processor = EnrichmentProcessor()
 
             # Access embedder multiple times
@@ -483,7 +506,6 @@ class TestFindDuplicate:
 
     def _create_mock_processor_with_mocked_select(self):
         """Helper to create a processor with mocked select to bypass SQLAlchemy validation."""
-        from unittest.mock import MagicMock, patch
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -492,6 +514,7 @@ class TestFindDuplicate:
     def test_find_duplicate_returns_match_when_similarity_above_threshold(self):
         """Test that find_duplicate returns a match when similarity >= threshold."""
         from unittest.mock import MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -517,7 +540,7 @@ class TestFindDuplicate:
         embedding = [0.1] * 768
 
         # Patch the Article class and create a mock for select
-        with patch('ai_daily.etl.enrichment.Article') as MockArticle:
+        with patch("ai_daily.etl.enrichment.Article") as MockArticle:
             MockArticle.enriched_at = MagicMock()
             MockArticle.embedding = MagicMock()
             MockArticle.id = MagicMock()
@@ -527,7 +550,6 @@ class TestFindDuplicate:
 
             # We need to patch select where it's imported in the method
             import ai_daily.etl.enrichment as enrichment_module
-            original_find_duplicate = enrichment_module.EnrichmentProcessor.find_duplicate
 
             def mock_find_duplicate(self, session, article_id, embedding):
                 """Mock version that simulates the query logic."""
@@ -541,7 +563,9 @@ class TestFindDuplicate:
                         return result
                 return None
 
-            with patch.object(enrichment_module.EnrichmentProcessor, 'find_duplicate', mock_find_duplicate):
+            with patch.object(
+                enrichment_module.EnrichmentProcessor, "find_duplicate", mock_find_duplicate
+            ):
                 result = processor.find_duplicate(mock_session, 999, embedding)
 
         assert result == mock_match
@@ -549,6 +573,7 @@ class TestFindDuplicate:
     def test_find_duplicate_returns_none_when_similarity_below_threshold(self):
         """Test that find_duplicate returns None when similarity < threshold."""
         from unittest.mock import MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -585,7 +610,9 @@ class TestFindDuplicate:
                     return result
             return None
 
-        with patch.object(enrichment_module.EnrichmentProcessor, 'find_duplicate', mock_find_duplicate):
+        with patch.object(
+            enrichment_module.EnrichmentProcessor, "find_duplicate", mock_find_duplicate
+        ):
             result = processor.find_duplicate(mock_session, 999, embedding)
 
         assert result is None
@@ -593,6 +620,7 @@ class TestFindDuplicate:
     def test_find_duplicate_returns_none_when_no_matches(self):
         """Test that find_duplicate returns None when no candidates exist."""
         from unittest.mock import MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -620,7 +648,9 @@ class TestFindDuplicate:
                     return result
             return None
 
-        with patch.object(enrichment_module.EnrichmentProcessor, 'find_duplicate', mock_find_duplicate):
+        with patch.object(
+            enrichment_module.EnrichmentProcessor, "find_duplicate", mock_find_duplicate
+        ):
             result = processor.find_duplicate(mock_session, 999, embedding)
 
         assert result is None
@@ -628,6 +658,7 @@ class TestFindDuplicate:
     def test_find_duplicate_at_exact_threshold_returns_match(self):
         """Test that find_duplicate returns match at exactly the threshold (0.92)."""
         from unittest.mock import MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -662,7 +693,9 @@ class TestFindDuplicate:
                     return result
             return None
 
-        with patch.object(enrichment_module.EnrichmentProcessor, 'find_duplicate', mock_find_duplicate):
+        with patch.object(
+            enrichment_module.EnrichmentProcessor, "find_duplicate", mock_find_duplicate
+        ):
             result = processor.find_duplicate(mock_session, 999, embedding)
 
         assert result == mock_match
@@ -670,6 +703,7 @@ class TestFindDuplicate:
     def test_find_duplicate_just_below_threshold_returns_none(self):
         """Test that find_duplicate returns None when similarity is just below threshold."""
         from unittest.mock import MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -704,7 +738,9 @@ class TestFindDuplicate:
                     return result
             return None
 
-        with patch.object(enrichment_module.EnrichmentProcessor, 'find_duplicate', mock_find_duplicate):
+        with patch.object(
+            enrichment_module.EnrichmentProcessor, "find_duplicate", mock_find_duplicate
+        ):
             result = processor.find_duplicate(mock_session, 999, embedding)
 
         assert result is None
@@ -714,21 +750,22 @@ class TestFindDuplicate:
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
-        assert hasattr(processor, 'find_duplicate')
+        assert hasattr(processor, "find_duplicate")
         assert callable(processor.find_duplicate)
 
     def test_find_duplicate_has_correct_signature(self):
         """Test that find_duplicate has the correct signature."""
         import inspect
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
         sig = inspect.signature(processor.find_duplicate)
         params = list(sig.parameters.keys())
 
-        assert 'session' in params
-        assert 'article_id' in params
-        assert 'embedding' in params
+        assert "session" in params
+        assert "article_id" in params
+        assert "embedding" in params
 
     def test_find_duplicate_uses_lookback_days_constant(self):
         """Test that find_duplicate method uses LOOKBACK_DAYS for cutoff calculation."""
@@ -753,14 +790,14 @@ class TestLLMEnrich:
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
-        assert hasattr(processor, 'llm_enrich')
+        assert hasattr(processor, "llm_enrich")
         assert callable(processor.llm_enrich)
 
     def test_enrichment_prompt_constant_exists(self):
         """Test that ENRICHMENT_PROMPT constant exists."""
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
-        assert hasattr(EnrichmentProcessor, 'ENRICHMENT_PROMPT')
+        assert hasattr(EnrichmentProcessor, "ENRICHMENT_PROMPT")
         assert isinstance(EnrichmentProcessor.ENRICHMENT_PROMPT, str)
 
     def test_enrichment_prompt_contains_required_fields(self):
@@ -768,19 +805,28 @@ class TestLLMEnrich:
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         prompt = EnrichmentProcessor.ENRICHMENT_PROMPT
-        assert 'CATEGORY' in prompt
-        assert 'IS_AI_RELATED' in prompt
-        assert 'SUMMARY' in prompt
-        assert 'TAGS' in prompt
-        assert '{title}' in prompt
-        assert '{content}' in prompt
+        assert "CATEGORY" in prompt
+        assert "IS_AI_RELATED" in prompt
+        assert "SUMMARY" in prompt
+        assert "TAGS" in prompt
+        assert "{title}" in prompt
+        assert "{content}" in prompt
 
     def test_enrichment_prompt_has_valid_categories(self):
         """Test that ENRICHMENT_PROMPT lists valid categories."""
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         prompt = EnrichmentProcessor.ENRICHMENT_PROMPT
-        categories = ['ai', 'security', 'cloud', 'hardware', 'mobile', 'software', 'business', 'other']
+        categories = [
+            "ai",
+            "security",
+            "cloud",
+            "hardware",
+            "mobile",
+            "software",
+            "business",
+            "other",
+        ]
         for category in categories:
             assert category in prompt
 
@@ -788,6 +834,7 @@ class TestLLMEnrich:
     async def test_llm_enrich_formats_prompt_correctly(self):
         """Test that llm_enrich formats the prompt with title and content."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -795,7 +842,7 @@ class TestLLMEnrich:
         mock_response = MagicMock()
         mock_response.text = '{"category": "ai", "is_ai_related": true, "summary": "Test summary.", "tags": ["test"]}'
 
-        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+        with patch("ai_daily.etl.enrichment.genai") as mock_genai:
             mock_client = MagicMock()
             mock_genai.Client.return_value = mock_client
             mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
@@ -807,17 +854,20 @@ class TestLLMEnrich:
 
             # Get the prompt that was passed
             call_args = mock_client.aio.models.generate_content.call_args
-            prompt = call_args.kwargs.get('contents') or call_args.args[0] if call_args.args else None
-            if prompt is None and 'contents' in call_args.kwargs:
-                prompt = call_args.kwargs['contents']
+            prompt = (
+                call_args.kwargs.get("contents") or call_args.args[0] if call_args.args else None
+            )
+            if prompt is None and "contents" in call_args.kwargs:
+                prompt = call_args.kwargs["contents"]
 
-            assert 'Test Title' in prompt
-            assert 'Test content about AI.' in prompt
+            assert "Test Title" in prompt
+            assert "Test content about AI." in prompt
 
     @pytest.mark.asyncio
     async def test_llm_enrich_truncates_content(self):
         """Test that llm_enrich truncates content to 4000 characters."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -826,9 +876,11 @@ class TestLLMEnrich:
         long_content = "A" * 5000
 
         mock_response = MagicMock()
-        mock_response.text = '{"category": "ai", "is_ai_related": true, "summary": "Test.", "tags": ["test"]}'
+        mock_response.text = (
+            '{"category": "ai", "is_ai_related": true, "summary": "Test.", "tags": ["test"]}'
+        )
 
-        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+        with patch("ai_daily.etl.enrichment.genai") as mock_genai:
             mock_client = MagicMock()
             mock_genai.Client.return_value = mock_client
             mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
@@ -837,18 +889,21 @@ class TestLLMEnrich:
 
             # Get the prompt that was passed
             call_args = mock_client.aio.models.generate_content.call_args
-            prompt = call_args.kwargs.get('contents') or call_args.args[0] if call_args.args else None
-            if prompt is None and 'contents' in call_args.kwargs:
-                prompt = call_args.kwargs['contents']
+            prompt = (
+                call_args.kwargs.get("contents") or call_args.args[0] if call_args.args else None
+            )
+            if prompt is None and "contents" in call_args.kwargs:
+                prompt = call_args.kwargs["contents"]
 
             # Content should be truncated to 4000 chars, not the full 5000
-            assert 'A' * 5000 not in prompt
-            assert 'A' * 4000 in prompt
+            assert "A" * 5000 not in prompt
+            assert "A" * 4000 in prompt
 
     @pytest.mark.asyncio
     async def test_llm_enrich_parses_valid_json(self):
         """Test that llm_enrich correctly parses valid JSON response."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -857,13 +912,13 @@ class TestLLMEnrich:
             "category": "ai",
             "is_ai_related": True,
             "summary": "This is a test summary.",
-            "tags": ["machine-learning", "neural-networks"]
+            "tags": ["machine-learning", "neural-networks"],
         }
 
         mock_response = MagicMock()
         mock_response.text = '{"category": "ai", "is_ai_related": true, "summary": "This is a test summary.", "tags": ["machine-learning", "neural-networks"]}'
 
-        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+        with patch("ai_daily.etl.enrichment.genai") as mock_genai:
             mock_client = MagicMock()
             mock_genai.Client.return_value = mock_client
             mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
@@ -876,6 +931,7 @@ class TestLLMEnrich:
     async def test_llm_enrich_extracts_json_from_text(self):
         """Test that llm_enrich can extract JSON from text with extra content."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -884,7 +940,7 @@ class TestLLMEnrich:
         mock_response = MagicMock()
         mock_response.text = 'Here is the analysis:\n{"category": "security", "is_ai_related": false, "summary": "Security article.", "tags": ["security"]}\nEnd of response.'
 
-        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+        with patch("ai_daily.etl.enrichment.genai") as mock_genai:
             mock_client = MagicMock()
             mock_genai.Client.return_value = mock_client
             mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
@@ -900,15 +956,16 @@ class TestLLMEnrich:
     async def test_llm_enrich_raises_on_invalid_json(self):
         """Test that llm_enrich raises ValueError when JSON cannot be parsed."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
 
         # Response with no valid JSON
         mock_response = MagicMock()
-        mock_response.text = 'This is not valid JSON at all'
+        mock_response.text = "This is not valid JSON at all"
 
-        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+        with patch("ai_daily.etl.enrichment.genai") as mock_genai:
             mock_client = MagicMock()
             mock_genai.Client.return_value = mock_client
             mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
@@ -922,15 +979,18 @@ class TestLLMEnrich:
     async def test_llm_enrich_uses_correct_model(self):
         """Test that llm_enrich uses the model from config."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
 
         mock_response = MagicMock()
-        mock_response.text = '{"category": "ai", "is_ai_related": true, "summary": "Test.", "tags": ["test"]}'
+        mock_response.text = (
+            '{"category": "ai", "is_ai_related": true, "summary": "Test.", "tags": ["test"]}'
+        )
 
-        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
-            with patch('ai_daily.etl.enrichment.config') as mock_config:
+        with patch("ai_daily.etl.enrichment.genai") as mock_genai:
+            with patch("ai_daily.etl.enrichment.config") as mock_config:
                 mock_config.llm.google_api_key = "test-api-key"
                 mock_config.llm.model = "gemini-2.0-flash-lite"
 
@@ -945,21 +1005,23 @@ class TestLLMEnrich:
 
                 # Verify model was passed
                 call_args = mock_client.aio.models.generate_content.call_args
-                assert call_args.kwargs.get('model') == "gemini-2.0-flash-lite"
+                assert call_args.kwargs.get("model") == "gemini-2.0-flash-lite"
 
     @pytest.mark.asyncio
     async def test_llm_enrich_requests_json_response(self):
         """Test that llm_enrich requests JSON mime type."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
-        from google.genai.types import GenerateContentConfig
 
         processor = EnrichmentProcessor()
 
         mock_response = MagicMock()
-        mock_response.text = '{"category": "ai", "is_ai_related": true, "summary": "Test.", "tags": ["test"]}'
+        mock_response.text = (
+            '{"category": "ai", "is_ai_related": true, "summary": "Test.", "tags": ["test"]}'
+        )
 
-        with patch('ai_daily.etl.enrichment.genai') as mock_genai:
+        with patch("ai_daily.etl.enrichment.genai") as mock_genai:
             mock_client = MagicMock()
             mock_genai.Client.return_value = mock_client
             mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
@@ -968,7 +1030,7 @@ class TestLLMEnrich:
 
             # Verify config was passed with JSON mime type
             call_args = mock_client.aio.models.generate_content.call_args
-            config_arg = call_args.kwargs.get('config')
+            config_arg = call_args.kwargs.get("config")
             assert config_arg is not None
             assert config_arg.response_mime_type == "application/json"
 
@@ -981,7 +1043,7 @@ class TestRunAndProcessBatch:
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
-        assert hasattr(processor, 'run')
+        assert hasattr(processor, "run")
         assert callable(processor.run)
 
     def test_process_batch_method_exists_and_callable(self):
@@ -989,19 +1051,20 @@ class TestRunAndProcessBatch:
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
-        assert hasattr(processor, '_process_batch')
+        assert hasattr(processor, "_process_batch")
         assert callable(processor._process_batch)
 
     @pytest.mark.asyncio
     async def test_run_with_session_uses_provided_session(self):
         """Test that run() uses provided session instead of creating a new one."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
         mock_session = MagicMock()
 
-        with patch.object(processor, '_process_batch', new_callable=AsyncMock) as mock_process:
+        with patch.object(processor, "_process_batch", new_callable=AsyncMock) as mock_process:
             mock_process.return_value = EnrichmentStats(processed=5)
             result = await processor.run(session=mock_session)
 
@@ -1015,6 +1078,7 @@ class TestRunAndProcessBatch:
     async def test_run_without_session_creates_session(self):
         """Test that run() creates a session when none is provided."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
@@ -1025,8 +1089,8 @@ class TestRunAndProcessBatch:
         mock_context.__exit__ = MagicMock(return_value=None)
 
         # Patch get_session in ai_daily.db where it's imported from
-        with patch('ai_daily.db.get_session', return_value=mock_context) as mock_get_session:
-            with patch.object(processor, '_process_batch', new_callable=AsyncMock) as mock_process:
+        with patch("ai_daily.db.get_session", return_value=mock_context) as mock_get_session:
+            with patch.object(processor, "_process_batch", new_callable=AsyncMock) as mock_process:
                 mock_process.return_value = EnrichmentStats(processed=3)
                 result = await processor.run()
 
@@ -1037,12 +1101,13 @@ class TestRunAndProcessBatch:
     @pytest.mark.asyncio
     async def test_process_batch_calls_get_unenriched_articles(self, session):
         """Test that _process_batch calls get_unenriched_articles."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[]) as mock_get:
+        with patch.object(processor, "get_unenriched_articles", return_value=[]) as mock_get:
             stats = EnrichmentStats()
             await processor._process_batch(session, stats)
             mock_get.assert_called_once_with(session)
@@ -1051,6 +1116,7 @@ class TestRunAndProcessBatch:
     async def test_process_batch_generates_embedding_for_each_article(self, session):
         """Test that _process_batch generates embedding for each article."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
@@ -1068,24 +1134,39 @@ class TestRunAndProcessBatch:
 
         mock_embedding = [0.1] * 768
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[mock_article1, mock_article2]):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding) as mock_embed:
-                with patch.object(processor, 'find_duplicate', return_value=None):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
-                        "category": "ai", "is_ai_related": True, "summary": "Test", "tags": ["test"]
-                    }):
-                        stats = EnrichmentStats()
-                        await processor._process_batch(session, stats)
+        with (
+            patch.object(
+                processor, "get_unenriched_articles", return_value=[mock_article1, mock_article2]
+            ),
+            patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ) as mock_embed,
+            patch.object(processor, "find_duplicate", return_value=None),
+            patch.object(
+                processor,
+                "llm_enrich",
+                new_callable=AsyncMock,
+                return_value={
+                    "category": "ai",
+                    "is_ai_related": True,
+                    "summary": "Test",
+                    "tags": ["test"],
+                },
+            ),
+        ):
+            stats = EnrichmentStats()
+            await processor._process_batch(session, stats)
 
-                        # Verify generate_embedding was called for each article
-                        assert mock_embed.call_count == 2
-                        mock_embed.assert_any_call("Content 1")
-                        mock_embed.assert_any_call("Content 2")
+            # Verify generate_embedding was called for each article
+            assert mock_embed.call_count == 2
+            mock_embed.assert_any_call("Content 1")
+            mock_embed.assert_any_call("Content 2")
 
     @pytest.mark.asyncio
     async def test_process_batch_marks_duplicate_articles(self, session):
         """Test that _process_batch marks duplicate articles correctly."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
@@ -1102,9 +1183,11 @@ class TestRunAndProcessBatch:
 
         mock_embedding = [0.1] * 768
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[mock_article]):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
-                with patch.object(processor, 'find_duplicate', return_value=mock_duplicate):
+        with patch.object(processor, "get_unenriched_articles", return_value=[mock_article]):
+            with patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ):
+                with patch.object(processor, "find_duplicate", return_value=mock_duplicate):
                     stats = EnrichmentStats()
                     await processor._process_batch(session, stats)
 
@@ -1119,6 +1202,7 @@ class TestRunAndProcessBatch:
     async def test_process_batch_calls_llm_enrich_for_non_duplicates(self, session):
         """Test that _process_batch calls llm_enrich for non-duplicate articles."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
@@ -1131,12 +1215,22 @@ class TestRunAndProcessBatch:
 
         mock_embedding = [0.1] * 768
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[mock_article]):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
-                with patch.object(processor, 'find_duplicate', return_value=None):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
-                        "category": "ai", "is_ai_related": True, "summary": "Test summary", "tags": ["test"]
-                    }) as mock_llm:
+        with patch.object(processor, "get_unenriched_articles", return_value=[mock_article]):
+            with patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ):
+                with patch.object(processor, "find_duplicate", return_value=None):
+                    with patch.object(
+                        processor,
+                        "llm_enrich",
+                        new_callable=AsyncMock,
+                        return_value={
+                            "category": "ai",
+                            "is_ai_related": True,
+                            "summary": "Test summary",
+                            "tags": ["test"],
+                        },
+                    ) as mock_llm:
                         stats = EnrichmentStats()
                         await processor._process_batch(session, stats)
 
@@ -1147,6 +1241,7 @@ class TestRunAndProcessBatch:
     async def test_process_batch_updates_article_with_enrichment(self, session):
         """Test that _process_batch updates article with enrichment data."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
@@ -1162,13 +1257,20 @@ class TestRunAndProcessBatch:
             "category": "ai",
             "is_ai_related": True,
             "summary": "This is about AI.",
-            "tags": ["machine-learning", "llm"]
+            "tags": ["machine-learning", "llm"],
         }
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[mock_article]):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
-                with patch.object(processor, 'find_duplicate', return_value=None):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value=enrichment_data):
+        with patch.object(processor, "get_unenriched_articles", return_value=[mock_article]):
+            with patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ):
+                with patch.object(processor, "find_duplicate", return_value=None):
+                    with patch.object(
+                        processor,
+                        "llm_enrich",
+                        new_callable=AsyncMock,
+                        return_value=enrichment_data,
+                    ):
                         stats = EnrichmentStats()
                         await processor._process_batch(session, stats)
 
@@ -1184,6 +1286,7 @@ class TestRunAndProcessBatch:
     async def test_process_batch_updates_stats_correctly(self, session):
         """Test that _process_batch updates stats correctly."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
@@ -1202,24 +1305,41 @@ class TestRunAndProcessBatch:
         mock_embedding = [0.1] * 768
 
         enrichment_ai = {"category": "ai", "is_ai_related": True, "summary": "AI.", "tags": []}
-        enrichment_security = {"category": "security", "is_ai_related": False, "summary": "Security.", "tags": []}
+        enrichment_security = {
+            "category": "security",
+            "is_ai_related": False,
+            "summary": "Security.",
+            "tags": [],
+        }
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[mock_article1, mock_article2]):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
-                with patch.object(processor, 'find_duplicate', return_value=None):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, side_effect=[enrichment_ai, enrichment_security]):
-                        stats = EnrichmentStats()
-                        result = await processor._process_batch(session, stats)
+        with (
+            patch.object(
+                processor, "get_unenriched_articles", return_value=[mock_article1, mock_article2]
+            ),
+            patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ),
+            patch.object(processor, "find_duplicate", return_value=None),
+            patch.object(
+                processor,
+                "llm_enrich",
+                new_callable=AsyncMock,
+                side_effect=[enrichment_ai, enrichment_security],
+            ),
+        ):
+            stats = EnrichmentStats()
+            result = await processor._process_batch(session, stats)
 
-                        assert result.processed == 2
-                        assert result.ai_related == 1
-                        assert result.duplicates == 0
-                        assert result.errors == 0
+            assert result.processed == 2
+            assert result.ai_related == 1
+            assert result.duplicates == 0
+            assert result.errors == 0
 
     @pytest.mark.asyncio
     async def test_process_batch_handles_errors_gracefully(self, session):
         """Test that _process_batch handles errors and continues processing."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
@@ -1242,29 +1362,47 @@ class TestRunAndProcessBatch:
                 raise Exception("Embedding generation failed")
             return mock_embedding
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[mock_article1, mock_article2]):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, side_effect=generate_side_effect):
-                with patch.object(processor, 'find_duplicate', return_value=None):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
-                        "category": "ai", "is_ai_related": True, "summary": "Test", "tags": []
-                    }):
-                        stats = EnrichmentStats()
-                        result = await processor._process_batch(session, stats)
+        with (
+            patch.object(
+                processor, "get_unenriched_articles", return_value=[mock_article1, mock_article2]
+            ),
+            patch.object(
+                processor,
+                "generate_embedding",
+                new_callable=AsyncMock,
+                side_effect=generate_side_effect,
+            ),
+            patch.object(processor, "find_duplicate", return_value=None),
+            patch.object(
+                processor,
+                "llm_enrich",
+                new_callable=AsyncMock,
+                return_value={
+                    "category": "ai",
+                    "is_ai_related": True,
+                    "summary": "Test",
+                    "tags": [],
+                },
+            ),
+        ):
+            stats = EnrichmentStats()
+            result = await processor._process_batch(session, stats)
 
-                        # Verify error was counted and processing continued
-                        assert result.errors == 1
-                        assert result.processed == 1
+            # Verify error was counted and processing continued
+            assert result.errors == 1
+            assert result.processed == 1
 
     @pytest.mark.asyncio
     async def test_process_batch_commits_session(self, session):
         """Test that _process_batch commits the session after processing."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
         mock_session = MagicMock()
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[]):
+        with patch.object(processor, "get_unenriched_articles", return_value=[]):
             stats = EnrichmentStats()
             await processor._process_batch(mock_session, stats)
             mock_session.commit.assert_called_once()
@@ -1272,12 +1410,13 @@ class TestRunAndProcessBatch:
     @pytest.mark.asyncio
     async def test_process_batch_returns_stats(self, session):
         """Test that _process_batch returns the stats object."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[]):
+        with patch.object(processor, "get_unenriched_articles", return_value=[]):
             stats = EnrichmentStats()
             result = await processor._process_batch(session, stats)
 
@@ -1288,12 +1427,15 @@ class TestRunAndProcessBatch:
     async def test_run_returns_enrichment_stats(self):
         """Test that run() returns EnrichmentStats."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
 
-        with patch.object(processor, '_process_batch', new_callable=AsyncMock) as mock_process:
-            mock_process.return_value = EnrichmentStats(processed=10, duplicates=2, ai_related=5, errors=1)
+        with patch.object(processor, "_process_batch", new_callable=AsyncMock) as mock_process:
+            mock_process.return_value = EnrichmentStats(
+                processed=10, duplicates=2, ai_related=5, errors=1
+            )
             mock_session = MagicMock()
             result = await processor.run(session=mock_session)
 
@@ -1307,6 +1449,7 @@ class TestRunAndProcessBatch:
     async def test_process_batch_skips_llm_for_duplicates(self, session):
         """Test that _process_batch does NOT call llm_enrich for duplicate articles."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
@@ -1323,10 +1466,12 @@ class TestRunAndProcessBatch:
 
         mock_embedding = [0.1] * 768
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[mock_article]):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
-                with patch.object(processor, 'find_duplicate', return_value=mock_duplicate):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock) as mock_llm:
+        with patch.object(processor, "get_unenriched_articles", return_value=[mock_article]):
+            with patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ):
+                with patch.object(processor, "find_duplicate", return_value=mock_duplicate):
+                    with patch.object(processor, "llm_enrich", new_callable=AsyncMock) as mock_llm:
                         stats = EnrichmentStats()
                         await processor._process_batch(session, stats)
 
@@ -1337,6 +1482,7 @@ class TestRunAndProcessBatch:
     async def test_process_batch_with_mixed_articles(self, session):
         """Test _process_batch with a mix of duplicates and unique articles."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor, EnrichmentStats
 
         processor = EnrichmentProcessor()
@@ -1362,32 +1508,46 @@ class TestRunAndProcessBatch:
                 return mock_original
             return None
 
-        with patch.object(processor, 'get_unenriched_articles', return_value=[mock_unique, mock_dup]):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
-                with patch.object(processor, 'find_duplicate', side_effect=find_dup_side_effect):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
-                        "category": "ai", "is_ai_related": True, "summary": "Test", "tags": []
-                    }) as mock_llm:
-                        stats = EnrichmentStats()
-                        result = await processor._process_batch(session, stats)
+        with (
+            patch.object(
+                processor, "get_unenriched_articles", return_value=[mock_unique, mock_dup]
+            ),
+            patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ),
+            patch.object(processor, "find_duplicate", side_effect=find_dup_side_effect),
+        ):
+            with patch.object(
+                processor,
+                "llm_enrich",
+                new_callable=AsyncMock,
+                return_value={
+                    "category": "ai",
+                    "is_ai_related": True,
+                    "summary": "Test",
+                    "tags": [],
+                },
+            ) as mock_llm:
+                stats = EnrichmentStats()
+                result = await processor._process_batch(session, stats)
 
-                        # Verify stats
-                        assert result.processed == 1
-                        assert result.duplicates == 1
-                        assert result.ai_related == 1
+                # Verify stats
+                assert result.processed == 1
+                assert result.duplicates == 1
+                assert result.ai_related == 1
 
-                        # Verify llm_enrich was only called for unique article
-                        mock_llm.assert_called_once_with("Unique Article", "Unique content")
+                # Verify llm_enrich was only called for unique article
+                mock_llm.assert_called_once_with("Unique Article", "Unique content")
 
-                        # Verify duplicate article was marked
-                        assert mock_dup.is_duplicate is True
-                        assert mock_dup.duplicate_of_id == 99
-
+                # Verify duplicate article was marked
+                assert mock_dup.is_duplicate is True
+                assert mock_dup.duplicate_of_id == 99
 
     @pytest.mark.asyncio
     async def test_enrich_article_with_precomputed_embedding(self, session):
         """Test enrich_article uses provided embedding instead of generating one."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -1399,15 +1559,25 @@ class TestRunAndProcessBatch:
 
         precomputed_embedding = [0.5] * 768
 
-        with patch.object(processor, 'find_duplicate', return_value=None):
-            with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
-                "category": "ai", "is_ai_related": True, "summary": "AI article.", "tags": ["ai"]
-            }):
-                with patch.object(processor, 'generate_embedding', new_callable=AsyncMock) as mock_embed:
-                    result = await processor.enrich_article(session, mock_article, precomputed_embedding)
+        with (
+            patch.object(processor, "find_duplicate", return_value=None),
+            patch.object(
+                processor,
+                "llm_enrich",
+                new_callable=AsyncMock,
+                return_value={
+                    "category": "ai",
+                    "is_ai_related": True,
+                    "summary": "AI article.",
+                    "tags": ["ai"],
+                },
+            ),
+            patch.object(processor, "generate_embedding", new_callable=AsyncMock) as mock_embed,
+        ):
+            result = await processor.enrich_article(session, mock_article, precomputed_embedding)
 
-                    # Should NOT call generate_embedding since we provided one
-                    mock_embed.assert_not_called()
+            # Should NOT call generate_embedding since we provided one
+            mock_embed.assert_not_called()
 
         # Article should be enriched
         assert mock_article.category == "ai"
@@ -1420,6 +1590,7 @@ class TestRunAndProcessBatch:
     async def test_enrich_article_detects_duplicate(self, session):
         """Test enrich_article marks duplicates and skips LLM."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
@@ -1434,9 +1605,11 @@ class TestRunAndProcessBatch:
 
         precomputed_embedding = [0.5] * 768
 
-        with patch.object(processor, 'find_duplicate', return_value=mock_original):
-            with patch.object(processor, 'llm_enrich', new_callable=AsyncMock) as mock_llm:
-                result = await processor.enrich_article(session, mock_article, precomputed_embedding)
+        with patch.object(processor, "find_duplicate", return_value=mock_original):
+            with patch.object(processor, "llm_enrich", new_callable=AsyncMock) as mock_llm:
+                result = await processor.enrich_article(
+                    session, mock_article, precomputed_embedding
+                )
                 mock_llm.assert_not_called()
 
         assert result == "duplicate"
@@ -1450,7 +1623,8 @@ class TestEnrichmentIntegration:
     @pytest.mark.asyncio
     async def test_full_pipeline_processes_articles(self, session):
         """Full pipeline processes unenriched articles."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import AsyncMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
@@ -1483,19 +1657,40 @@ class TestEnrichmentIntegration:
         # Use title-based matching for enrichment responses
         async def llm_enrich_mock(title, content):
             if "AI Model" in title:
-                return {"category": "ai", "is_ai_related": True, "summary": "New AI model released.", "tags": ["ai", "llm"]}
+                return {
+                    "category": "ai",
+                    "is_ai_related": True,
+                    "summary": "New AI model released.",
+                    "tags": ["ai", "llm"],
+                }
             elif "Cloud" in title:
-                return {"category": "cloud", "is_ai_related": False, "summary": "AWS cloud services.", "tags": ["cloud", "aws"]}
+                return {
+                    "category": "cloud",
+                    "is_ai_related": False,
+                    "summary": "AWS cloud services.",
+                    "tags": ["cloud", "aws"],
+                }
             else:
-                return {"category": "security", "is_ai_related": False, "summary": "Security patch.", "tags": ["security"]}
+                return {
+                    "category": "security",
+                    "is_ai_related": False,
+                    "summary": "Security patch.",
+                    "tags": ["security"],
+                }
 
         processor = EnrichmentProcessor()
 
-        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
-                with patch.object(processor, 'find_duplicate', return_value=None):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, side_effect=llm_enrich_mock):
-                        stats = await processor.run(session=session)
+        with (
+            patch("ai_daily.etl.enrichment.Article", SqliteArticle),
+            patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ),
+            patch.object(processor, "find_duplicate", return_value=None),
+            patch.object(
+                processor, "llm_enrich", new_callable=AsyncMock, side_effect=llm_enrich_mock
+            ),
+        ):
+            stats = await processor.run(session=session)
 
         # Verify stats
         assert stats.processed == 3
@@ -1524,6 +1719,7 @@ class TestEnrichmentIntegration:
     async def test_full_pipeline_detects_duplicates(self, session):
         """Full pipeline marks duplicate articles."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
@@ -1559,7 +1755,6 @@ class TestEnrichmentIntegration:
 
         # Store IDs for later reference
         original_id = original_article.id
-        unique_id = unique_article.id
         dup_id = duplicate_article.id
 
         # Mock external dependencies
@@ -1576,13 +1771,25 @@ class TestEnrichmentIntegration:
 
         processor = EnrichmentProcessor()
 
-        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
-                with patch.object(processor, 'find_duplicate', side_effect=find_duplicate_mock):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
-                        "category": "security", "is_ai_related": False, "summary": "Security.", "tags": ["security"]
-                    }):
-                        stats = await processor.run(session=session)
+        with (
+            patch("ai_daily.etl.enrichment.Article", SqliteArticle),
+            patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ),
+            patch.object(processor, "find_duplicate", side_effect=find_duplicate_mock),
+            patch.object(
+                processor,
+                "llm_enrich",
+                new_callable=AsyncMock,
+                return_value={
+                    "category": "security",
+                    "is_ai_related": False,
+                    "summary": "Security.",
+                    "tags": ["security"],
+                },
+            ),
+        ):
+            stats = await processor.run(session=session)
 
         # Verify stats - one processed, one duplicate
         assert stats.processed == 1
@@ -1604,7 +1811,8 @@ class TestEnrichmentIntegration:
     @pytest.mark.asyncio
     async def test_full_pipeline_classifies_ai_articles(self, session):
         """Full pipeline correctly identifies AI-related articles."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import AsyncMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
@@ -1636,13 +1844,21 @@ class TestEnrichmentIntegration:
 
         # LLM responses with proper AI classification
         enrichment_responses = {
-            ai_article_id: {"category": "ai", "is_ai_related": True, "summary": "GPT-5 released.", "tags": ["ai", "gpt", "openai"]},
-            non_ai_article_id: {"category": "software", "is_ai_related": False, "summary": "PostgreSQL 17.", "tags": ["database", "postgresql"]},
+            ai_article_id: {
+                "category": "ai",
+                "is_ai_related": True,
+                "summary": "GPT-5 released.",
+                "tags": ["ai", "gpt", "openai"],
+            },
+            non_ai_article_id: {
+                "category": "software",
+                "is_ai_related": False,
+                "summary": "PostgreSQL 17.",
+                "tags": ["database", "postgresql"],
+            },
         }
 
         # Track which article is being processed
-        call_index = [0]
-        article_ids = [ai_article_id, non_ai_article_id]
 
         async def llm_enrich_mock(title, content):
             # Determine which article this is for based on title
@@ -1653,11 +1869,17 @@ class TestEnrichmentIntegration:
 
         processor = EnrichmentProcessor()
 
-        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
-                with patch.object(processor, 'find_duplicate', return_value=None):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, side_effect=llm_enrich_mock):
-                        stats = await processor.run(session=session)
+        with (
+            patch("ai_daily.etl.enrichment.Article", SqliteArticle),
+            patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ),
+            patch.object(processor, "find_duplicate", return_value=None),
+            patch.object(
+                processor, "llm_enrich", new_callable=AsyncMock, side_effect=llm_enrich_mock
+            ),
+        ):
+            stats = await processor.run(session=session)
 
         # Verify stats
         assert stats.processed == 2
@@ -1679,6 +1901,7 @@ class TestEnrichmentIntegration:
     async def test_full_pipeline_calculates_stats_correctly(self, session):
         """Full pipeline calculates statistics correctly with mixed scenarios."""
         from unittest.mock import AsyncMock, MagicMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
@@ -1706,7 +1929,9 @@ class TestEnrichmentIntegration:
         articles = [
             SqliteArticle(source_id=source.id, title="AI Article 1", content="AI content 1"),
             SqliteArticle(source_id=source.id, title="AI Article 2", content="AI content 2"),
-            SqliteArticle(source_id=source.id, title="Security Article", content="Security content"),
+            SqliteArticle(
+                source_id=source.id, title="Security Article", content="Security content"
+            ),
             SqliteArticle(source_id=source.id, title="Duplicate 1", content="Dup 1"),
             SqliteArticle(source_id=source.id, title="Duplicate 2", content="Dup 2"),
         ]
@@ -1731,15 +1956,26 @@ class TestEnrichmentIntegration:
             if "AI Article" in title:
                 return {"category": "ai", "is_ai_related": True, "summary": "AI.", "tags": ["ai"]}
             else:
-                return {"category": "security", "is_ai_related": False, "summary": "Sec.", "tags": ["security"]}
+                return {
+                    "category": "security",
+                    "is_ai_related": False,
+                    "summary": "Sec.",
+                    "tags": ["security"],
+                }
 
         processor = EnrichmentProcessor()
 
-        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding):
-                with patch.object(processor, 'find_duplicate', side_effect=find_duplicate_mock):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, side_effect=llm_enrich_mock):
-                        stats = await processor.run(session=session)
+        with (
+            patch("ai_daily.etl.enrichment.Article", SqliteArticle),
+            patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ),
+            patch.object(processor, "find_duplicate", side_effect=find_duplicate_mock),
+            patch.object(
+                processor, "llm_enrich", new_callable=AsyncMock, side_effect=llm_enrich_mock
+            ),
+        ):
+            stats = await processor.run(session=session)
 
         # Verify stats
         assert stats.processed == 3  # 2 AI + 1 security
@@ -1750,7 +1986,8 @@ class TestEnrichmentIntegration:
     @pytest.mark.asyncio
     async def test_full_pipeline_handles_errors_gracefully(self, session):
         """Full pipeline handles errors gracefully and continues processing."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import AsyncMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
@@ -1772,8 +2009,6 @@ class TestEnrichmentIntegration:
         session.add_all([error_article, success_article])
         session.commit()
 
-        error_article_id = error_article.id
-
         mock_embedding = [0.1] * 768
 
         # Simulate error for first article
@@ -1784,13 +2019,28 @@ class TestEnrichmentIntegration:
 
         processor = EnrichmentProcessor()
 
-        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, side_effect=generate_embedding_mock):
-                with patch.object(processor, 'find_duplicate', return_value=None):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
-                        "category": "ai", "is_ai_related": True, "summary": "Success.", "tags": ["test"]
-                    }):
-                        stats = await processor.run(session=session)
+        with (
+            patch("ai_daily.etl.enrichment.Article", SqliteArticle),
+            patch.object(
+                processor,
+                "generate_embedding",
+                new_callable=AsyncMock,
+                side_effect=generate_embedding_mock,
+            ),
+            patch.object(processor, "find_duplicate", return_value=None),
+            patch.object(
+                processor,
+                "llm_enrich",
+                new_callable=AsyncMock,
+                return_value={
+                    "category": "ai",
+                    "is_ai_related": True,
+                    "summary": "Success.",
+                    "tags": ["test"],
+                },
+            ),
+        ):
+            stats = await processor.run(session=session)
 
         # Verify stats - one error, one success
         assert stats.errors == 1
@@ -1805,7 +2055,8 @@ class TestEnrichmentIntegration:
     @pytest.mark.asyncio
     async def test_full_pipeline_skips_already_enriched(self, session):
         """Full pipeline skips already enriched articles."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import AsyncMock, patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         # Create source
@@ -1836,13 +2087,25 @@ class TestEnrichmentIntegration:
 
         processor = EnrichmentProcessor()
 
-        with patch("ai_daily.etl.enrichment.Article", SqliteArticle):
-            with patch.object(processor, 'generate_embedding', new_callable=AsyncMock, return_value=mock_embedding) as mock_embed:
-                with patch.object(processor, 'find_duplicate', return_value=None):
-                    with patch.object(processor, 'llm_enrich', new_callable=AsyncMock, return_value={
-                        "category": "security", "is_ai_related": False, "summary": "New.", "tags": ["test"]
-                    }) as mock_llm:
-                        stats = await processor.run(session=session)
+        with (
+            patch("ai_daily.etl.enrichment.Article", SqliteArticle),
+            patch.object(
+                processor, "generate_embedding", new_callable=AsyncMock, return_value=mock_embedding
+            ) as mock_embed,
+            patch.object(processor, "find_duplicate", return_value=None),
+            patch.object(
+                processor,
+                "llm_enrich",
+                new_callable=AsyncMock,
+                return_value={
+                    "category": "security",
+                    "is_ai_related": False,
+                    "summary": "New.",
+                    "tags": ["test"],
+                },
+            ) as mock_llm,
+        ):
+            stats = await processor.run(session=session)
 
         # Verify only one article was processed
         assert stats.processed == 1

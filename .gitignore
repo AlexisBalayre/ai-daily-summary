@@ -32,7 +32,8 @@ htmlcov/
 *.swp
 .claude/settings.local.json
 
-# Project (runtime output, never commit)
+# Project (runtime output and per-user settings, never commit)
+config.json
 logs/
 data/
 .worktrees/

@@ -11,10 +11,10 @@ They are read-only (no edits).
 
 | Agent | When to use | Model · tools |
 | :---- | :---------- | :------------ |
-| `convention-checker` | Before a commit, or after editing ≥3 files across `ai_daily/`. Fast audit against `docs/conventions/*`. | Haiku · Read/Glob/Grep |
-| `migration-reviewer` | After editing `ai_daily/db/models.py` or generating an Alembic migration. Checks schema + migration safety and backwards-compatibility. | Sonnet · Read/Glob/Grep |
-| `security-reviewer` | After editing API routes, Gmail/OAuth, the crawler, HTML email, or secret handling. Checks injection, SSRF, secrets exposure, OWASP Top 10. | Opus · Read/Glob/Grep/Bash |
-| `architecture-explainer` | A why/how question about service boundaries, data flow, or cross-service interactions. Answers grounded in `docs/`, never invented. | Sonnet · Read/Glob/Grep |
+| `convention-checker` | Before a commit, or after editing ≥3 files across `ai_daily/`. Fast audit against `docs/conventions/*.md`. | Haiku · Read/Glob/Grep |
+| `migration-reviewer` | After editing `ai_daily/db/models.py` or generating an Alembic migration under `ai_daily/db/migrations/versions/`. Checks schema + migration safety and backwards-compatibility. | Sonnet · Read/Glob/Grep |
+| `security-reviewer` | After editing API routes, Gmail/OAuth, the RSS extractor or crawler, HTML email, or secret handling. Checks injection, SSRF, secrets exposure, OWASP Top 10. | Opus · Read/Glob/Grep/Bash |
+| `architecture-explainer` | A why/how question about the ETL → enrichment → outputs flow, source configuration, scheduling, the dashboard/API boundary, or embeddings. Answers grounded in `README.md`, `docs/conventions/`, `docs/design/`, and the code, never invented. | Sonnet · Read/Glob/Grep |
 
 ## Dispatched agents
 
@@ -24,13 +24,13 @@ is spawned (relevance-gated, model-tiered) by the [`pr-ci-review` skill](../skil
 
 | Agent | What it does | Model · tools |
 | :---- | :----------- | :------------ |
-| `comment-pruner` | Prunes low-value comments added in the current session, delete-when-uncertain, with a hard floor for tooling directives (`@ts-expect-error`, `eslint-disable`, …). The one agent here that edits. Also usable manually for a repo-wide sweep. | Sonnet · Read/Edit/Grep/Glob/Bash |
+| `comment-pruner` | Prunes low-value `#` comments and docstrings added in the current session, delete-when-uncertain, with a hard floor for tooling directives (`# noqa`, `# type: ignore`, `# pragma: no cover`, …). The one agent here that edits. Also usable manually for a repo-wide sweep. | Sonnet · Read/Edit/Grep/Glob/Bash |
 | `review-context` | Spec/protocol contradictions and infrastructure anti-patterns, each finding grounded in the contract it breaks. | Sonnet · Read/Glob/Grep/Bash |
-| `review-conventions` | Audits changed files against `docs/conventions/*`, accepted ADRs, and `CLAUDE.md`, quoting the exact rule violated. | Sonnet · Read/Glob/Grep/Bash |
+| `review-conventions` | Audits changed files against `docs/conventions/*.md` and `CLAUDE.md`, quoting the exact rule violated. | Sonnet · Read/Glob/Grep/Bash |
 | `review-correctness` | Logic/behavior defects deterministic tooling can't catch, including silent regressions on the surface tests don't cover. | Opus · Read/Glob/Grep/Bash |
 | `review-docs` | Accuracy and usefulness of prose a change introduces; strict on noise comments and stale docs. | Sonnet · Read/Glob/Grep/Bash |
 | `review-maintainability` | Structural regressions — wrong layer, duplication, needless indirection — each with a citable mechanism. | Sonnet · Read/Glob/Grep/Bash |
-| `review-security` | Real, reachable security issues at trust boundaries, cross-referenced against the threat model. | Opus · Read/Glob/Grep/Bash |
+| `review-security` | Real, reachable security issues at trust boundaries: HTML email escaping, SSRF in RSS/crawler fetches, Gmail OAuth token handling, API input validation. | Opus · Read/Glob/Grep/Bash |
 | `review-validator` | Adversarial gate: tries to refute each finding against the actual code before it is posted or auto-fixed. | Opus · Read/Glob/Grep/Bash |
 
 **Tuning:** `tools` is the minimum each needs; `model` is matched to the work (Haiku = fast/cheap,

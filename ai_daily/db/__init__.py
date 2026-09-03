@@ -1,5 +1,11 @@
 """Database models and connection management."""
 
+from ai_daily.db.connection import (
+    get_async_session,
+    get_session,
+    init_db,
+    init_db_async,
+)
 from ai_daily.db.models import (
     Article,
     Base,
@@ -7,12 +13,6 @@ from ai_daily.db.models import (
     JobRun,
     LeaderboardSnapshot,
     Source,
-)
-from ai_daily.db.connection import (
-    get_session,
-    get_async_session,
-    init_db,
-    init_db_async,
 )
 
 __all__ = [

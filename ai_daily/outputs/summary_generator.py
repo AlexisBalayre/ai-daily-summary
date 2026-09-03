@@ -2,12 +2,11 @@
 
 import json
 import logging
-from datetime import date, datetime, timedelta
-from typing import List, Optional
+from datetime import UTC, date, datetime, timedelta
 
 from google import genai
 from google.genai.types import GenerateContentConfig
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ai_daily.config import config
@@ -41,22 +40,26 @@ Output valid JSON:
         self.client = genai.Client(api_key=config.llm.google_api_key)
         self.model = config.llm.model
 
-    def get_cached_summary(self, session: Session, target_date: date) -> Optional[DailySummary]:
+    def get_cached_summary(self, session: Session, target_date: date) -> DailySummary | None:
         """Get cached summary for date if exists."""
         stmt = select(DailySummary).where(
-            DailySummary.date == datetime.combine(target_date, datetime.min.time())
+            DailySummary.date == datetime.combine(target_date, datetime.min.time(), tzinfo=UTC)
         )
         return session.execute(stmt).scalar_one_or_none()
 
-    def get_recent_articles(self, session: Session, hours: int = 24) -> List[Article]:
+    def get_recent_articles(self, session: Session, hours: int = 24) -> list[Article]:
         """Get articles from the last N hours."""
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
 
-        stmt = select(Article).where(
-            Article.ingested_at >= cutoff,
-            Article.is_ai_related == True,
-            Article.is_duplicate == False,
-        ).order_by(Article.ingested_at.desc())
+        stmt = (
+            select(Article)
+            .where(
+                Article.ingested_at >= cutoff,
+                Article.is_ai_related.is_(True),
+                Article.is_duplicate.is_(False),
+            )
+            .order_by(Article.ingested_at.desc())
+        )
 
         return list(session.execute(stmt).scalars().all())
 
@@ -67,11 +70,11 @@ Output valid JSON:
         return count > 0
 
     def _create_fallback_summary(
-        self, session: Session, target_date: date, articles: List[Article], error_message: str
+        self, session: Session, target_date: date, articles: list[Article], error_message: str
     ) -> DailySummary:
         """Create a fallback summary when LLM generation fails."""
         summary = DailySummary(
-            date=datetime.combine(target_date, datetime.min.time()),
+            date=datetime.combine(target_date, datetime.min.time(), tzinfo=UTC),
             summary_text=f"Summary generation failed: {error_message}",
             key_facts=[],
             article_ids=[a.id for a in articles],
@@ -80,7 +83,9 @@ Output valid JSON:
         session.commit()
         return summary
 
-    async def generate(self, session: Session, target_date: Optional[date] = None, force: bool = False) -> DailySummary:
+    async def generate(
+        self, session: Session, target_date: date | None = None, force: bool = False
+    ) -> DailySummary:
         """Generate summary for recent articles.
 
         Args:
@@ -92,7 +97,7 @@ Output valid JSON:
             DailySummary model instance.
         """
         if target_date is None:
-            target_date = date.today()
+            target_date = datetime.now(UTC).date()
 
         # Check cache (unless forced)
         cached = self.get_cached_summary(session, target_date)
@@ -109,7 +114,7 @@ Output valid JSON:
 
         if not articles:
             summary = DailySummary(
-                date=datetime.combine(target_date, datetime.min.time()),
+                date=datetime.combine(target_date, datetime.min.time(), tzinfo=UTC),
                 summary_text="No articles for today.",
                 key_facts=[],
                 article_ids=[],
@@ -136,23 +141,29 @@ Output valid JSON:
             )
         except Exception as e:
             logger.error("Google API error during summary generation: %s", e)
-            return self._create_fallback_summary(session, target_date, articles, "LLM API error occurred.")
+            return self._create_fallback_summary(
+                session, target_date, articles, "LLM API error occurred."
+            )
 
         # Validate response
         if not response.text:
             logger.error("LLM response has no text")
-            return self._create_fallback_summary(session, target_date, articles, "LLM returned empty response.")
+            return self._create_fallback_summary(
+                session, target_date, articles, "LLM returned empty response."
+            )
 
         # Parse JSON with error handling
         try:
             result = json.loads(response.text)
         except json.JSONDecodeError as e:
             logger.error("Failed to parse LLM response as JSON: %s", e)
-            return self._create_fallback_summary(session, target_date, articles, "Failed to parse LLM response.")
+            return self._create_fallback_summary(
+                session, target_date, articles, "Failed to parse LLM response."
+            )
 
         # Create and save summary
         summary = DailySummary(
-            date=datetime.combine(target_date, datetime.min.time()),
+            date=datetime.combine(target_date, datetime.min.time(), tzinfo=UTC),
             summary_text=result.get("summary", ""),
             key_facts=result.get("key_facts", []),
             article_ids=[a.id for a in articles],

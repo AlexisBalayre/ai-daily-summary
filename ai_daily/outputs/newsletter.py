@@ -3,13 +3,12 @@
 import base64
 import json
 import logging
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from email.mime.audio import MIMEAudio
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from html import escape
 from pathlib import Path
-from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -52,39 +51,43 @@ class NewsletterOutput:
         </html>
         """
 
-    def get_newsletter_articles(self, session: Session, hours: int = 24) -> List[Article]:
+    def get_newsletter_articles(self, session: Session, hours: int = 24) -> list[Article]:
         """Get non-GitHub articles from the last N hours."""
         # Get GitHub source IDs to exclude
-        github_sources = session.execute(
-            select(Source.id).where(Source.type == "github")
-        ).scalars().all()
+        github_sources = (
+            session.execute(select(Source.id).where(Source.type == "github")).scalars().all()
+        )
         github_source_ids = set(github_sources)
 
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
 
-        stmt = select(Article).where(
-            Article.ingested_at >= cutoff,
-            Article.is_ai_related == True,
-            Article.is_duplicate == False,
-        ).order_by(Article.ingested_at.desc())
+        stmt = (
+            select(Article)
+            .where(
+                Article.ingested_at >= cutoff,
+                Article.is_ai_related.is_(True),
+                Article.is_duplicate.is_(False),
+            )
+            .order_by(Article.ingested_at.desc())
+        )
 
         all_articles = list(session.execute(stmt).scalars().all())
 
         # Filter out GitHub articles
         return [a for a in all_articles if a.source_id not in github_source_ids]
 
-    def get_release_radar_articles(self, session: Session, hours: int = 24) -> List[Article]:
+    def get_release_radar_articles(self, session: Session, hours: int = 24) -> list[Article]:
         """Get model-release articles from the last N hours (default: 24h).
 
         The newsletter shows only the freshest releases — the full history lives
         on the dashboard's Releases page and arrives as instant alerts.
         """
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
         stmt = (
             select(Article)
             .where(
                 Article.ingested_at >= cutoff,
-                Article.is_duplicate == False,
+                Article.is_duplicate.is_(False),
                 Article.tags.any(MODEL_RELEASE_TAG),
             )
             .order_by(Article.ingested_at.desc())
@@ -102,7 +105,7 @@ announcements over commentary or tutorials, and skip near-duplicate stories.
 
 Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}"""
 
-    async def _select_top_articles(self, articles: List[Article]) -> List[Article]:
+    async def _select_top_articles(self, articles: list[Article]) -> list[Article]:
         """LLM curation: keep only the day's most essential stories.
 
         Falls back to the most recent TOP_STORIES_COUNT articles when the
@@ -132,7 +135,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
             logger.warning(f"Top-story selection failed, falling back to recency: {e}")
         return articles[:n]
 
-    def _categorize_articles(self, articles: List[Article]) -> dict:
+    def _categorize_articles(self, articles: list[Article]) -> dict:
         """Categorize articles by topic."""
         categories = {
             "AI Research and Advances": [],
@@ -145,9 +148,13 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
             topic = article.topic or ""
             topic_lower = topic.lower()
 
-            if any(word in topic_lower for word in ["research", "study", "advance", "breakthrough"]):
+            if any(
+                word in topic_lower for word in ["research", "study", "advance", "breakthrough"]
+            ):
                 categories["AI Research and Advances"].append(article)
-            elif any(word in topic_lower for word in ["tool", "product", "repository", "framework"]):
+            elif any(
+                word in topic_lower for word in ["tool", "product", "repository", "framework"]
+            ):
                 categories["AI Products, Tools, and Repositories"].append(article)
             elif any(word in topic_lower for word in ["tip", "technique", "guide", "tutorial"]):
                 categories["Data Science Techniques and Tips"].append(article)
@@ -158,7 +165,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
 
     RADAR_MAX_ITEMS = 5
 
-    def _render_release_radar(self, articles: List[Article]) -> str:
+    def _render_release_radar(self, articles: list[Article]) -> str:
         """Compact one-line-per-release block, or '' when there are none."""
         if not articles:
             return ""
@@ -172,30 +179,33 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
                       <p class="radar-title"><a href="{url}">{title}</a>
                         <span class="radar-source">&nbsp;— {source}</span></p>
                     </div>'''
-        return f'''
+        return f"""
                     <div class="radar">
                       <p class="radar-label">🚀 Released in the last 24h</p>
                       {items}
-                    </div>'''
+                    </div>"""
 
     def generate_html(
         self,
         summary: DailySummary,
-        articles: List[Article],
-        release_articles: Optional[List[Article]] = None,
+        articles: list[Article],
+        release_articles: list[Article] | None = None,
     ) -> str:
         """Generate HTML email content."""
         template = self._load_template()
 
         # Replace placeholders
-        html = template.replace("{{date}}", datetime.now().strftime("%B %d, %Y"))
-        html = html.replace("{{year}}", str(datetime.now().year))
+        html = template.replace("{{date}}", datetime.now(UTC).strftime("%B %d, %Y"))
+        html = html.replace("{{year}}", str(datetime.now(UTC).year))
+        html = html.replace("{{brand}}", escape(config.brand))
         html = html.replace("{{release_radar}}", self._render_release_radar(release_articles or []))
 
         # Key facts - handle both list and other types
         key_facts_html = ""
         if summary.key_facts:
-            facts = summary.key_facts if isinstance(summary.key_facts, list) else [summary.key_facts]
+            facts = (
+                summary.key_facts if isinstance(summary.key_facts, list) else [summary.key_facts]
+            )
             for fact in facts[:6]:
                 key_facts_html += f"<li>{escape(str(fact))}</li>"
         html = html.replace("{{key_facts}}", key_facts_html)
@@ -206,15 +216,17 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
 
         for category, cat_articles in categories.items():
             if cat_articles:
-                articles_html += f'''
+                articles_html += f"""
                 <div class="category" style="margin-bottom: 28px;">
                     <h3 class="category-title" style="font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; font-weight: 600; color: #18181b; margin: 0 0 16px; padding-left: 12px; border-left: 3px solid #18181b;">{escape(category)}</h3>
-                '''
+                """
                 for article in cat_articles:
                     title = escape(article.title or "Untitled")
                     url = escape(article.url or "#")
                     excerpt = article.summary or (article.content or "")
-                    truncated_content = escape(excerpt[:280]) + "..." if len(excerpt) > 280 else escape(excerpt)
+                    truncated_content = (
+                        escape(excerpt[:280]) + "..." if len(excerpt) > 280 else escape(excerpt)
+                    )
                     articles_html += f'''
                     <div class="article-card" style="background: #fafafa; border: 1px solid #e4e4e7; border-radius: 6px; padding: 20px; margin-bottom: 12px;">
                         <h4 class="article-title" style="font-family: 'Inter', -apple-system, sans-serif; font-size: 15px; font-weight: 600; color: #18181b; margin: 0 0 8px; line-height: 1.4;">
@@ -234,7 +246,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
         return html
 
     def _build_plaintext(
-        self, articles: List[Article], release_articles: Optional[List[Article]] = None
+        self, articles: list[Article], release_articles: list[Article] | None = None
     ) -> str:
         """Plain-text alternative: article titles, links, and excerpts by section."""
         lines = ["AI Daily Briefing", ""]
@@ -257,8 +269,12 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
         return "\n".join(lines).strip() + "\n"
 
     def _build_message(
-        self, subject: str, recipient: str, html_content: str,
-        text_content: str, audio_path: Optional[Path]
+        self,
+        subject: str,
+        recipient: str,
+        html_content: str,
+        text_content: str,
+        audio_path: Path | None,
     ) -> MIMEMultipart:
         """Assemble the email: text+html alternative, plus the audio attachment
         as a `mixed` wrapper when a briefing was generated."""
@@ -270,9 +286,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
             message = MIMEMultipart("mixed")
             message.attach(alternative)
             audio = MIMEAudio(Path(audio_path).read_bytes(), _subtype="wav")
-            audio.add_header(
-                "Content-Disposition", "attachment", filename=Path(audio_path).name
-            )
+            audio.add_header("Content-Disposition", "attachment", filename=Path(audio_path).name)
             message.attach(audio)
         else:
             message = alternative
@@ -285,9 +299,9 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
     async def send(
         self,
         session: Session,
-        target_date: Optional[date] = None,
-        recipients: Optional[List[str]] = None,
-        audio_path: Optional[Path] = None,
+        target_date: date | None = None,
+        recipients: list[str] | None = None,
+        audio_path: Path | None = None,
     ) -> bool:
         """Generate and send newsletter.
 
@@ -304,7 +318,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
             raise ValueError("Gmail service not initialized")
 
         if target_date is None:
-            target_date = date.today()
+            target_date = datetime.now(UTC).date()
 
         if recipients is None:
             recipients = config.get_newsletter_recipients()
@@ -316,9 +330,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
         summary = await self.summary_generator.generate(session, target_date)
 
         # Essentials only: curate the day's top stories + last-24h releases
-        articles = await self._select_top_articles(
-            self.get_newsletter_articles(session, hours=24)
-        )
+        articles = await self._select_top_articles(self.get_newsletter_articles(session, hours=24))
         release_articles = self.get_release_radar_articles(session)
 
         # Generate HTML + plain-text alternative
@@ -338,10 +350,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
 
             raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
             try:
-                self.gmail_service.users().messages().send(
-                    userId="me",
-                    body={"raw": raw}
-                ).execute()
+                self.gmail_service.users().messages().send(userId="me", body={"raw": raw}).execute()
                 success_count += 1
                 logger.info(f"Newsletter sent successfully to {recipient}")
             except Exception as e:
@@ -353,7 +362,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
         return success_count > 0
 
     def send_release_alert(
-        self, articles: List[Article], recipients: Optional[List[str]] = None
+        self, articles: list[Article], recipients: list[str] | None = None
     ) -> bool:
         """Send an immediate alert email for freshly detected model releases.
 
@@ -389,7 +398,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
                 f'<a href="{url}" style="color:#18181b;text-decoration:none;">{title}</a></div>'
                 f'<div style="font-size:12px;color:#1d4ed8;font-weight:500;">{source}</div>'
                 f'<p style="font-size:14px;color:#3f3f46;line-height:1.55;margin:8px 0 0;">{desc}</p>'
-                f'</div>'
+                f"</div>"
             )
             text_lines.append(f"- {a.title or 'Untitled'}")
             if a.url:
@@ -414,5 +423,7 @@ Respond ONLY with valid JSON: {{"selected": [numbers of the chosen articles]}}""
                 sent += 1
             except Exception as e:
                 logger.error(f"Failed to send release alert to {recipient}: {e}")
-        logger.info(f"Release alert sent to {sent}/{len(recipients)} recipients for {len(articles)} release(s)")
+        logger.info(
+            f"Release alert sent to {sent}/{len(recipients)} recipients for {len(articles)} release(s)"
+        )
         return sent > 0

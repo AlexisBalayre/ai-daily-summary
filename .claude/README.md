@@ -1,6 +1,6 @@
 # Claude Code Configuration
 
-This directory contains all Claude Code customizations for the Acme project. Everything here extends Claude's agentic loop: the cycle of reasoning, tool use, and iteration that powers every session.
+This directory contains all Claude Code customizations for AI Daily Summary. Everything here extends Claude's agentic loop: the cycle of reasoning, tool use, and iteration that powers every session.
 
 ## How It All Fits Together
 
@@ -33,31 +33,27 @@ This directory contains all Claude Code customizations for the Acme project. Eve
 
 ```
 .claude/
-├── settings.json              # Shared project config (permissions, hooks)
+├── settings.json               # Shared project config (permissions, hooks, status line)
 ├── settings.local.json.example # Template for personal overrides (real file gitignored)
+├── statusline.sh               # Renders the 3-line status bar (dir · branch · model, context, cost)
 │
 ├── rules/                 # Path-scoped convention rules (auto-load)
-│   ├── universal-conventions.md
-│   ├── api-conventions.md
-│   ├── frontend-conventions.md
-│   ├── testing-conventions.md
-│   ├── database-conventions.md
-│   ├── session-engine-conventions.md
-│   ├── gateway-conventions.md
-│   ├── grpc-conventions.md
-│   └── providers-conventions.md
+│   ├── universal-conventions.md      **/*.py
+│   ├── etl-conventions.md            ai_daily/etl/**
+│   ├── api-conventions.md            ai_daily/api/**
+│   ├── database-conventions.md       ai_daily/db/** (incl. migrations)
+│   ├── outputs-conventions.md        ai_daily/outputs/**
+│   ├── orchestrator-conventions.md   ai_daily/orchestrator/**
+│   ├── testing-conventions.md        tests/**, **/test_*.py
+│   └── frontend-conventions.md       frontend/**
 │
 ├── skills/                # Auto-discoverable knowledge + workflows (each is <name>/SKILL.md)
-│   ├── new-api-endpoint/   new-frontend-route/   new-provider/   # scaffolding
 │   ├── tdd/   diagnose/   resolve-merge-conflicts/               # engineering
-│   ├── find-dead-code/   improve-codebase-architecture/          # engineering (manual)
-│   ├── grilling/   grill-me/   grill-with-docs/                  # thinking / design
-│   ├── codebase-design/   domain-modeling/   zoom-out/   prototype/
-│   ├── pr-description/   pr-ci-review/                           # PR & review
-│   ├── address-review-comments/   review-retro/
-│   ├── write-a-skill/   handoff/   caveman/                      # meta / workflow
-│   ├── obsidian-vault/   daily-note/   to-issues/   to-epic/     # personal integrations (.env)
-│   └── backfill-issues/   fix-sonar/   wiz/   fix-wiz/
+│   ├── improve-codebase-architecture/                            # engineering (manual)
+│   ├── grilling/   grill-me/   codebase-design/                  # thinking / design
+│   ├── domain-modeling/   zoom-out/   prototype/
+│   ├── pr-description/   pr-ci-review/   address-review-comments/ # PR & review
+│   └── write-a-skill/   handoff/   caveman/                      # meta / workflow
 │
 ├── agents/                # Custom subagents for specialized tasks
 │   ├── convention-checker.md      migration-reviewer.md          # proactive
@@ -69,12 +65,12 @@ This directory contains all Claude Code customizations for the Acme project. Eve
 │   └── comment-pruner.md          # dispatched by the comment-pruner Stop hook
 │
 └── hooks/                    # Deterministic shell scripts (zero LLM cost)
-    ├── quality-checks.sh          # Stop: lint/format dirty files + repo typecheck
-    ├── convention-spot-check.sh   # Stop: advisory file-level convention scan
+    ├── quality-checks.sh          # Stop: ruff fix + format on dirty .py files
+    ├── convention-spot-check.sh   # Stop: advisory scan (bare except, import *, utcnow, print)
     ├── comment-pruner.sh          # Stop: dispatch the comment-pruner subagent on new comments
-    ├── git-safety.sh              # PreToolUse(Bash): block dangerous git/shell ops
-    ├── protect-generated.sh       # PreToolUse(Edit|Write): block generated files
-    ├── validate-file-naming.sh    # PreToolUse(Write): enforce kebab-case.role.ts
+    ├── git-safety.sh              # PreToolUse(Bash): block dangerous git/shell ops, protect master
+    ├── protect-generated.sh       # PreToolUse(Edit|Write): block ai_daily/static/, uv.lock, *.pyc
+    ├── validate-file-naming.sh    # PreToolUse(Write): enforce snake_case .py modules
     └── pre-compact-preserve.sh    # PreCompact: inject must-preserve context
 ```
 
@@ -84,27 +80,24 @@ This directory contains all Claude Code customizations for the Acme project. Eve
 
 ### 1. `CLAUDE.md` — Project Memory
 
-The root `CLAUDE.md` contains universal rules Claude sees every session: coding standards, git workflow, key commands. Kept under ~60 lines to minimize context cost.
+The root `CLAUDE.md` contains universal rules Claude sees every session: the module map, coding standards, git workflow, key commands. Kept short to minimize context cost.
 
 **When to edit:** Add universal rules that apply to every file. For area-specific rules, use `rules/` instead.
 
 ### 2. `rules/` — Path-Scoped Convention Rules
 
-Markdown files with `paths:` frontmatter that auto-load when Claude works with matching files. Each rule contains a quick-reference (~15 lines) plus an `@docs/conventions/X.md` import for the full doc.
+Markdown files with `paths:` frontmatter that auto-load when Claude works with matching files. Each rule is a thin trigger carrying an `@docs/conventions/X.md` import for the full doc.
 
 ```yaml
 ---
 paths:
-  - "apps/acme-api/**"
+  - "ai_daily/api/**/*.py"
 ---
-# API Conventions — Quick Reference
-- STRICT layering: Routes → Services → Repositories → Database
-...
-## Full conventions
+
 @docs/conventions/api.md
 ```
 
-**Key insight:** Rules follow the "split pattern" — lightweight recognition triggers (quick facts) pointing to detailed knowledge (full convention docs). This keeps always-on context small while ensuring full detail loads when needed.
+**Key insight:** Rules follow the "split pattern" — lightweight recognition triggers pointing to detailed knowledge (the full convention docs in `docs/conventions/`, the single source of truth). This keeps always-on context small while ensuring full detail loads when needed.
 
 **When to add a rule:** When conventions are specific to a file path pattern and should auto-load when editing those files.
 
@@ -114,7 +107,7 @@ paths:
 
 Skills are directories with a `SKILL.md` that Claude discovers automatically. Claude sees the description at session start (tiny context cost) and loads the full content when the skill is relevant.
 
-This repo ships **30 skills** across scaffolding, engineering, thinking/design, PR & review, meta, and personal integrations. The **[skill catalog](skills/README.md)** lists when each one fires and how to invoke it (auto-trigger, `/slash-command`, Claude-only, or manual-only).
+This repo ships **16 skills** across engineering, thinking/design, PR & review, and meta/workflow. The **[skill catalog](skills/README.md)** lists when each one fires and how to invoke it (auto-trigger, `/slash-command`, or manual-only).
 
 **Frontmatter options:**
 - `name` — identifier and `/slash-command` name
@@ -125,7 +118,7 @@ This repo ships **30 skills** across scaffolding, engineering, thinking/design, 
 - `context: fork` — run in isolated subagent context
 - `model` — override model when active
 
-**When to add a skill:** When Claude should auto-discover and apply knowledge or follow a workflow without being asked. Skills are for things Claude should know to do on its own. For repeatable workflows only the user should trigger — anything with side effects like posting PR comments or filing issues — set `disable-model-invocation: true`: a manual-only skill is invoked as `/<name>` and replaces the deprecated `commands/` layer.
+**When to add a skill:** When Claude should auto-discover and apply knowledge or follow a workflow without being asked. Skills are for things Claude should know to do on its own. For repeatable workflows only the user should trigger — anything with side effects like posting PR comments — set `disable-model-invocation: true`: a manual-only skill is invoked as `/<name>` and replaces the deprecated `commands/` layer.
 
 ### 4. `agents/` — Custom Subagents
 
@@ -133,10 +126,10 @@ Specialized AI workers that run in their own context window. Claude delegates to
 
 | Agent | Model | Tools | Purpose |
 |-------|-------|-------|---------|
-| `convention-checker` | Haiku | Read, Glob, Grep | Fast convention compliance audit |
-| `migration-reviewer` | Sonnet | Read, Glob, Grep | Schema change safety review |
-| `security-reviewer` | Opus | Read, Glob, Grep, Bash | Deep security analysis |
-| `architecture-explainer` | Sonnet | Read, Glob, Grep | Answer why/how architecture questions, grounded in `docs/` |
+| `convention-checker` | Haiku | Read, Glob, Grep | Fast convention compliance audit against `docs/conventions/*.md` |
+| `migration-reviewer` | Sonnet | Read, Glob, Grep | Schema + Alembic migration safety review |
+| `security-reviewer` | Opus | Read, Glob, Grep, Bash | Deep security analysis (HTML email escaping, SSRF, OAuth tokens, API input) |
+| `architecture-explainer` | Sonnet | Read, Glob, Grep | Answer why/how architecture questions, grounded in `README.md`, `docs/conventions/`, `docs/design/`, and the code |
 | `review-*` (7 agents) | Sonnet/Opus | Read, Glob, Grep, Bash | Area reviewers + adversarial validator, dispatched by the `pr-ci-review` skill |
 | `comment-pruner` | Sonnet | Read, Edit, Grep, Glob, Bash | Prune low-value comments; dispatched by the `comment-pruner.sh` Stop hook |
 
@@ -159,12 +152,12 @@ Shell scripts that run outside the LLM loop on lifecycle events. Zero context co
 
 | Hook | Event | What it does |
 |------|-------|-------------|
-| `quality-checks.sh` | Stop | Lint/format dirty files, typecheck the repo (blocks on failure; tests live in pre-commit) |
-| `convention-spot-check.sh` | Stop | Advisory scan for `export default`, inline types, missing JSDoc (`packages/` only) |
+| `quality-checks.sh` | Stop | `ruff check --fix` + `ruff format` on the session's dirty `.py` files (blocks on unfixable lint; tests are not run here) |
+| `convention-spot-check.sh` | Stop | Advisory scan for bare `except:`, `import *`, `datetime.utcnow()`, `print()` in `ai_daily/` |
 | `comment-pruner.sh` | Stop | Dispatch the `comment-pruner` subagent when the session added net-new comments |
-| `git-safety.sh` | PreToolUse(Bash) | Block `rm -rf`, `git reset --hard`, force push, `checkout -b` on main, push to main |
-| `protect-generated.sh` | PreToolUse(Edit\|Write) | Block edits to `*.gen.ts` and gRPC stubs |
-| `validate-file-naming.sh` | PreToolUse(Write) | Enforce `kebab-case.role.ts` on new files |
+| `git-safety.sh` | PreToolUse(Bash) | Block `rm -rf`, `DROP TABLE`, `git reset --hard`, force push, `checkout -b` on `master`, push to `master` |
+| `protect-generated.sh` | PreToolUse(Edit\|Write) | Block edits to `ai_daily/static/`, `uv.lock`, and `*.pyc` |
+| `validate-file-naming.sh` | PreToolUse(Write) | Enforce `snake_case` on new `.py` files under `ai_daily/` and `tests/` |
 | `pre-compact-preserve.sh` | PreCompact | Preserve branch, modified files, test output across compaction |
 
 **Exit codes:**
@@ -179,11 +172,13 @@ Shell scripts that run outside the LLM loop on lifecycle events. Zero context co
 ### 6. `settings.json` — Permissions & Hook Wiring
 
 Shared project configuration. Contains:
-- **`permissions.allow`** — pre-approved tool patterns (pnpm, git read-only, MCP tools)
-- **`permissions.deny`** — explicitly blocked operations (force push, hard reset, rm -rf)
-- **`hooks`** — wires hook scripts to lifecycle events
+- **`permissions.allow`** — pre-approved tool patterns (`uv run …`, `npm run build|lint`, git read-only and branch ops, `gh pr`)
+- **`permissions.deny`** — explicitly blocked operations (force push, hard reset, `rm -rf`) and secret files (`.env`, `.env.local`, `token.json`, credentials)
+- **`permissions.ask`** — always confirm (`git checkout`, `git rebase`, `git cherry-pick`)
+- **`hooks`** — wires the seven hook scripts to lifecycle events
+- **`statusLine`** — runs `statusline.sh`
 
-**`settings.local.json`** (gitignored) extends this with personal preferences — additional MCP servers, machine-specific permissions, etc. Copy `settings.local.json.example` to `settings.local.json` to start; it is merged on top of `settings.json`, never replacing it.
+**`settings.local.json`** (gitignored) extends this with personal preferences — extra permissions, machine-specific tools, and MCP servers such as the local `aidaily` server (`scripts/aidaily_mcp.py`). Copy `settings.local.json.example` to `settings.local.json` to start; it is merged on top of `settings.json`, never replacing it.
 
 ---
 
@@ -197,7 +192,7 @@ Shared project configuration. Contains:
 | A workflow I trigger explicitly | `skills/` with `disable-model-invocation: true` |
 | Isolated analysis that won't bloat context | `agents/` |
 | A check that runs every time, deterministically | `hooks/` |
-| External service access | MCP (`.mcp.json`) |
+| External service access | MCP server in `settings.local.json` (`mcpServers`) |
 
 ---
 
@@ -205,20 +200,23 @@ Shared project configuration. Contains:
 
 ### New rule
 1. Create `.claude/rules/<name>.md` with `paths:` frontmatter
-2. Add ~15 lines of quick-reference facts
-3. Point to full docs with `@docs/conventions/<area>.md`
+2. Point to the full doc with `@docs/conventions/<area>.md` (write that doc if it does not exist)
+3. Add a row to `rules/README.md`
 
 ### New skill
-1. Create `.claude/skills/<name>/SKILL.md` with `name` and `description` frontmatter
+1. Create `.claude/skills/<name>/SKILL.md` with `name` and `description` frontmatter (see `/write-a-skill`)
 2. Write the full workflow/knowledge content
 3. Set `user-invocable: false` if Claude-only, `disable-model-invocation: true` if user-only
+4. Add a row to `skills/README.md`
 
 ### New agent
 1. Create `.claude/agents/<name>.md` with `name`, `description`, and `tools`
 2. Choose `model` based on task complexity (haiku/sonnet/opus)
 3. Restrict `tools` to minimum needed
+4. Add a row to `agents/README.md`
 
 ### New hook
 1. Create `.claude/hooks/<name>.sh` (must be executable)
 2. Wire it in `settings.json` under the appropriate event
 3. Use exit code `2` to block operations
+4. Add a row to `hooks/README.md`

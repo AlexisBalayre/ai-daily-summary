@@ -1,7 +1,6 @@
 """Base extractor interface for all data sources."""
 
 from abc import ABC, abstractmethod
-from typing import List
 
 from ai_daily.db.models import Source
 from ai_daily.etl.types import RawContent
@@ -11,7 +10,7 @@ class BaseExtractor(ABC):
     """Abstract base class for all extractors."""
 
     @abstractmethod
-    async def extract(self, source: Source) -> List[RawContent]:
+    async def extract(self, source: Source) -> list[RawContent]:
         """
         Extract raw content from the source.
 
@@ -42,6 +41,6 @@ class BaseExtractor(ABC):
 
     @property
     @abstractmethod
-    def supported_types(self) -> List[str]:
+    def supported_types(self) -> list[str]:
         """List of source types this extractor supports."""
         pass

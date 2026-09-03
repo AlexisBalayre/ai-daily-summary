@@ -1,9 +1,7 @@
 """GitHub trending repositories extractor."""
 
 import hashlib
-import os
-from datetime import datetime
-from typing import List, Optional
+from datetime import UTC, datetime
 
 import requests
 from bs4 import BeautifulSoup
@@ -29,7 +27,7 @@ class GitHubExtractor(BaseExtractor):
         }
 
     @property
-    def supported_types(self) -> List[str]:
+    def supported_types(self) -> list[str]:
         return ["github"]
 
     def _parse_numeric(self, text: str) -> int:
@@ -42,7 +40,7 @@ class GitHubExtractor(BaseExtractor):
         except (ValueError, IndexError):
             return 0
 
-    def _fetch_page(self, url: str) -> Optional[BeautifulSoup]:
+    def _fetch_page(self, url: str) -> BeautifulSoup | None:
         """Fetch and parse a page."""
         try:
             response = self.session.get(url, timeout=30)
@@ -64,7 +62,7 @@ class GitHubExtractor(BaseExtractor):
                 return content
         return ""
 
-    def _extract_trending(self, soup: BeautifulSoup) -> List[RawContent]:
+    def _extract_trending(self, soup: BeautifulSoup) -> list[RawContent]:
         """Extract trending repositories."""
         repos = []
 
@@ -98,29 +96,33 @@ class GitHubExtractor(BaseExtractor):
                 lang_elem = article.select_one('span[itemprop="programmingLanguage"]')
                 language = lang_elem.text.strip() if lang_elem else "Unknown"
 
-                content = f"{description}\n\nLanguage: {language}\nStars: {stars:,}\nForks: {forks:,}"
+                content = (
+                    f"{description}\n\nLanguage: {language}\nStars: {stars:,}\nForks: {forks:,}"
+                )
 
-                repos.append(RawContent(
-                    external_id=hashlib.md5(url.encode()).hexdigest(),
-                    title=f"{author}/{name}",
-                    content=content,
-                    url=url,
-                    author=author,
-                    published_at=datetime.utcnow(),
-                    source_name="github_trending",
-                    metadata={
-                        "stars": stars,
-                        "forks": forks,
-                        "language": language,
-                        "repo_type": "trending",
-                    }
-                ))
+                repos.append(
+                    RawContent(
+                        external_id=hashlib.md5(url.encode()).hexdigest(),
+                        title=f"{author}/{name}",
+                        content=content,
+                        url=url,
+                        author=author,
+                        published_at=datetime.now(UTC),
+                        source_name="github_trending",
+                        metadata={
+                            "stars": stars,
+                            "forks": forks,
+                            "language": language,
+                            "repo_type": "trending",
+                        },
+                    )
+                )
             except Exception:
                 continue
 
         return repos
 
-    def _extract_explore(self, soup: BeautifulSoup) -> List[RawContent]:
+    def _extract_explore(self, soup: BeautifulSoup) -> list[RawContent]:
         """Extract explore repositories."""
         repos = []
 
@@ -153,39 +155,39 @@ class GitHubExtractor(BaseExtractor):
 
                 content = f"{description}\n\nLanguage: {language}\nStars: {stars:,}"
 
-                repos.append(RawContent(
-                    external_id=hashlib.md5(url.encode()).hexdigest(),
-                    title=f"{author}/{name}",
-                    content=content,
-                    url=url,
-                    author=author,
-                    published_at=datetime.utcnow(),
-                    source_name="github_explore",
-                    metadata={
-                        "stars": stars,
-                        "language": language,
-                        "repo_type": "explore",
-                    }
-                ))
+                repos.append(
+                    RawContent(
+                        external_id=hashlib.md5(url.encode()).hexdigest(),
+                        title=f"{author}/{name}",
+                        content=content,
+                        url=url,
+                        author=author,
+                        published_at=datetime.now(UTC),
+                        source_name="github_explore",
+                        metadata={
+                            "stars": stars,
+                            "language": language,
+                            "repo_type": "explore",
+                        },
+                    )
+                )
             except Exception:
                 continue
 
         return repos
 
-    async def extract(self, source: Source) -> List[RawContent]:
+    async def extract(self, source: Source) -> list[RawContent]:
         """Extract repositories from GitHub."""
         repos = []
 
         fetch_trending = source.config.get("fetch_trending", True) if source.config else True
         fetch_explore = source.config.get("fetch_explore", True) if source.config else True
 
-        if fetch_trending:
-            if soup := self._fetch_page(self.TRENDING_URL):
-                repos.extend(self._extract_trending(soup))
+        if fetch_trending and (soup := self._fetch_page(self.TRENDING_URL)):
+            repos.extend(self._extract_trending(soup))
 
-        if fetch_explore:
-            if soup := self._fetch_page(self.EXPLORE_URL):
-                repos.extend(self._extract_explore(soup))
+        if fetch_explore and (soup := self._fetch_page(self.EXPLORE_URL)):
+            repos.extend(self._extract_explore(soup))
 
         return repos
 

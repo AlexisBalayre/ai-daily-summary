@@ -1,11 +1,10 @@
 """Tests for orchestrator module."""
 
-import asyncio
-import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from click.testing import CliRunner
 
 
 def test_orchestrator_config_defaults():
@@ -15,7 +14,6 @@ def test_orchestrator_config_defaults():
     cfg = OrchestratorConfig()
 
     assert cfg.etl_schedule == "0 */4 * * *"
-    assert cfg.tts_schedule == "0 9 * * *"
     assert cfg.newsletter_schedule == "0 14 * * *"
     assert cfg.retry_max_attempts == 3
     assert cfg.retry_base_delay == 10.0
@@ -27,8 +25,10 @@ def test_orchestrator_config_from_env(monkeypatch):
     monkeypatch.setenv("ETL_SCHEDULE", "0 */2 * * *")
     monkeypatch.setenv("RETRY_MAX_ATTEMPTS", "5")
 
-    from ai_daily import config as config_module
     import importlib
+
+    from ai_daily import config as config_module
+
     importlib.reload(config_module)
 
     cfg = config_module.OrchestratorConfig()
@@ -64,11 +64,13 @@ async def test_executor_retry_on_failure():
     from ai_daily.orchestrator.types import RetryConfig
 
     # Fail twice, succeed on third attempt
-    mock_job = AsyncMock(side_effect=[
-        Exception("First failure"),
-        Exception("Second failure"),
-        {"articles_created": 3}
-    ])
+    mock_job = AsyncMock(
+        side_effect=[
+            Exception("First failure"),
+            Exception("Second failure"),
+            {"articles_created": 3},
+        ]
+    )
 
     with patch("ai_daily.orchestrator.executor.get_session") as mock_session:
         mock_session.return_value.__enter__ = MagicMock(return_value=MagicMock())
@@ -119,7 +121,7 @@ async def test_notifier_sends_alert():
         job_name="etl",
         error="Connection timeout",
         run_id=42,
-        started_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+        started_at=datetime.now(UTC) - timedelta(minutes=5),
         attempts=3,
     )
 
@@ -137,15 +139,15 @@ async def test_notifier_rate_limits():
     notifier = Notifier(gmail_service=mock_gmail, recipients=["test@example.com"])
 
     # First alert should send
-    await notifier.send_failure_alert("etl", "Error 1", 1, datetime.now(timezone.utc), 3)
+    await notifier.send_failure_alert("etl", "Error 1", 1, datetime.now(UTC), 3)
     assert mock_gmail.users.return_value.messages.return_value.send.call_count == 1
 
     # Second alert for same job within rate limit should not send
-    await notifier.send_failure_alert("etl", "Error 2", 2, datetime.now(timezone.utc), 3)
+    await notifier.send_failure_alert("etl", "Error 2", 2, datetime.now(UTC), 3)
     assert mock_gmail.users.return_value.messages.return_value.send.call_count == 1
 
     # Alert for different job should send
-    await notifier.send_failure_alert("newsletter", "Error 3", 3, datetime.now(timezone.utc), 3)
+    await notifier.send_failure_alert("newsletter", "Error 3", 3, datetime.now(UTC), 3)
     assert mock_gmail.users.return_value.messages.return_value.send.call_count == 2
 
 
@@ -159,13 +161,13 @@ def test_scheduler_cron_matching():
     )
 
     # 4:00 AM should match ETL (every 4 hours)
-    dt = datetime(2026, 2, 3, 4, 0, 0)
+    dt = datetime(2026, 2, 3, 4, 0, 0, tzinfo=UTC)
     due = scheduler.get_due_jobs(dt)
     assert "etl" in due
     assert "newsletter" not in due
 
     # 2:00 PM should match newsletter
-    dt = datetime(2026, 2, 3, 14, 0, 0)
+    dt = datetime(2026, 2, 3, 14, 0, 0, tzinfo=UTC)
     due = scheduler.get_due_jobs(dt)
     assert "newsletter" in due
 
@@ -179,7 +181,7 @@ def test_scheduler_prevents_duplicate_runs():
         executor=MagicMock(),
     )
 
-    dt = datetime(2026, 2, 3, 4, 0, 0)
+    dt = datetime(2026, 2, 3, 4, 0, 0, tzinfo=UTC)
 
     # First call should return the job
     due = scheduler.get_due_jobs(dt)
@@ -194,7 +196,6 @@ def test_scheduler_prevents_duplicate_runs():
 
 
 # CLI Tests
-from click.testing import CliRunner
 
 
 def test_cli_orchestrator_status():

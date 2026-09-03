@@ -15,7 +15,7 @@ Map each file path to its area doc:
 
 - `ai_daily/etl/` → `docs/conventions/etl.md` (BaseExtractor, RawContent, transformers, enrichment)
 - `ai_daily/api/` → `docs/conventions/api.md` (thin routers, Pydantic models, session dependency)
-- `ai_daily/db/`, `alembic/` → `docs/conventions/database.md` (SQLAlchemy 2.0, pgvector, migration safety)
+- `ai_daily/db/` (incl. `migrations/`) → `docs/conventions/database.md` (SQLAlchemy 2.0, pgvector, migration safety)
 - `ai_daily/outputs/` → `docs/conventions/outputs.md` (use enriched summaries/categories, escape HTML, plaintext part)
 - `ai_daily/orchestrator/` → `docs/conventions/orchestrator.md` (idempotent jobs, retries, job_runs)
 - `tests/**`, `**/test_*.py` → `docs/conventions/testing.md` (pytest-asyncio, mock external services)
