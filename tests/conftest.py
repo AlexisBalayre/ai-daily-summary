@@ -4,7 +4,7 @@ import json
 from datetime import UTC, datetime
 
 import pytest
-from sqlalchemy import Boolean, DateTime, Integer, String, Text, create_engine, delete
+from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text, create_engine, delete
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
@@ -66,6 +66,21 @@ class SqliteArticle(SqliteBase):
     duplicate_of_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
+class SqliteDailySummary(SqliteBase):
+    """Simplified DailySummary model for testing with SQLite (JSON instead of JSONB/ARRAY)."""
+
+    __tablename__ = "daily_summaries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    date: Mapped[datetime] = mapped_column(DateTime(timezone=True), unique=True, nullable=False)
+    summary_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    key_facts: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    article_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+
+
 @pytest.fixture(scope="session")
 def engine():
     """Create test database engine."""
@@ -85,5 +100,6 @@ def session(engine):
     session.rollback()
     session.execute(delete(SqliteArticle))
     session.execute(delete(SqliteSource))
+    session.execute(delete(SqliteDailySummary))
     session.commit()
     session.close()
