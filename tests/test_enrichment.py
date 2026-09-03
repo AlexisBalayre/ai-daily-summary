@@ -395,6 +395,8 @@ class TestEnrichmentProcessor:
 
     def test_enrichment_processor_has_embedder_property(self):
         """The embedder is built lazily, on first access, from the Embedder class."""
+        from unittest.mock import patch
+
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
