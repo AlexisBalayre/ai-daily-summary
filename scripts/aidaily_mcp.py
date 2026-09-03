@@ -9,7 +9,8 @@ Served over the tailnet via `tailscale serve`, so every device on the
 Tailscale network can use it from Claude Code / Desktop / mobile.
 
 Run: uv run --script aidaily_mcp.py
-Env: AIDAILY_API (default http://127.0.0.1:8000/api/v1), MCP_PORT (default 8765)
+Env: AIDAILY_API (default http://127.0.0.1:8000/api/v1), MCP_PORT (default 8765),
+     MCP_PUBLIC_HOST (tailnet DNS name to accept; loopback only when unset)
 """
 
 import os
@@ -21,8 +22,15 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 API = os.getenv("AIDAILY_API", "http://127.0.0.1:8000/api/v1").rstrip("/")
 PORT = int(os.getenv("MCP_PORT", "8765"))
-# The tailnet DNS name `tailscale serve` publishes; requests arrive with this Host.
-PUBLIC_HOST = os.getenv("MCP_PUBLIC_HOST", "my-host.tailnet.ts.net")
+# The tailnet DNS name `tailscale serve` publishes (e.g. my-host.tailnet.ts.net);
+# requests arrive with this Host. Leave unset to accept loopback only.
+PUBLIC_HOST = os.getenv("MCP_PUBLIC_HOST", "")
+
+_allowed_hosts = [f"127.0.0.1:{PORT}", f"localhost:{PORT}"]
+_allowed_origins = [f"http://127.0.0.1:{PORT}"]
+if PUBLIC_HOST:
+    _allowed_hosts += [PUBLIC_HOST, f"{PUBLIC_HOST}:443"]
+    _allowed_origins.append(f"https://{PUBLIC_HOST}")
 
 mcp = FastMCP(
     "ai-daily",
@@ -32,8 +40,8 @@ mcp = FastMCP(
     # server restart never strands clients with stale session ids.
     stateless_http=True,
     transport_security=TransportSecuritySettings(
-        allowed_hosts=[PUBLIC_HOST, f"{PUBLIC_HOST}:443", f"127.0.0.1:{PORT}", f"localhost:{PORT}"],
-        allowed_origins=[f"https://{PUBLIC_HOST}", f"http://127.0.0.1:{PORT}"],
+        allowed_hosts=_allowed_hosts,
+        allowed_origins=_allowed_origins,
     ),
 )
 client = httpx.Client(base_url=API, timeout=30)

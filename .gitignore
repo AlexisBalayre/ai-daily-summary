@@ -1,6 +1,12 @@
-# Environment
+# Environment / credentials (never commit)
 .env
+.env.*
+!.env.example
 token.json
+credentials.json
+client_secret*.json
+*.pem
+*.key
 
 # OS
 .DS_Store
@@ -20,15 +26,18 @@ build/
 .coverage
 htmlcov/
 
-# IDE
+# IDE / local tooling
 .idea/
 .vscode/
 *.swp
+.claude/settings.local.json
 
-# Project
+# Project (runtime output, never commit)
 logs/
 data/
 .worktrees/
+*.mp3
+*.wav
 
 # Built frontend assets
 ai_daily/static/
