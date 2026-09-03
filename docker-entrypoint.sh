@@ -12,6 +12,12 @@ until pg_isready -h "${DB_HOST:-postgres}" -p "${DB_PORT:-5432}" -U "${DB_USER:-
 done
 echo "[$(date -Iseconds)] Database is ready!"
 
+# First boot without a mounted config.json: start from the example sources/whitelist
+if [ ! -s /app/config.json ]; then
+    echo "[$(date -Iseconds)] No config.json mounted, using config.example.json"
+    cp /app/config.example.json /app/config.json
+fi
+
 # Run database migrations
 echo "[$(date -Iseconds)] Running database migrations..."
 if ! alembic upgrade head; then

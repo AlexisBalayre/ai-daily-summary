@@ -1,7 +1,6 @@
 """Content deduplication using hash and semantic similarity."""
 
 import hashlib
-from typing import List, Optional, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -15,12 +14,12 @@ def compute_content_hash(title: str, content: str) -> str:
     return hashlib.md5(text.encode()).hexdigest()
 
 
-def cosine_similarity(a: List[float], b: List[float]) -> float:
+def cosine_similarity(a: list[float], b: list[float]) -> float:
     """Compute cosine similarity between two vectors."""
     if not a or not b or len(a) != len(b):
         return 0.0
 
-    dot_product = sum(x * y for x, y in zip(a, b))
+    dot_product = sum(x * y for x, y in zip(a, b, strict=False))
     norm_a = sum(x * x for x in a) ** 0.5
     norm_b = sum(x * x for x in b) ** 0.5
 
@@ -46,18 +45,17 @@ class Deduplicator:
 
     def is_duplicate_by_external_id(self, source_id: int, external_id: str) -> bool:
         """Check if external ID already exists for this source."""
-        stmt = select(Article.id).where(
-            Article.source_id == source_id,
-            Article.external_id == external_id
-        ).limit(1)
+        stmt = (
+            select(Article.id)
+            .where(Article.source_id == source_id, Article.external_id == external_id)
+            .limit(1)
+        )
         result = self.session.execute(stmt).first()
         return result is not None
 
     def find_similar_by_embedding(
-        self,
-        embedding: List[float],
-        limit: int = 5
-    ) -> List[Tuple[int, float]]:
+        self, embedding: list[float], limit: int = 5
+    ) -> list[tuple[int, float]]:
         """Find similar articles by embedding.
 
         Note: For production, use pgvector's built-in similarity search.
@@ -84,8 +82,8 @@ class Deduplicator:
         source_id: int,
         external_id: str,
         content_hash: str,
-        embedding: Optional[List[float]] = None
-    ) -> Tuple[bool, Optional[int]]:
+        embedding: list[float] | None = None,
+    ) -> tuple[bool, int | None]:
         """Check if content is duplicate.
 
         Args:

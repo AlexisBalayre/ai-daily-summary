@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass
@@ -12,8 +11,8 @@ class RawContent:
     external_id: str
     title: str
     content: str
-    url: Optional[str] = None
-    author: Optional[str] = None
-    published_at: Optional[datetime] = None
+    url: str | None = None
+    author: str | None = None
+    published_at: datetime | None = None
     source_name: str = ""
     metadata: dict = field(default_factory=dict)

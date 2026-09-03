@@ -3,12 +3,11 @@
 import asyncio
 import hashlib
 import logging
-from datetime import datetime
-from time import mktime
-from typing import List, Optional
+from calendar import timegm
+from datetime import UTC, datetime
 
 import feedparser
-from trafilatura import fetch_url, extract
+from trafilatura import extract, fetch_url
 
 from ai_daily.db.models import Source
 from ai_daily.etl.extractors.base import BaseExtractor
@@ -25,10 +24,10 @@ class RSSExtractor(BaseExtractor):
     FETCH_TIMEOUT = 15  # Article fetch timeout
 
     @property
-    def supported_types(self) -> List[str]:
+    def supported_types(self) -> list[str]:
         return ["rss"]
 
-    async def extract(self, source: Source) -> List[RawContent]:
+    async def extract(self, source: Source) -> list[RawContent]:
         """Extract articles from RSS/Atom feed."""
         if not source.config:
             return []
@@ -66,7 +65,11 @@ class RSSExtractor(BaseExtractor):
                     content = summary if summary else title
 
                 # Generate external ID from URL
-                external_id = hashlib.md5(link.encode()).hexdigest() if link else hashlib.md5(title.encode()).hexdigest()
+                external_id = (
+                    hashlib.md5(link.encode()).hexdigest()
+                    if link
+                    else hashlib.md5(title.encode()).hexdigest()
+                )
 
                 results.append(
                     RawContent(
@@ -91,17 +94,17 @@ class RSSExtractor(BaseExtractor):
         logger.info(f"Extracted {len(results)} articles from {source.name}")
         return results
 
-    def _parse_date(self, entry) -> Optional[datetime]:
+    def _parse_date(self, entry) -> datetime | None:
         """Parse publication date from feed entry."""
         parsed = getattr(entry, "published_parsed", None) or getattr(entry, "updated_parsed", None)
         if parsed:
             try:
-                return datetime.fromtimestamp(mktime(parsed))
+                return datetime.fromtimestamp(timegm(parsed), tz=UTC)
             except (ValueError, OverflowError, TypeError):
                 pass
         return None
 
-    def _fetch_full_content(self, url: str) -> Optional[str]:
+    def _fetch_full_content(self, url: str) -> str | None:
         """Fetch and extract full article content using trafilatura."""
         if not url:
             return None

@@ -7,8 +7,7 @@ final text answer.
 """
 
 import logging
-from datetime import date, datetime, timedelta, timezone
-from typing import List
+from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, HTTPException
 from google import genai
@@ -43,8 +42,6 @@ def search_articles(query: str, limit: int = 8) -> list[dict]:
         limit: Max results (default 8).
     """
     try:
-        from ai_daily.etl.transformers.embedder import Embedder
-
         client = genai.Client(api_key=config.llm.google_api_key)
         resp = client.models.embed_content(
             model=config.llm.embedding_model,
@@ -60,7 +57,7 @@ def search_articles(query: str, limit: int = 8) -> list[dict]:
         if embedding is not None:
             stmt = (
                 select(Article)
-                .where(Article.embedding.isnot(None), Article.is_duplicate == False)  # noqa: E712
+                .where(Article.embedding.isnot(None), Article.is_duplicate.is_(False))
                 .order_by(Article.embedding.cosine_distance(embedding))
                 .limit(min(limit, 20))
             )
@@ -90,13 +87,13 @@ def latest_releases(days: int = 7) -> list[dict]:
     Args:
         days: Lookback window in days (default 7).
     """
-    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    cutoff = datetime.now(UTC) - timedelta(days=days)
     with get_session() as session:
         stmt = (
             select(Article)
             .where(
                 Article.ingested_at >= cutoff,
-                Article.is_duplicate == False,  # noqa: E712
+                Article.is_duplicate.is_(False),
                 Article.tags.any("model-release"),
             )
             .order_by(Article.ingested_at.desc())
@@ -163,11 +160,11 @@ def list_leaderboards() -> list[dict]:
 
 def daily_summary(target_date: str = "") -> dict:
     """The generated daily news summary. target_date YYYY-MM-DD, empty = today."""
-    day = date.fromisoformat(target_date) if target_date else date.today()
+    day = date.fromisoformat(target_date) if target_date else datetime.now(UTC).date()
     with get_session() as session:
         s = session.execute(
             select(DailySummary).where(
-                DailySummary.date == datetime.combine(day, datetime.min.time())
+                DailySummary.date == datetime.combine(day, datetime.min.time(), tzinfo=UTC)
             )
         ).scalar_one_or_none()
         if not s:
@@ -182,9 +179,11 @@ def daily_summary(target_date: str = "") -> dict:
 def pipeline_status() -> dict:
     """Recent pipeline job runs (name, status, started_at)."""
     with get_session() as session:
-        runs = session.execute(
-            select(JobRun).order_by(JobRun.started_at.desc()).limit(10)
-        ).scalars().all()
+        runs = (
+            session.execute(select(JobRun).order_by(JobRun.started_at.desc()).limit(10))
+            .scalars()
+            .all()
+        )
         return {
             "recent_jobs": [
                 {
@@ -213,12 +212,12 @@ class ChatMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    messages: List[ChatMessage]
+    messages: list[ChatMessage]
 
 
 class ChatResponse(BaseModel):
     reply: str
-    tools_used: List[str]
+    tools_used: list[str]
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -241,13 +240,13 @@ async def chat(req: ChatRequest):
             model=config.llm.model,
             contents=contents,
             config=GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT.format(today=date.today().isoformat()),
+                system_instruction=SYSTEM_PROMPT.format(today=datetime.now(UTC).date().isoformat()),
                 tools=TOOLS,
             ),
         )
     except Exception as e:
         logger.error(f"Chat generation failed: {e}")
-        raise HTTPException(status_code=502, detail="LLM request failed")
+        raise HTTPException(status_code=502, detail="LLM request failed") from e
 
     tools_used = []
     for content in response.automatic_function_calling_history or []:

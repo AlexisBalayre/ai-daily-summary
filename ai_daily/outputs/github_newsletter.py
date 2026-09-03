@@ -2,11 +2,10 @@
 
 import base64
 import logging
-from datetime import date, datetime
+from datetime import UTC, datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from html import escape
-from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -38,31 +37,32 @@ class GitHubNewsletterOutput:
         </html>
         """
 
-    def get_github_articles(self, session: Session, hours: int = 24) -> List[Article]:
+    def get_github_articles(self, session: Session, hours: int = 24) -> list[Article]:
         """Get GitHub articles from the last N hours."""
         from datetime import timedelta
 
         # Get GitHub source IDs
-        github_sources = session.execute(
-            select(Source.id).where(Source.type == "github")
-        ).scalars().all()
+        github_sources = (
+            session.execute(select(Source.id).where(Source.type == "github")).scalars().all()
+        )
 
         if not github_sources:
             return []
 
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
 
-        stmt = select(Article).where(
-            Article.source_id.in_(github_sources),
-            Article.ingested_at >= cutoff
-        ).order_by(Article.ingested_at.desc())
+        stmt = (
+            select(Article)
+            .where(Article.source_id.in_(github_sources), Article.ingested_at >= cutoff)
+            .order_by(Article.ingested_at.desc())
+        )
 
         return list(session.execute(stmt).scalars().all())
 
-    def _generate_repos_html(self, articles: List[Article]) -> str:
+    def _generate_repos_html(self, articles: list[Article]) -> str:
         """Generate HTML for repos with professional styling."""
         if not articles:
-            return '''<p style="font-family: 'Source Serif 4', Georgia, serif; font-size: 15px; color: #71717a; text-align: center; padding: 40px;">No trending repositories today.</p>'''
+            return """<p style="font-family: 'Source Serif 4', Georgia, serif; font-size: 15px; color: #71717a; text-align: center; padding: 40px;">No trending repositories today.</p>"""
 
         html = ""
         for idx, article in enumerate(articles[:15], 1):  # Limit to top 15
@@ -86,7 +86,9 @@ class GitHubNewsletterOutput:
                     forks = line.replace("Forks:", "").strip()
 
             # Truncate description
-            desc_text = escape(description[:180]) + "..." if len(description) > 180 else escape(description)
+            desc_text = (
+                escape(description[:180]) + "..." if len(description) > 180 else escape(description)
+            )
 
             html += f'''
             <div class="repo-card" style="background: #fafafa; border: 1px solid #e4e4e7; border-radius: 6px; padding: 20px; margin-bottom: 16px; position: relative;">
@@ -98,30 +100,27 @@ class GitHubNewsletterOutput:
                 <div class="repo-meta" style="display: flex; flex-wrap: wrap; gap: 12px; font-family: 'Inter', -apple-system, sans-serif; font-size: 12px;">
                     <span class="meta-item" style="display: inline-flex; align-items: center; gap: 6px; color: #52525b; background: #ffffff; padding: 4px 10px; border-radius: 4px; border: 1px solid #e4e4e7;">{escape(language)}</span>
                     <span class="meta-item" style="display: inline-flex; align-items: center; gap: 6px; color: #52525b; background: #ffffff; padding: 4px 10px; border-radius: 4px; border: 1px solid #e4e4e7;">{escape(stars)} stars</span>
-                    {f'<span class="meta-item" style="display: inline-flex; align-items: center; gap: 6px; color: #52525b; background: #ffffff; padding: 4px 10px; border-radius: 4px; border: 1px solid #e4e4e7;">{escape(forks)} forks</span>' if forks else ''}
+                    {f'<span class="meta-item" style="display: inline-flex; align-items: center; gap: 6px; color: #52525b; background: #ffffff; padding: 4px 10px; border-radius: 4px; border: 1px solid #e4e4e7;">{escape(forks)} forks</span>' if forks else ""}
                 </div>
             </div>
             '''
 
         return html
 
-    def generate_html(self, articles: List[Article]) -> str:
+    def generate_html(self, articles: list[Article]) -> str:
         """Generate HTML email content."""
         template = self._load_template()
 
-        html = template.replace("{{date}}", datetime.now().strftime("%B %d, %Y"))
-        html = html.replace("{{year}}", str(datetime.now().year))
+        html = template.replace("{{date}}", datetime.now(UTC).strftime("%B %d, %Y"))
+        html = html.replace("{{year}}", str(datetime.now(UTC).year))
+        html = html.replace("{{brand}}", escape(config.brand))
 
         repos_html = self._generate_repos_html(articles)
         html = html.replace("{{repos}}", repos_html)
 
         return html
 
-    async def send(
-        self,
-        session: Session,
-        recipients: Optional[List[str]] = None
-    ) -> bool:
+    async def send(self, session: Session, recipients: list[str] | None = None) -> bool:
         """Generate and send GitHub newsletter.
 
         Args:
@@ -151,7 +150,7 @@ class GitHubNewsletterOutput:
         html_content = self.generate_html(articles)
 
         # Send to each recipient
-        subject = f"🔥 GitHub Hot Repos - {datetime.now().strftime('%B %d, %Y')}"
+        subject = f"🔥 GitHub Hot Repos - {datetime.now(UTC).strftime('%B %d, %Y')}"
 
         success_count = 0
         failure_count = 0
@@ -167,10 +166,7 @@ class GitHubNewsletterOutput:
 
             raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
             try:
-                self.gmail_service.users().messages().send(
-                    userId="me",
-                    body={"raw": raw}
-                ).execute()
+                self.gmail_service.users().messages().send(userId="me", body={"raw": raw}).execute()
                 success_count += 1
                 logger.info(f"GitHub newsletter sent to {recipient}")
             except Exception as e:

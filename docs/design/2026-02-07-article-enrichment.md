@@ -1,7 +1,5 @@
 # Article Enrichment Pipeline Design
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Enrich ingested articles with LLM-generated metadata (summary, category, tags) and detect duplicates via semantic similarity.
 
 **Architecture:** Post-ingestion batch processing. ETL ingests raw articles quickly, then a separate enrichment job processes unenriched articles with LLM classification and embedding-based deduplication.

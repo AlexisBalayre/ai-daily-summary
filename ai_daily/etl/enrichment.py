@@ -4,8 +4,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta, UTC
-from typing import List, Optional
+from datetime import UTC, datetime, timedelta
 
 from google import genai
 from google.genai.types import GenerateContentConfig
@@ -21,6 +20,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EnrichmentStats:
     """Statistics from an enrichment run."""
+
     processed: int = 0
     duplicates: int = 0
     ai_related: int = 0
@@ -34,7 +34,7 @@ class EnrichmentProcessor:
     SIMILARITY_THRESHOLD = 0.92
     LOOKBACK_DAYS = 7
 
-    ENRICHMENT_PROMPT = '''Analyze this tech news article and provide:
+    ENRICHMENT_PROMPT = """Analyze this tech news article and provide:
 
 1. CATEGORY: One of: ai, security, cloud, hardware, mobile, software, business, other
 2. IS_AI_RELATED: true/false - Is this primarily about AI, machine learning, LLMs, or related technology?
@@ -48,7 +48,7 @@ Article Content:
 {content}
 
 Respond ONLY with valid JSON:
-{{"category": "...", "is_ai_related": true/false, "is_model_release": true/false, "summary": "...", "tags": ["...", "..."]}}'''
+{{"category": "...", "is_ai_related": true/false, "is_model_release": true/false, "summary": "...", "tags": ["...", "..."]}}"""
 
     # Tag used to mark model-release articles (drives the newsletter Release Radar
     # and the instant-alert email). Stored in the existing tags array — no migration.
@@ -56,7 +56,7 @@ Respond ONLY with valid JSON:
 
     def __init__(self):
         """Initialize the enrichment processor."""
-        self._embedder: Optional[Embedder] = None
+        self._embedder: Embedder | None = None
 
     @property
     def embedder(self) -> Embedder:
@@ -65,7 +65,7 @@ Respond ONLY with valid JSON:
             self._embedder = Embedder()
         return self._embedder
 
-    async def generate_embedding(self, content: str) -> List[float]:
+    async def generate_embedding(self, content: str) -> list[float]:
         """Generate embedding vector for content.
 
         Args:
@@ -109,12 +109,12 @@ Respond ONLY with valid JSON:
             return json.loads(response.text)
         except json.JSONDecodeError:
             # Try to extract JSON from response
-            match = re.search(r'\{.*\}', response.text, re.DOTALL)
+            match = re.search(r"\{.*\}", response.text, re.DOTALL)
             if match:
                 return json.loads(match.group())
-            raise ValueError(f"Could not parse LLM response: {response.text}")
+            raise ValueError(f"Could not parse LLM response: {response.text}") from None
 
-    def get_unenriched_articles(self, session: Session, limit: int = None) -> List[Article]:
+    def get_unenriched_articles(self, session: Session, limit: int = None) -> list[Article]:
         """Get articles that haven't been enriched yet."""
         from sqlalchemy import select
 
@@ -122,15 +122,15 @@ Respond ONLY with valid JSON:
         stmt = (
             select(Article)
             .where(Article.enriched_at.is_(None))
-            .where(Article.is_duplicate == False)
+            .where(Article.is_duplicate.is_(False))
             .order_by(Article.ingested_at.desc())
             .limit(limit)
         )
         return list(session.execute(stmt).scalars().all())
 
     def find_duplicate(
-        self, session: Session, article_id: int, embedding: List[float]
-    ) -> Optional[Article]:
+        self, session: Session, article_id: int, embedding: list[float]
+    ) -> Article | None:
         """Find a semantically duplicate article.
 
         Returns the duplicate article if similarity >= SIMILARITY_THRESHOLD,
@@ -146,7 +146,7 @@ Respond ONLY with valid JSON:
             .where(Article.enriched_at >= cutoff)
             .where(Article.embedding.isnot(None))
             .where(Article.id != article_id)
-            .where(Article.is_duplicate == False)
+            .where(Article.is_duplicate.is_(False))
             .order_by(Article.embedding.cosine_distance(embedding))
             .limit(1)
         )
@@ -156,7 +156,9 @@ Respond ONLY with valid JSON:
         if match:
             # Calculate similarity (1 - cosine_distance)
             # For pgvector, cosine_distance returns distance, not similarity
-            distance_stmt = select(Article.embedding.cosine_distance(embedding)).where(Article.id == match.id)
+            distance_stmt = select(Article.embedding.cosine_distance(embedding)).where(
+                Article.id == match.id
+            )
             distance = session.execute(distance_stmt).scalar()
             similarity = 1 - distance
 
@@ -166,7 +168,7 @@ Respond ONLY with valid JSON:
         return None
 
     async def enrich_article(
-        self, session: Session, article: Article, embedding: List[float]
+        self, session: Session, article: Article, embedding: list[float]
     ) -> str:
         """Enrich a single article using a pre-computed embedding.
 
@@ -247,12 +249,16 @@ Respond ONLY with valid JSON:
                 if article.is_ai_related:
                     stats.ai_related += 1
 
-                logger.debug(f"Enriched article {article.id}: category={article.category}, ai_related={article.is_ai_related}")
+                logger.debug(
+                    f"Enriched article {article.id}: category={article.category}, ai_related={article.is_ai_related}"
+                )
 
             except Exception as e:
                 logger.error(f"Error enriching article {article.id}: {e}")
                 stats.errors += 1
 
         session.commit()
-        logger.info(f"Enrichment complete: {stats.processed} processed, {stats.duplicates} duplicates, {stats.ai_related} AI-related, {stats.errors} errors")
+        logger.info(
+            f"Enrichment complete: {stats.processed} processed, {stats.duplicates} duplicates, {stats.ai_related} AI-related, {stats.errors} errors"
+        )
         return stats

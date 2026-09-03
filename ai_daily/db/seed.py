@@ -2,7 +2,6 @@
 
 import json
 import logging
-from pathlib import Path
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -13,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 def seed_sources():
-    """Seed sources from config.json."""
-    config_file = config.config_file
+    """Seed sources from the config file (config.json or config.example.json)."""
+    config_file = config.resolve_config_file()
 
     if not config_file.exists():
-        logger.info("No config.json found, skipping source seeding")
+        logger.info("No config file found at %s, skipping source seeding", config_file)
         return
 
     try:
@@ -68,9 +67,7 @@ def seed_sources():
             name, url = feed.get("name"), feed.get("url")
             if not name or not url:
                 continue
-            exists = session.query(Source).filter(
-                Source.type == "rss", Source.name == name
-            ).first()
+            exists = session.query(Source).filter(Source.type == "rss", Source.name == name).first()
             if exists:
                 continue
             session.add(Source(type="rss", name=name, config={"url": url}, enabled=True))
@@ -81,9 +78,9 @@ def seed_sources():
             name, url = crawler.get("name"), crawler.get("url")
             if not name or not url:
                 continue
-            exists = session.query(Source).filter(
-                Source.type == "crawler", Source.name == name
-            ).first()
+            exists = (
+                session.query(Source).filter(Source.type == "crawler", Source.name == name).first()
+            )
             if exists:
                 continue
             cfg = {

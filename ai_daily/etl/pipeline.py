@@ -2,21 +2,25 @@
 
 import logging
 from contextlib import contextmanager
-from datetime import datetime
-from typing import Dict, List, Optional, Type
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
 from ai_daily.db import Article, JobRun, Source, get_session
 from ai_daily.etl.enrichment import EnrichmentProcessor
-from ai_daily.etl.extractors import BaseExtractor, CrawlerExtractor, GitHubExtractor, GmailExtractor, RSSExtractor
+from ai_daily.etl.extractors import (
+    BaseExtractor,
+    CrawlerExtractor,
+    GitHubExtractor,
+    GmailExtractor,
+    RSSExtractor,
+)
 from ai_daily.etl.transformers import Deduplicator, Embedder, LLMParser, compute_content_hash
-from ai_daily.etl.types import RawContent
 
 logger = logging.getLogger(__name__)
 
 
-EXTRACTORS: Dict[str, Type[BaseExtractor]] = {
+EXTRACTORS: dict[str, type[BaseExtractor]] = {
     "newsletter": GmailExtractor,
     "github": GitHubExtractor,
     "crawler": CrawlerExtractor,
@@ -31,7 +35,14 @@ def track_job(session: Session, job_name: str):
     session.add(job)
     session.commit()
 
-    metrics = {"articles_processed": 0, "articles_created": 0, "duplicates_skipped": 0, "articles_enriched": 0, "enrichment_duplicates": 0, "enrichment_errors": 0}
+    metrics = {
+        "articles_processed": 0,
+        "articles_created": 0,
+        "duplicates_skipped": 0,
+        "articles_enriched": 0,
+        "enrichment_duplicates": 0,
+        "enrichment_errors": 0,
+    }
 
     try:
         yield job, metrics
@@ -43,7 +54,7 @@ def track_job(session: Session, job_name: str):
         job.metrics = metrics
         raise
     finally:
-        job.finished_at = datetime.utcnow()
+        job.finished_at = datetime.now(UTC)
         session.commit()
 
 
@@ -51,7 +62,7 @@ class ETLPipeline:
     """Main ETL pipeline orchestrator."""
 
     def __init__(self):
-        self.extractors: Dict[str, BaseExtractor] = {}
+        self.extractors: dict[str, BaseExtractor] = {}
         self.llm_parser = LLMParser()
         self.embedder = Embedder()
         self.enrichment = EnrichmentProcessor()
@@ -65,7 +76,7 @@ class ETLPipeline:
             self.extractors[source_type] = extractor_class()
         return self.extractors[source_type]
 
-    async def run_for_source(self, source: Source, session: Session) -> Dict:
+    async def run_for_source(self, source: Source, session: Session) -> dict:
         """Run ETL pipeline for a single source."""
         job_name = f"etl_{source.type}_{source.id}"
 
@@ -82,23 +93,28 @@ class ETLPipeline:
                 if source.type == "newsletter":
                     articles_data = await self.llm_parser.parse(raw)
                 else:
-                    articles_data = [{
-                        "title": raw.title,
-                        "content": raw.content,
-                        "topic": "AI Products, Tools, and Repositories" if source.type == "github" else "Industry News and Trends",
-                        "url": raw.url,
-                        "source_name": raw.source_name,
-                        "external_id": raw.external_id,
-                    }]
+                    articles_data = [
+                        {
+                            "title": raw.title,
+                            "content": raw.content,
+                            "topic": "AI Products, Tools, and Repositories"
+                            if source.type == "github"
+                            else "Industry News and Trends",
+                            "url": raw.url,
+                            "source_name": raw.source_name,
+                            "external_id": raw.external_id,
+                        }
+                    ]
 
                 for article_data in articles_data:
                     if not article_data.get("title") or not article_data.get("content"):
-                        logger.warning(f"Skipping article with missing title/content from {source.name}")
+                        logger.warning(
+                            f"Skipping article with missing title/content from {source.name}"
+                        )
                         continue
 
                     content_hash = compute_content_hash(
-                        article_data["title"],
-                        article_data["content"]
+                        article_data["title"], article_data["content"]
                     )
 
                     is_dup, related_id = deduplicator.is_duplicate(
@@ -142,7 +158,9 @@ class ETLPipeline:
                     metrics["articles_created"] += 1
 
                     # Inline enrichment using already-computed embedding
-                    enrich_result = await self.enrichment.enrich_article(session, article, embedding)
+                    enrich_result = await self.enrichment.enrich_article(
+                        session, article, embedding
+                    )
                     if enrich_result == "enriched":
                         metrics["articles_enriched"] += 1
                     elif enrich_result == "duplicate":
@@ -151,16 +169,25 @@ class ETLPipeline:
                         metrics["enrichment_errors"] += 1
 
             session.commit()
-            logger.info(f"Created {metrics['articles_created']} articles, skipped {metrics['duplicates_skipped']} duplicates")
+            logger.info(
+                f"Created {metrics['articles_created']} articles, skipped {metrics['duplicates_skipped']} duplicates"
+            )
 
         return metrics
 
-    async def run_all(self, source_types: Optional[List[str]] = None) -> Dict:
+    async def run_all(self, source_types: list[str] | None = None) -> dict:
         """Run ETL for all enabled sources."""
-        total_metrics = {"articles_processed": 0, "articles_created": 0, "duplicates_skipped": 0, "articles_enriched": 0, "enrichment_duplicates": 0, "enrichment_errors": 0}
+        total_metrics = {
+            "articles_processed": 0,
+            "articles_created": 0,
+            "duplicates_skipped": 0,
+            "articles_enriched": 0,
+            "enrichment_duplicates": 0,
+            "enrichment_errors": 0,
+        }
 
         with get_session() as session:
-            query = session.query(Source).filter(Source.enabled == True)
+            query = session.query(Source).filter(Source.enabled.is_(True))
             if source_types:
                 query = query.filter(Source.type.in_(source_types))
 

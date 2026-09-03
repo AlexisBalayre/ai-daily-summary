@@ -2,8 +2,9 @@
 
 import asyncio
 import logging
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from datetime import UTC, datetime
+from typing import Any
 
 from ai_daily.db import JobRun, get_session
 from ai_daily.orchestrator.types import JobContext, RetryConfig
@@ -14,15 +15,15 @@ logger = logging.getLogger(__name__)
 class Executor:
     """Execute jobs with retry logic and tracking."""
 
-    def __init__(self, retry_config: Optional[RetryConfig] = None):
+    def __init__(self, retry_config: RetryConfig | None = None):
         self.retry_config = retry_config or RetryConfig()
 
     async def run(
         self,
         job_name: str,
         job_func: Callable,
-        scheduled_at: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        scheduled_at: datetime | None = None,
+    ) -> dict[str, Any]:
         """Run a job with retries.
 
         Args:
@@ -33,9 +34,9 @@ class Executor:
         Returns:
             Dict with success, metrics, error, and attempts.
         """
-        scheduled_at = scheduled_at or datetime.now(timezone.utc)
-        last_error: Optional[str] = None
-        metrics: Dict[str, Any] = {}
+        scheduled_at = scheduled_at or datetime.now(UTC)
+        last_error: str | None = None
+        metrics: dict[str, Any] = {}
 
         for attempt in range(self.retry_config.max_attempts):
             run_id = self._create_job_run(job_name, attempt)
@@ -48,7 +49,9 @@ class Executor:
             )
 
             try:
-                logger.info(f"Running job '{job_name}' (attempt {attempt + 1}/{self.retry_config.max_attempts})")
+                logger.info(
+                    f"Running job '{job_name}' (attempt {attempt + 1}/{self.retry_config.max_attempts})"
+                )
                 result = await job_func(context)
                 metrics = result if isinstance(result, dict) else {}
 
@@ -93,15 +96,15 @@ class Executor:
         self,
         run_id: int,
         status: str,
-        metrics: Optional[Dict] = None,
-        error_message: Optional[str] = None,
+        metrics: dict | None = None,
+        error_message: str | None = None,
     ) -> None:
         """Update job run with final status."""
         with get_session() as session:
             job_run = session.query(JobRun).filter(JobRun.id == run_id).first()
             if job_run:
                 job_run.status = status
-                job_run.finished_at = datetime.now(timezone.utc)
+                job_run.finished_at = datetime.now(UTC)
                 job_run.metrics = metrics
                 job_run.error_message = error_message
                 session.commit()

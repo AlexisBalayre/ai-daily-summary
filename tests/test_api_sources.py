@@ -1,15 +1,16 @@
 """Tests for Source CRUD API endpoints."""
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import patch, MagicMock
-from fastapi.testclient import TestClient
-
-from ai_daily.api.routes import router, get_db
-from ai_daily.db import Source
-
 
 # Create a test app
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from ai_daily.api.routes import get_db, router
+from ai_daily.db import Source
+
 app = FastAPI()
 app.include_router(router)
 
@@ -24,6 +25,7 @@ def mock_db():
 @pytest.fixture
 def client(mock_db):
     """Create a test client with mocked database."""
+
     def override_get_db():
         yield mock_db
 
@@ -55,6 +57,7 @@ class TestCreateSource:
 
         def mock_refresh(obj):
             obj.id = 1
+
         mock_db.refresh = mock_refresh
 
         response = client.post(
@@ -82,6 +85,7 @@ class TestCreateSource:
 
         def mock_refresh(obj):
             obj.id = 2
+
         mock_db.refresh = mock_refresh
 
         response = client.post(

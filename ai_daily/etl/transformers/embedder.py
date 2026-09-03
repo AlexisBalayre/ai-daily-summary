@@ -1,7 +1,5 @@
 """Generate vector embeddings for articles."""
 
-from typing import List
-
 from google import genai
 
 from ai_daily.config import config
@@ -14,7 +12,7 @@ class Embedder:
         self.client = genai.Client(api_key=config.llm.google_api_key)
         self.model = config.llm.embedding_model
 
-    async def embed(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> list[float]:
         """Generate embedding for text.
 
         Args:
@@ -33,7 +31,7 @@ class Embedder:
 
         return list(response.embeddings[0].values)
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for multiple texts.
 
         Args:

@@ -1,12 +1,11 @@
 """FastAPI server configuration."""
 
-import os
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from ai_daily.api.chat import router as chat_router
 from ai_daily.api.routes import router
@@ -21,7 +20,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -38,7 +37,7 @@ def health():
 
 
 # Static files serving for frontend
-static_dir = Path(__file__).parent / "static"
+static_dir = Path(__file__).parent.parent / "static"
 if static_dir.exists():
     # Serve static assets
     app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")

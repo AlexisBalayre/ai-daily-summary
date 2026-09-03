@@ -18,7 +18,7 @@ export default function Whitelist() {
       const data = await api.getWhitelist()
       setEmails(data.whitelist)
       setError(null)
-    } catch (err) {
+    } catch {
       setError('Failed to load whitelist')
     } finally {
       setLoading(false)
@@ -35,7 +35,7 @@ export default function Whitelist() {
       setEmails(data.whitelist)
       setNewEmail('')
       setError(null)
-    } catch (err) {
+    } catch {
       setError('Failed to add email')
     } finally {
       setAdding(false)
@@ -49,7 +49,7 @@ export default function Whitelist() {
       await api.removeFromWhitelist(email)
       setEmails(emails.filter(e => e.toLowerCase() !== email.toLowerCase()))
       setError(null)
-    } catch (err) {
+    } catch {
       setError('Failed to remove email')
     }
   }

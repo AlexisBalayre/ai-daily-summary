@@ -30,11 +30,11 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY ai_daily/ ./ai_daily/
 COPY templates/ ./templates/
-COPY config.json ./
+COPY config.example.json ./
 COPY alembic.ini ./
 
 # Copy built frontend from first stage
-COPY --from=frontend-builder /ai_daily/static ./ai_daily/api/static
+COPY --from=frontend-builder /ai_daily/static ./ai_daily/static
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \

@@ -14,7 +14,7 @@ Env: AIDAILY_API (default http://127.0.0.1:8000/api/v1), MCP_PORT (default 8765)
 """
 
 import os
-from datetime import date
+from datetime import UTC, datetime
 
 import httpx
 from mcp.server.fastmcp import FastMCP
@@ -135,7 +135,7 @@ def latest_releases(days: int = 7) -> list[dict]:
 @mcp.tool()
 def daily_summary(target_date: str | None = None) -> dict:
     """The LLM-generated daily summary. target_date: YYYY-MM-DD, default today."""
-    return _get(f"/summary/{target_date or date.today().isoformat()}")
+    return _get(f"/summary/{target_date or datetime.now(UTC).date().isoformat()}")
 
 
 @mcp.tool()

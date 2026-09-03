@@ -1,8 +1,8 @@
 """Job definitions for orchestrator."""
 
 import logging
-from datetime import date, datetime, timedelta, timezone
-from typing import Any, Dict
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import select
 
@@ -32,7 +32,7 @@ def _alert_new_releases() -> int:
         stmt = (
             select(Article)
             .where(
-                Article.is_duplicate == False,
+                Article.is_duplicate.is_(False),
                 Article.tags.any(MODEL_RELEASE_TAG),
                 ~Article.tags.any(RELEASE_ALERTED_TAG),
             )
@@ -42,7 +42,7 @@ def _alert_new_releases() -> int:
         if not candidates:
             return 0
 
-        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
+        cutoff = datetime.now(UTC) - timedelta(hours=24)
         fresh = [a for a in candidates if a.ingested_at and a.ingested_at >= cutoff]
         stale = [a for a in candidates if a not in fresh]
 
@@ -64,7 +64,7 @@ def _alert_new_releases() -> int:
         return len(fresh) if sent else 0
 
 
-async def run_etl(context: JobContext) -> Dict[str, Any]:
+async def run_etl(context: JobContext) -> dict[str, Any]:
     """Run ETL pipeline for all sources."""
     logger.info(f"Starting ETL job (run_id={context.run_id})")
 
@@ -88,7 +88,7 @@ async def run_etl(context: JobContext) -> Dict[str, Any]:
     return metrics
 
 
-async def run_newsletter(context: JobContext) -> Dict[str, Any]:
+async def run_newsletter(context: JobContext) -> dict[str, Any]:
     """Generate and send the newsletter with the spoken briefing attached."""
     logger.info(f"Starting newsletter job (run_id={context.run_id})")
 
@@ -98,7 +98,7 @@ async def run_newsletter(context: JobContext) -> Dict[str, Any]:
         audio_path = None
         try:
             tts = TTSBriefingOutput()
-            audio_path, _ = await tts.generate(session, target_date=date.today())
+            audio_path, _ = await tts.generate(session, target_date=datetime.now(UTC).date())
         except Exception as e:
             logger.warning(f"Briefing audio unavailable, sending newsletter without it: {e}")
 
@@ -106,17 +106,17 @@ async def run_newsletter(context: JobContext) -> Dict[str, Any]:
         newsletter = NewsletterOutput(gmail_service=gmail_extractor.service)
 
         success = await newsletter.send(
-            session, target_date=date.today(), audio_path=audio_path
+            session, target_date=datetime.now(UTC).date(), audio_path=audio_path
         )
 
         return {
             "sent": success,
             "audio_attached": audio_path is not None,
-            "date": date.today().isoformat(),
+            "date": datetime.now(UTC).date().isoformat(),
         }
 
 
-async def run_github_newsletter(context: JobContext) -> Dict[str, Any]:
+async def run_github_newsletter(context: JobContext) -> dict[str, Any]:
     """Generate and send GitHub trending repos newsletter."""
     logger.info(f"Starting GitHub newsletter job (run_id={context.run_id})")
 
@@ -128,17 +128,17 @@ async def run_github_newsletter(context: JobContext) -> Dict[str, Any]:
 
         return {
             "sent": success,
-            "date": date.today().isoformat(),
+            "date": datetime.now(UTC).date().isoformat(),
         }
 
 
-async def run_tts(context: JobContext) -> Dict[str, Any]:
-    """Generate TTS audio briefing, sync to iCloud, and email."""
+async def run_tts(context: JobContext) -> dict[str, Any]:
+    """Generate the TTS audio briefing, copy it to the sync directory, and email it."""
     logger.info(f"Starting TTS job (run_id={context.run_id})")
 
     with get_session() as session:
         tts = TTSBriefingOutput()
-        audio_path, sync_path = await tts.generate(session, target_date=date.today())
+        audio_path, sync_path = await tts.generate(session, target_date=datetime.now(UTC).date())
 
         # Send audio by email
         email_sent = False
@@ -147,7 +147,7 @@ async def run_tts(context: JobContext) -> Dict[str, Any]:
             email_sent = _send_audio_email(
                 gmail_service=gmail_extractor.service,
                 audio_path=audio_path,
-                target_date=date.today(),
+                target_date=datetime.now(UTC).date(),
             )
         except Exception as e:
             logger.warning(f"Failed to email audio briefing: {e}")
@@ -156,7 +156,7 @@ async def run_tts(context: JobContext) -> Dict[str, Any]:
             "audio_path": str(audio_path),
             "sync_path": str(sync_path) if sync_path else None,
             "email_sent": email_sent,
-            "date": date.today().isoformat(),
+            "date": datetime.now(UTC).date().isoformat(),
         }
 
 
@@ -211,7 +211,7 @@ def _send_audio_email(gmail_service, audio_path, target_date) -> bool:
     return True
 
 
-async def run_leaderboards(context: JobContext) -> Dict[str, Any]:
+async def run_leaderboards(context: JobContext) -> dict[str, Any]:
     """Capture all model leaderboards, diff against previous snapshots, alert."""
     logger.info(f"Starting leaderboards job (run_id={context.run_id})")
     from ai_daily.etl.leaderboards import capture_all
@@ -232,7 +232,7 @@ async def run_leaderboards(context: JobContext) -> Dict[str, Any]:
     return result
 
 
-def _send_leaderboard_alert(gmail_service, changes: Dict[str, Any]) -> None:
+def _send_leaderboard_alert(gmail_service, changes: dict[str, Any]) -> None:
     """Email a digest of leaderboard changes (new/dropped models, rank moves)."""
     import base64
     from email.mime.multipart import MIMEMultipart
@@ -265,7 +265,7 @@ def _send_leaderboard_alert(gmail_service, changes: Dict[str, Any]) -> None:
             arrow = "↑" if mv["to"] < mv["from"] else "↓"
             parts_html += (
                 f'<p style="margin:4px 0;">{arrow} {escape(mv["name"])}: '
-                f'#{mv["from"]} → #{mv["to"]}</p>'
+                f"#{mv['from']} → #{mv['to']}</p>"
             )
             parts_text.append(f"  {arrow} {mv['name']}: #{mv['from']} -> #{mv['to']}")
         sections_html += (

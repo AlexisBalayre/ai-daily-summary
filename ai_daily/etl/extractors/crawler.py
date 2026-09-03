@@ -2,8 +2,8 @@
 
 import hashlib
 import re
-from datetime import datetime
-from typing import Any, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
@@ -11,11 +11,11 @@ from bs4 import BeautifulSoup
 from trafilatura import extract, fetch_url
 
 from ai_daily.db.models import Source
+from ai_daily.etl.extractors.base import BaseExtractor
+from ai_daily.etl.types import RawContent
 
 # author is VARCHAR(255) in the DB; keep a margin below that.
 MAX_AUTHOR_LEN = 250
-from ai_daily.etl.extractors.base import BaseExtractor
-from ai_daily.etl.types import RawContent
 
 
 class CrawlerExtractor(BaseExtractor):
@@ -29,10 +29,10 @@ class CrawlerExtractor(BaseExtractor):
         }
 
     @property
-    def supported_types(self) -> List[str]:
+    def supported_types(self) -> list[str]:
         return ["crawler"]
 
-    def _fetch_page(self, url: str) -> Optional[BeautifulSoup]:
+    def _fetch_page(self, url: str) -> BeautifulSoup | None:
         """Fetch and parse a page."""
         try:
             response = self.session.get(url, timeout=30)
@@ -59,7 +59,7 @@ class CrawlerExtractor(BaseExtractor):
                 return target.get_text(strip=True)
         return ""
 
-    def _fetch_full_content(self, url: str, content_selector: Optional[str]) -> str:
+    def _fetch_full_content(self, url: str, content_selector: str | None) -> str:
         """Fetch full article content from URL.
 
         With a CSS content_selector, extract that element. Without one, fall back
@@ -114,7 +114,7 @@ class CrawlerExtractor(BaseExtractor):
         slug = link.rstrip("/").rsplit("/", 1)[-1]
         return slug.replace("-", " ").replace("_", " ").strip().title()
 
-    async def extract(self, source: Source) -> List[RawContent]:
+    async def extract(self, source: Source) -> list[RawContent]:
         """Extract content from configured website."""
         if not source.config:
             return []
@@ -155,7 +155,11 @@ class CrawlerExtractor(BaseExtractor):
                 # Optional fields come ONLY from an explicit selector. An empty
                 # selector must not fall back to the whole element's text — that
                 # blob overflows author VARCHAR(255) and crashes the ETL insert.
-                description = self._extract_attribute(item, description_selector) if description_selector else ""
+                description = (
+                    self._extract_attribute(item, description_selector)
+                    if description_selector
+                    else ""
+                )
                 author = self._extract_attribute(item, author_selector) if author_selector else ""
                 date_str = self._extract_attribute(item, date_selector) if date_selector else ""
 
@@ -184,19 +188,21 @@ class CrawlerExtractor(BaseExtractor):
 
                 external_id = hashlib.md5((link or title).encode()).hexdigest()
 
-                raw_contents.append(RawContent(
-                    external_id=external_id,
-                    title=title,
-                    content=content,
-                    url=link,
-                    author=author if author else None,
-                    published_at=datetime.utcnow(),
-                    source_name=source.name,
-                    metadata={
-                        "crawler_url": url,
-                        "date_string": date_str,
-                    }
-                ))
+                raw_contents.append(
+                    RawContent(
+                        external_id=external_id,
+                        title=title,
+                        content=content,
+                        url=link,
+                        author=author if author else None,
+                        published_at=datetime.now(UTC),
+                        source_name=source.name,
+                        metadata={
+                            "crawler_url": url,
+                            "date_string": date_str,
+                        },
+                    )
+                )
             except Exception:
                 continue
 

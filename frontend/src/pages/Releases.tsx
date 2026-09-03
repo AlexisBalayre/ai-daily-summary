@@ -10,8 +10,13 @@ export default function Releases() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  // Loading flips on when the window changes (see selectWindow), never inside the effect.
+  const selectWindow = (d: number) => {
+    setDays(d)
     setLoading(true)
+  }
+
+  useEffect(() => {
     api
       .getReleases(days)
       .then(setReleases)
@@ -36,7 +41,7 @@ export default function Releases() {
           {WINDOWS.map((w) => (
             <button
               key={w}
-              onClick={() => setDays(w)}
+              onClick={() => selectWindow(w)}
               className={`px-3 py-1.5 text-sm font-medium border first:rounded-l-md last:rounded-r-md -ml-px first:ml-0 ${
                 days === w
                   ? 'bg-gray-900 text-white border-gray-900'

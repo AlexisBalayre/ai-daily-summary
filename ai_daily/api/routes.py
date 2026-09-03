@@ -4,12 +4,12 @@ import asyncio
 import json
 import logging
 import re
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -26,6 +26,7 @@ def escape_like_wildcards(value: str) -> str:
     """
     return value.replace("%", r"\%").replace("_", r"\_")
 
+
 router = APIRouter()
 
 
@@ -34,77 +35,73 @@ class ArticleResponse(BaseModel):
     id: int
     title: str
     content: str
-    url: Optional[str]
-    author: Optional[str]
-    topic: Optional[str]
-    tags: Optional[List[str]]
-    published_at: Optional[datetime]
-    ingested_at: Optional[datetime]
-    source_name: Optional[str] = None
-    summary: Optional[str]
-    category: Optional[str]
-    is_ai_related: Optional[bool]
-    enriched_at: Optional[datetime]
+    url: str | None
+    author: str | None
+    topic: str | None
+    tags: list[str] | None
+    published_at: datetime | None
+    ingested_at: datetime | None
+    source_name: str | None = None
+    summary: str | None
+    category: str | None
+    is_ai_related: bool | None
+    enriched_at: datetime | None
     is_duplicate: bool = False
-    duplicate_of_id: Optional[int]
+    duplicate_of_id: int | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SummaryResponse(BaseModel):
     date: datetime
-    summary_text: Optional[str]
-    key_facts: Optional[Any]  # JSONB in DB, can be dict or list
-    article_ids: Optional[List[int]]
-    created_at: Optional[datetime]
+    summary_text: str | None
+    key_facts: Any | None  # JSONB in DB, can be dict or list
+    article_ids: list[int] | None
+    created_at: datetime | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SourceResponse(BaseModel):
     id: int
     type: str
     name: str
-    config: Optional[dict]
+    config: dict | None
     enabled: bool
-    created_at: Optional[datetime]
+    created_at: datetime | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SourceCreate(BaseModel):
     type: str
     name: str
-    config: Optional[dict] = None
+    config: dict | None = None
     enabled: bool = True
 
 
 class SourceUpdate(BaseModel):
-    name: Optional[str] = None
-    config: Optional[dict] = None
-    enabled: Optional[bool] = None
+    name: str | None = None
+    config: dict | None = None
+    enabled: bool | None = None
 
 
 class SourceTestResult(BaseModel):
     success: bool
-    message: Optional[str] = None
-    preview: Optional[dict] = None
+    message: str | None = None
+    preview: dict | None = None
 
 
 class JobResponse(BaseModel):
     id: int
     job_name: str
     started_at: datetime
-    finished_at: Optional[datetime]
-    status: Optional[str]
-    metrics: Optional[dict]
-    error_message: Optional[str]
+    finished_at: datetime | None
+    status: str | None
+    metrics: dict | None
+    error_message: str | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SystemStatus(BaseModel):
@@ -115,8 +112,8 @@ class SystemStatus(BaseModel):
     enriched_articles: int = 0
     ai_related_articles: int = 0
     duplicate_articles: int = 0
-    last_job: Optional[dict] = None
-    next_runs: Optional[dict] = None
+    last_job: dict | None = None
+    next_runs: dict | None = None
 
 
 # Dependency for DB session
@@ -126,17 +123,19 @@ def get_db():
 
 
 # Article endpoints
-@router.get("/articles", response_model=List[ArticleResponse])
+@router.get("/articles", response_model=list[ArticleResponse])
 def list_articles(
-    q: Optional[str] = Query(None, description="Search query"),
-    topic: Optional[str] = Query(None, description="Filter by topic"),
-    category: Optional[str] = Query(None, description="Filter by category"),
-    is_ai_related: Optional[bool] = Query(None, description="Filter by AI relevance"),
-    is_duplicate: Optional[bool] = Query(None, description="Filter by duplicate status"),
-    source_type: Optional[str] = Query(None, description="Filter by source type (rss, newsletter, github, crawler)"),
-    exclude_source_type: Optional[str] = Query(None, description="Exclude source type"),
-    from_date: Optional[date] = Query(None, alias="from"),
-    to_date: Optional[date] = Query(None, alias="to"),
+    q: str | None = Query(None, description="Search query"),
+    topic: str | None = Query(None, description="Filter by topic"),
+    category: str | None = Query(None, description="Filter by category"),
+    is_ai_related: bool | None = Query(None, description="Filter by AI relevance"),
+    is_duplicate: bool | None = Query(None, description="Filter by duplicate status"),
+    source_type: str | None = Query(
+        None, description="Filter by source type (rss, newsletter, github, crawler)"
+    ),
+    exclude_source_type: str | None = Query(None, description="Exclude source type"),
+    from_date: date | None = Query(None, alias="from"),
+    to_date: date | None = Query(None, alias="to"),
     limit: int = Query(20, le=100),
     offset: int = Query(0),
     db: Session = Depends(get_db),
@@ -147,10 +146,12 @@ def list_articles(
 
         if q:
             escaped_q = escape_like_wildcards(q)
-            stmt = stmt.where(or_(
-                Article.title.ilike(f"%{escaped_q}%", escape="\\"),
-                Article.content.ilike(f"%{escaped_q}%", escape="\\"),
-            ))
+            stmt = stmt.where(
+                or_(
+                    Article.title.ilike(f"%{escaped_q}%", escape="\\"),
+                    Article.content.ilike(f"%{escaped_q}%", escape="\\"),
+                )
+            )
 
         if topic:
             stmt = stmt.where(Article.topic == topic)
@@ -171,10 +172,14 @@ def list_articles(
             stmt = stmt.where(Source.type != exclude_source_type)
 
         if from_date:
-            stmt = stmt.where(Article.published_at >= datetime.combine(from_date, datetime.min.time()))
+            stmt = stmt.where(
+                Article.published_at >= datetime.combine(from_date, datetime.min.time(), tzinfo=UTC)
+            )
 
         if to_date:
-            stmt = stmt.where(Article.published_at <= datetime.combine(to_date, datetime.max.time()))
+            stmt = stmt.where(
+                Article.published_at <= datetime.combine(to_date, datetime.max.time(), tzinfo=UTC)
+            )
 
         stmt = stmt.order_by(Article.published_at.desc()).offset(offset).limit(limit)
 
@@ -190,7 +195,7 @@ def list_articles(
         return results
     except SQLAlchemyError as e:
         logger.error(f"Database error in list_articles: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
 @router.get("/articles/{article_id}", response_model=ArticleResponse)
@@ -205,10 +210,10 @@ def get_article(article_id: int, db: Session = Depends(get_db)):
         raise
     except SQLAlchemyError as e:
         logger.error(f"Database error in get_article: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
-@router.get("/search", response_model=List[ArticleResponse])
+@router.get("/search", response_model=list[ArticleResponse])
 async def semantic_search(
     q: str = Query(..., description="Search query"),
     limit: int = Query(10, le=50),
@@ -226,7 +231,7 @@ async def semantic_search(
             select(Article)
             .where(
                 Article.embedding.isnot(None),
-                Article.is_duplicate == False,  # noqa: E712
+                Article.is_duplicate.is_(False),
             )
             .order_by(Article.embedding.cosine_distance(embedding))
             .limit(limit)
@@ -234,14 +239,21 @@ async def semantic_search(
         return db.execute(stmt).scalars().all()
     except SQLAlchemyError as e:
         logger.error(f"Database error in semantic_search: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
     except Exception as e:
         logger.warning(f"Embedding failed, keyword fallback for search: {e}")
         escaped_q = escape_like_wildcards(q)
-        stmt = select(Article).where(or_(
-            Article.title.ilike(f"%{escaped_q}%", escape="\\"),
-            Article.content.ilike(f"%{escaped_q}%", escape="\\"),
-        )).order_by(Article.published_at.desc()).limit(limit)
+        stmt = (
+            select(Article)
+            .where(
+                or_(
+                    Article.title.ilike(f"%{escaped_q}%", escape="\\"),
+                    Article.content.ilike(f"%{escaped_q}%", escape="\\"),
+                )
+            )
+            .order_by(Article.published_at.desc())
+            .limit(limit)
+        )
         return db.execute(stmt).scalars().all()
 
 
@@ -251,7 +263,7 @@ def get_summary(target_date: date, db: Session = Depends(get_db)):
     """Get daily summary for a specific date."""
     try:
         stmt = select(DailySummary).where(
-            DailySummary.date == datetime.combine(target_date, datetime.min.time())
+            DailySummary.date == datetime.combine(target_date, datetime.min.time(), tzinfo=UTC)
         )
         summary = db.execute(stmt).scalar_one_or_none()
 
@@ -263,10 +275,10 @@ def get_summary(target_date: date, db: Session = Depends(get_db)):
         raise
     except SQLAlchemyError as e:
         logger.error(f"Database error in get_summary: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
-@router.get("/summaries", response_model=List[SummaryResponse])
+@router.get("/summaries", response_model=list[SummaryResponse])
 def list_summaries(
     limit: int = Query(20, le=100),
     offset: int = Query(0),
@@ -278,18 +290,18 @@ def list_summaries(
         return db.execute(stmt).scalars().all()
     except SQLAlchemyError as e:
         logger.error(f"Database error in list_summaries: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
 # Source endpoints
-@router.get("/sources", response_model=List[SourceResponse])
+@router.get("/sources", response_model=list[SourceResponse])
 def list_sources(db: Session = Depends(get_db)):
     """List all sources."""
     try:
         return db.execute(select(Source)).scalars().all()
     except SQLAlchemyError as e:
         logger.error(f"Database error in list_sources: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
 @router.get("/sources/{source_id}", response_model=SourceResponse)
@@ -304,7 +316,7 @@ def get_source(source_id: int, db: Session = Depends(get_db)):
         raise
     except SQLAlchemyError as e:
         logger.error(f"Database error in get_source: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
 @router.post("/sources", response_model=SourceResponse, status_code=201)
@@ -324,7 +336,7 @@ def create_source(source_data: SourceCreate, db: Session = Depends(get_db)):
     except SQLAlchemyError as e:
         logger.error(f"Database error in create_source: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
 @router.put("/sources/{source_id}", response_model=SourceResponse)
@@ -350,7 +362,7 @@ def update_source(source_id: int, source_data: SourceUpdate, db: Session = Depen
     except SQLAlchemyError as e:
         logger.error(f"Database error in update_source: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
 @router.delete("/sources/{source_id}", status_code=204)
@@ -369,7 +381,7 @@ def delete_source(source_id: int, db: Session = Depends(get_db)):
     except SQLAlchemyError as e:
         logger.error(f"Database error in delete_source: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
 @router.patch("/sources/{source_id}/toggle", response_model=SourceResponse)
@@ -389,47 +401,50 @@ def toggle_source(source_id: int, db: Session = Depends(get_db)):
     except SQLAlchemyError as e:
         logger.error(f"Database error in toggle_source: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
-def _test_rss_source(config: Optional[dict]) -> SourceTestResult:
+def _test_rss_source(config: dict | None) -> SourceTestResult:
     """Test an RSS source by parsing the feed URL."""
     if not config or not config.get("url"):
         return SourceTestResult(success=False, message="Missing URL in config")
     try:
         import feedparser
+
         feed = feedparser.parse(config["url"])
         if feed.bozo and not feed.entries:
-            return SourceTestResult(success=False, message=f"Failed to parse feed: {feed.bozo_exception}")
+            return SourceTestResult(
+                success=False, message=f"Failed to parse feed: {feed.bozo_exception}"
+            )
         return SourceTestResult(
             success=True,
             preview={
                 "feed_title": feed.feed.get("title", "Unknown"),
                 "entry_count": len(feed.entries),
-                "sample_titles": [e.get("title", "")[:100] for e in feed.entries[:3]]
-            }
+                "sample_titles": [e.get("title", "")[:100] for e in feed.entries[:3]],
+            },
         )
     except Exception as e:
         return SourceTestResult(success=False, message=str(e))
 
 
-def _test_newsletter_source(config: Optional[dict]) -> SourceTestResult:
+def _test_newsletter_source(config: dict | None) -> SourceTestResult:
     """Test a newsletter source by validating the email format."""
     if not config or not config.get("email"):
         return SourceTestResult(success=False, message="Missing email in config")
     import re
+
     email = config["email"]
     # Basic email validation regex
-    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     if not re.match(email_pattern, email):
         return SourceTestResult(success=False, message="Invalid email format")
     return SourceTestResult(
-        success=True,
-        preview={"email": email, "status": "Email format is valid"}
+        success=True, preview={"email": email, "status": "Email format is valid"}
     )
 
 
-def _test_crawler_source(config: Optional[dict]) -> SourceTestResult:
+def _test_crawler_source(config: dict | None) -> SourceTestResult:
     """Test a crawler source by fetching the URL and applying selectors."""
     if not config or not config.get("url"):
         return SourceTestResult(success=False, message="Missing URL in config")
@@ -474,43 +489,53 @@ def test_source(source_data: SourceCreate):
     elif source_type == "crawler":
         return _test_crawler_source(source_data.config)
     else:
-        return SourceTestResult(
-            success=False,
-            message=f"Unknown source type: {source_data.type}"
-        )
+        return SourceTestResult(success=False, message=f"Unknown source type: {source_data.type}")
 
 
 # Status endpoint
 @router.get("/status", response_model=SystemStatus)
 def get_status(db: Session = Depends(get_db)):
     """Get system status and stats."""
-    from datetime import timedelta
+
     from croniter import croniter
+
     from ai_daily.config import config
 
     try:
         total_articles = db.execute(select(func.count(Article.id))).scalar() or 0
 
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        articles_today = db.execute(
-            select(func.count(Article.id)).where(Article.published_at >= today_start)
-        ).scalar() or 0
+        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        articles_today = (
+            db.execute(
+                select(func.count(Article.id)).where(Article.published_at >= today_start)
+            ).scalar()
+            or 0
+        )
 
-        active_sources = db.execute(
-            select(func.count(Source.id)).where(Source.enabled == True)
-        ).scalar() or 0
+        active_sources = (
+            db.execute(select(func.count(Source.id)).where(Source.enabled.is_(True))).scalar() or 0
+        )
 
-        enriched_articles = db.execute(
-            select(func.count(Article.id)).where(Article.enriched_at.isnot(None))
-        ).scalar() or 0
+        enriched_articles = (
+            db.execute(
+                select(func.count(Article.id)).where(Article.enriched_at.isnot(None))
+            ).scalar()
+            or 0
+        )
 
-        ai_related_articles = db.execute(
-            select(func.count(Article.id)).where(Article.is_ai_related == True)
-        ).scalar() or 0
+        ai_related_articles = (
+            db.execute(
+                select(func.count(Article.id)).where(Article.is_ai_related.is_(True))
+            ).scalar()
+            or 0
+        )
 
-        duplicate_articles = db.execute(
-            select(func.count(Article.id)).where(Article.is_duplicate == True)
-        ).scalar() or 0
+        duplicate_articles = (
+            db.execute(
+                select(func.count(Article.id)).where(Article.is_duplicate.is_(True))
+            ).scalar()
+            or 0
+        )
 
         last_job_obj = db.execute(
             select(JobRun).order_by(JobRun.started_at.desc()).limit(1)
@@ -521,10 +546,12 @@ def get_status(db: Session = Depends(get_db)):
             last_job = {
                 "name": last_job_obj.job_name,
                 "status": last_job_obj.status,
-                "started_at": last_job_obj.started_at.isoformat() if last_job_obj.started_at else None
+                "started_at": last_job_obj.started_at.isoformat()
+                if last_job_obj.started_at
+                else None,
             }
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         schedules = {
             "etl": config.orchestrator.etl_schedule,
             "newsletter": config.orchestrator.newsletter_schedule,
@@ -546,16 +573,16 @@ def get_status(db: Session = Depends(get_db)):
             ai_related_articles=ai_related_articles,
             duplicate_articles=duplicate_articles,
             last_job=last_job,
-            next_runs=next_runs if next_runs else None
+            next_runs=next_runs if next_runs else None,
         )
     except SQLAlchemyError as e:
         logger.error(f"Database error in get_status: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
 # Whitelist endpoints
 class WhitelistResponse(BaseModel):
-    whitelist: List[str]
+    whitelist: list[str]
 
 
 class WhitelistAddRequest(BaseModel):
@@ -565,15 +592,18 @@ class WhitelistAddRequest(BaseModel):
 def _get_config_path() -> Path:
     """Get the config.json path."""
     from ai_daily.config import config
+
     return config.config_file
 
 
 def _read_config() -> dict:
-    """Read config.json file."""
-    config_path = _get_config_path()
+    """Read the whitelist config (personal config.json, else the shipped example)."""
+    from ai_daily.config import config
+
+    config_path = config.resolve_config_file()
     if not config_path.exists():
         return {"whitelist": []}
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return json.load(f)
 
 
@@ -592,7 +622,7 @@ def get_whitelist():
         return WhitelistResponse(whitelist=config_data.get("whitelist", []))
     except Exception as e:
         logger.error(f"Error reading whitelist: {e}")
-        raise HTTPException(status_code=500, detail="Failed to read whitelist")
+        raise HTTPException(status_code=500, detail="Failed to read whitelist") from e
 
 
 @router.post("/whitelist", response_model=WhitelistResponse, status_code=201)
@@ -618,7 +648,7 @@ def add_to_whitelist(request: WhitelistAddRequest):
         raise
     except Exception as e:
         logger.error(f"Error adding to whitelist: {e}")
-        raise HTTPException(status_code=500, detail="Failed to add to whitelist")
+        raise HTTPException(status_code=500, detail="Failed to add to whitelist") from e
 
 
 @router.delete("/whitelist/{email:path}", status_code=204)
@@ -644,11 +674,11 @@ def remove_from_whitelist(email: str):
         raise
     except Exception as e:
         logger.error(f"Error removing from whitelist: {e}")
-        raise HTTPException(status_code=500, detail="Failed to remove from whitelist")
+        raise HTTPException(status_code=500, detail="Failed to remove from whitelist") from e
 
 
 # Job endpoints
-@router.get("/jobs", response_model=List[JobResponse])
+@router.get("/jobs", response_model=list[JobResponse])
 def list_jobs(
     limit: int = Query(20, le=100),
     db: Session = Depends(get_db),
@@ -659,35 +689,34 @@ def list_jobs(
         return db.execute(stmt).scalars().all()
     except SQLAlchemyError as e:
         logger.error(f"Database error in list_jobs: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
 # Release radar endpoints
 class ReleaseResponse(BaseModel):
     id: int
     title: str
-    url: Optional[str]
-    summary: Optional[str]
-    source_name: Optional[str] = None
-    ingested_at: Optional[datetime]
+    url: str | None
+    summary: str | None
+    source_name: str | None = None
+    ingested_at: datetime | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
-@router.get("/releases", response_model=List[ReleaseResponse])
+@router.get("/releases", response_model=list[ReleaseResponse])
 def list_releases(
     days: int = Query(7, ge=1, le=90),
     db: Session = Depends(get_db),
 ):
     """Model-release articles from the last N days (the newsletter's Release Radar)."""
-    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    cutoff = datetime.now(UTC) - timedelta(days=days)
     try:
         stmt = (
             select(Article)
             .where(
                 Article.ingested_at >= cutoff,
-                Article.is_duplicate == False,  # noqa: E712
+                Article.is_duplicate.is_(False),
                 Article.tags.any("model-release"),
             )
             .order_by(Article.ingested_at.desc())
@@ -706,7 +735,7 @@ def list_releases(
         ]
     except SQLAlchemyError as e:
         logger.error(f"Database error in list_releases: {e}")
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
 
 
 class JobTriggerResponse(BaseModel):
@@ -747,12 +776,12 @@ async def trigger_job(job_name: str):
 # Leaderboard endpoints
 class LeaderboardSummary(BaseModel):
     board: str
-    captured_at: Optional[datetime]
+    captured_at: datetime | None
     row_count: int
-    top: List[str]
+    top: list[str]
 
 
-@router.get("/leaderboards", response_model=List[LeaderboardSummary])
+@router.get("/leaderboards", response_model=list[LeaderboardSummary])
 def list_leaderboards(db: Session = Depends(get_db)):
     """Latest snapshot summary for every tracked leaderboard."""
     from ai_daily.db import LeaderboardSnapshot
@@ -814,7 +843,7 @@ def _briefings_dir() -> Path:
     return app_config.data_dir / "briefings"
 
 
-@router.get("/briefings", response_model=List[BriefingInfo])
+@router.get("/briefings", response_model=list[BriefingInfo])
 def list_briefings(limit: int = Query(30, le=100)):
     """Generated audio briefings, newest first."""
     d = _briefings_dir()

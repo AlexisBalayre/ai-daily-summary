@@ -1,18 +1,18 @@
 """Pytest configuration and fixtures."""
 
 import json
+from datetime import UTC, datetime
+
 import pytest
-from sqlalchemy import create_engine, event, Text, delete
-from sqlalchemy.orm import sessionmaker, DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Boolean, DateTime
-from datetime import datetime, UTC
-from typing import Optional
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, create_engine, delete
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
 # Create simplified models that work with SQLite
 # Note: Prefix with "Sqlite" instead of "Test" to avoid pytest collection warnings
 class SqliteBase(DeclarativeBase):
     """Base class for SQLite-compatible models."""
+
     pass
 
 
@@ -24,9 +24,11 @@ class SqliteSource(SqliteBase):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    config: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Store JSON as text
+    config: Mapped[str | None] = mapped_column(Text, nullable=True)  # Store JSON as text
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
 
     def set_config(self, config_dict: dict) -> None:
         """Set config from dict."""
@@ -44,22 +46,24 @@ class SqliteArticle(SqliteBase):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     source_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    external_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    author: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    ingested_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
-    topic: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    content_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    author: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ingested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    topic: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Enrichment fields
-    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    is_ai_related: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
-    enriched_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_ai_related: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    enriched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_duplicate: Mapped[bool] = mapped_column(Boolean, default=False)
-    duplicate_of_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    duplicate_of_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 @pytest.fixture(scope="session")

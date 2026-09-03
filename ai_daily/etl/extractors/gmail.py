@@ -4,9 +4,7 @@ import base64
 import json
 import os
 import re
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import List, Optional, Set
+from datetime import UTC, datetime, timedelta
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -24,16 +22,16 @@ class GmailExtractor(BaseExtractor):
 
     def __init__(self):
         self.service = self._authenticate()
-        self._processed_ids: Set[str] = set()
+        self._processed_ids: set[str] = set()
 
     @property
-    def supported_types(self) -> List[str]:
+    def supported_types(self) -> list[str]:
         return ["newsletter"]
 
     def _authenticate(self):
         """Authenticate with Gmail API using OAuth 2.0."""
         creds = None
-        token_path = Path("token.json")
+        token_path = config.gmail.token_path
 
         if token_path.exists():
             creds = Credentials.from_authorized_user_file(str(token_path), config.gmail.scopes)
@@ -49,21 +47,23 @@ class GmailExtractor(BaseExtractor):
                             "project_id": config.gmail.project_id,
                             "auth_uri": os.getenv("GOOGLE_AUTH_URI"),
                             "token_uri": os.getenv("GOOGLE_TOKEN_URI"),
-                            "auth_provider_x509_cert_url": os.getenv("GOOGLE_AUTH_PROVIDER_X509_CERT_URL"),
+                            "auth_provider_x509_cert_url": os.getenv(
+                                "GOOGLE_AUTH_PROVIDER_X509_CERT_URL"
+                            ),
                             "client_secret": config.gmail.client_secret,
-                            "redirect_uris": ["http://localhost:56450/"],
+                            "redirect_uris": [f"http://localhost:{config.gmail.oauth_port}/"],
                         }
                     },
                     config.gmail.scopes,
                 )
-                creds = flow.run_local_server(port=56450)
+                creds = flow.run_local_server(port=config.gmail.oauth_port)
 
             with open(token_path, "w") as token:
                 token.write(creds.to_json())
 
         return build("gmail", "v1", credentials=creds)
 
-    def _load_whitelist(self, source: Source) -> Set[str]:
+    def _load_whitelist(self, source: Source) -> set[str]:
         """Load whitelist from source config or config file."""
         if source.config and "whitelist" in source.config:
             return set(source.config["whitelist"])
@@ -75,14 +75,14 @@ class GmailExtractor(BaseExtractor):
 
         return set()
 
-    def _parse_email_date(self, date_str: str) -> Optional[datetime]:
+    def _parse_email_date(self, date_str: str) -> datetime | None:
         """Parse email date string."""
         date_str = date_str.replace(" (UTC)", "")
         try:
             return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
         except ValueError:
             try:
-                return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S")
+                return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S").replace(tzinfo=UTC)
             except ValueError:
                 return None
 
@@ -105,12 +105,12 @@ class GmailExtractor(BaseExtractor):
         match = re.search(r"<(.+?)>", sender)
         return match.group(1) if match else sender.strip()
 
-    async def extract(self, source: Source) -> List[RawContent]:
+    async def extract(self, source: Source) -> list[RawContent]:
         """Extract newsletters from Gmail."""
         whitelist = self._load_whitelist(source)
         days_back = source.config.get("days_back", 2) if source.config else 2
 
-        date_threshold = (datetime.utcnow() - timedelta(days=days_back)).strftime("%Y/%m/%d")
+        date_threshold = (datetime.now(UTC) - timedelta(days=days_back)).strftime("%Y/%m/%d")
         search_query = f"after:{date_threshold}"
 
         results = self.service.users().messages().list(userId="me", q=search_query).execute()
@@ -127,7 +127,9 @@ class GmailExtractor(BaseExtractor):
             if msg_id in self._processed_ids:
                 continue
 
-            msg = self.service.users().messages().get(userId="me", id=msg_id, format="full").execute()
+            msg = (
+                self.service.users().messages().get(userId="me", id=msg_id, format="full").execute()
+            )
             payload = msg["payload"]
             headers = {h["name"]: h["value"] for h in payload.get("headers", [])}
 
@@ -152,7 +154,7 @@ class GmailExtractor(BaseExtractor):
                 metadata={
                     "gmail_id": msg_id,
                     "snippet": msg.get("snippet", ""),
-                }
+                },
             )
 
             raw_contents.append(raw_content)

@@ -1,7 +1,5 @@
 # Orchestrator Design
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Add a lightweight internal orchestrator to manage job scheduling, retries, and failure notifications.
 
 **Architecture:** Python module with scheduler, executor, and notifier components. Replaces cron with native scheduling, adds exponential backoff retries, and sends email alerts on failures.

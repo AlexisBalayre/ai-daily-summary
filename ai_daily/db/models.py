@@ -1,7 +1,6 @@
 """SQLAlchemy models for the AI Daily data platform."""
 
-from datetime import datetime
-from typing import List, Optional
+from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
@@ -20,6 +19,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase):
     """Base class for all models."""
+
     pass
 
 
@@ -31,15 +31,17 @@ class Source(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    config: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-
-    articles: Mapped[List["Article"]] = relationship("Article", back_populates="source", cascade="all, delete-orphan")
-
-    __table_args__ = (
-        Index("idx_sources_type", "type"),
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
+
+    articles: Mapped[list["Article"]] = relationship(
+        "Article", back_populates="source", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (Index("idx_sources_type", "type"),)
 
 
 class Article(Base):
@@ -48,26 +50,30 @@ class Article(Base):
     __tablename__ = "articles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_id: Mapped[int] = mapped_column(Integer, ForeignKey("sources.id", ondelete="CASCADE"), nullable=False)
-    external_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    source_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("sources.id", ondelete="CASCADE"), nullable=False
+    )
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    author: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    ingested_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    topic: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    tags: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    author: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ingested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    topic: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    tags: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
     # 768 dimensions for Google text-embedding-004
-    embedding: Mapped[Optional[List[float]]] = mapped_column(Vector(768), nullable=True)
-    content_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(768), nullable=True)
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Enrichment fields
-    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    is_ai_related: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
-    enriched_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_ai_related: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    enriched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_duplicate: Mapped[bool] = mapped_column(Boolean, default=False)
-    duplicate_of_id: Mapped[Optional[int]] = mapped_column(
+    duplicate_of_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("articles.id"), nullable=True
     )
 
@@ -91,11 +97,13 @@ class DailySummary(Base):
     __tablename__ = "daily_summaries"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    date: Mapped[datetime] = mapped_column(DateTime, unique=True, nullable=False)
-    summary_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    key_facts: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
-    article_ids: Mapped[Optional[List[int]]] = mapped_column(ARRAY(Integer), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    date: Mapped[datetime] = mapped_column(DateTime(timezone=True), unique=True, nullable=False)
+    summary_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    key_facts: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    article_ids: Mapped[list[int] | None] = mapped_column(ARRAY(Integer), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
 
 
 class LeaderboardSnapshot(Base):
@@ -109,14 +117,14 @@ class LeaderboardSnapshot(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     board: Mapped[str] = mapped_column(String(100), nullable=False)
-    captured_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    rows: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
-    row_count: Mapped[int] = mapped_column(Integer, default=0)
-    content_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-
-    __table_args__ = (
-        Index("idx_leaderboard_board_captured", "board", "captured_at"),
+    captured_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
+    rows: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    row_count: Mapped[int] = mapped_column(Integer, default=0)
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    __table_args__ = (Index("idx_leaderboard_board_captured", "board", "captured_at"),)
 
 
 class JobRun(Base):
@@ -126,12 +134,12 @@ class JobRun(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     job_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    metrics: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-    __table_args__ = (
-        Index("idx_job_runs_name_started", "job_name", "started_at"),
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    metrics: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (Index("idx_job_runs_name_started", "job_name", "started_at"),)

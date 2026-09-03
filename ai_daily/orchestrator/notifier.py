@@ -2,9 +2,8 @@
 
 import base64
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from email.mime.text import MIMEText
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -17,26 +16,26 @@ class Notifier:
     def __init__(
         self,
         gmail_service=None,
-        recipients: Optional[List[str]] = None,
+        recipients: list[str] | None = None,
     ):
         self.gmail_service = gmail_service
         self.recipients = recipients or []
-        self._last_alert: Dict[str, datetime] = {}
+        self._last_alert: dict[str, datetime] = {}
 
     def _is_rate_limited(self, job_name: str) -> bool:
         """Check if alerts for this job are rate limited."""
         last = self._last_alert.get(job_name)
         if last is None:
             return False
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         # Handle both naive and aware datetimes for comparison
         if last.tzinfo is None:
-            last = last.replace(tzinfo=timezone.utc)
+            last = last.replace(tzinfo=UTC)
         return now - last < timedelta(hours=self.RATE_LIMIT_HOURS)
 
     def _mark_sent(self, job_name: str) -> None:
         """Mark alert as sent for rate limiting."""
-        self._last_alert[job_name] = datetime.now(timezone.utc)
+        self._last_alert[job_name] = datetime.now(UTC)
 
     async def send_failure_alert(
         self,
@@ -76,8 +75,8 @@ class Notifier:
 Last error: {error}
 
 Run ID: {run_id}
-Started: {started_at.strftime('%Y-%m-%d %H:%M:%S')}
-Failed: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}
+Started: {started_at.strftime("%Y-%m-%d %H:%M:%S")}
+Failed: {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")}
 
 Check logs: docker compose logs app
 """
@@ -90,10 +89,7 @@ Check logs: docker compose logs app
                 message["From"] = "me"
 
                 raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
-                self.gmail_service.users().messages().send(
-                    userId="me",
-                    body={"raw": raw}
-                ).execute()
+                self.gmail_service.users().messages().send(userId="me", body={"raw": raw}).execute()
 
                 logger.info(f"Failure alert sent to {recipient}")
             except Exception as e:

@@ -2,8 +2,8 @@
 
 import asyncio
 import logging
-from datetime import datetime
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
+from datetime import UTC, datetime
 
 from croniter import croniter
 
@@ -18,19 +18,19 @@ class Scheduler:
 
     def __init__(
         self,
-        schedules: Dict[str, str],
+        schedules: dict[str, str],
         executor: Executor,
-        notifier: Optional[Notifier] = None,
-        jobs: Optional[Dict[str, Callable]] = None,
+        notifier: Notifier | None = None,
+        jobs: dict[str, Callable] | None = None,
     ):
         self.schedules = schedules
         self.executor = executor
         self.notifier = notifier
         self.jobs = jobs or {}
-        self._last_run: Dict[str, datetime] = {}
+        self._last_run: dict[str, datetime] = {}
         self._running = False
 
-    def get_due_jobs(self, now: Optional[datetime] = None) -> List[str]:
+    def get_due_jobs(self, now: datetime | None = None) -> list[str]:
         """Get list of jobs that are due to run.
 
         Args:
@@ -39,7 +39,7 @@ class Scheduler:
         Returns:
             List of job names that should run.
         """
-        now = now or datetime.utcnow()
+        now = now or datetime.now(UTC)
         due = []
 
         for job_name, cron_expr in self.schedules.items():
@@ -69,15 +69,15 @@ class Scheduler:
             and last.minute == now.minute
         )
 
-    def mark_run(self, job_name: str, at: Optional[datetime] = None) -> None:
+    def mark_run(self, job_name: str, at: datetime | None = None) -> None:
         """Mark job as run at given time."""
-        self._last_run[job_name] = at or datetime.utcnow()
+        self._last_run[job_name] = at or datetime.now(UTC)
 
     def register_job(self, name: str, func: Callable) -> None:
         """Register a job function."""
         self.jobs[name] = func
 
-    async def run_job(self, job_name: str) -> Dict:
+    async def run_job(self, job_name: str) -> dict:
         """Run a single job immediately."""
         if job_name not in self.jobs:
             raise ValueError(f"Unknown job: {job_name}")
@@ -90,15 +90,15 @@ class Scheduler:
                 job_name=job_name,
                 error=result.get("error", "Unknown error"),
                 run_id=result.get("run_id", 0),
-                started_at=datetime.utcnow(),
+                started_at=datetime.now(UTC),
                 attempts=result.get("attempts", 0),
             )
 
         return result
 
-    async def tick(self) -> List[str]:
+    async def tick(self) -> list[str]:
         """Check for due jobs and run them. Returns list of jobs run."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         due_jobs = self.get_due_jobs(now)
         run_jobs = []
 

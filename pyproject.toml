@@ -4,8 +4,22 @@ version = "0.2.0"
 description = "AI-powered daily summary and newsletter generation platform"
 readme = "README.md"
 requires-python = ">=3.12"
+license = { file = "LICENSE" }
 authors = [
     { name = "Alexis Balayre", email = "60859013+AlexisBal@users.noreply.github.com" }
+]
+keywords = ["newsletter", "rss", "gmail", "llm", "gemini", "pgvector", "fastapi", "tts"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: Email",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
 ]
 dependencies = [
     # Core
@@ -39,12 +53,10 @@ dependencies = [
     "scipy>=1.12.0",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "ruff>=0.6.0",
-]
+[project.urls]
+Homepage = "https://github.com/AlexisBalayre/ai-daily-summary"
+Repository = "https://github.com/AlexisBalayre/ai-daily-summary"
+Issues = "https://github.com/AlexisBalayre/ai-daily-summary/issues"
 
 [project.scripts]
 ai-daily = "ai_daily.cli:main"
@@ -72,9 +84,11 @@ select = ["E", "F", "I", "UP", "B", "DTZ", "SIM", "LOG"]
 ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests may keep broad constructs; Alembic scaffolding is generated.
-"tests/**" = ["B"]
-"alembic/**" = ["E", "F", "UP", "B"]
+# FastAPI's Depends()/Query() in defaults is the framework's idiom (B008).
+"ai_daily/api/**" = ["B008"]
+# Tests may keep broad constructs and nested `with patch(...)` blocks; Alembic scaffolding is generated.
+"tests/**" = ["B", "SIM117"]
+"ai_daily/db/migrations/**" = ["E", "F", "UP", "B"]
 
 [dependency-groups]
 dev = [

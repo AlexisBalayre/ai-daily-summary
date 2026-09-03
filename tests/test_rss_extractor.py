@@ -1,8 +1,8 @@
 """Tests for RSS extractor."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from datetime import datetime
 
 from ai_daily.db.models import Source
 from ai_daily.etl.extractors.rss import RSSExtractor
