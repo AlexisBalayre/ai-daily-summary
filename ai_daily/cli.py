@@ -171,11 +171,10 @@ def serve(host: str, port: int, reload: bool) -> None:
 
 
 @main.command("run-daily")
-def run_daily():
-    """Run the complete daily pipeline (ETL + newsletter + TTS)."""
-    from ai_daily.main import run_daily_pipeline
-
-    asyncio.run(run_daily_pipeline())
+@click.pass_context
+def run_daily(ctx: click.Context) -> None:
+    """Run ETL, newsletter (with audio briefing) and GitHub email once, with retries and job records."""
+    ctx.invoke(orchestrator_trigger, job_name="all")
 
 
 @main.group()

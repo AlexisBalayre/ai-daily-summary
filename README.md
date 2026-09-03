@@ -65,7 +65,7 @@ on the host are needed once, for the Gmail OAuth flow.
 git clone https://github.com/AlexisBalayre/ai-daily-summary.git
 cd ai-daily-summary
 
-cp .env.example .env            # fill GOOGLE_API_KEY, GMAIL_*, GOOGLE_*_URI, RECIPIENTS
+cp .env.example .env            # fill GOOGLE_API_KEY, GMAIL_*, RECIPIENTS
 cp config.example.json config.json   # your newsletter senders, RSS feeds, crawlers
 
 # One-time Gmail OAuth consent on the host: opens a browser, writes token.json
@@ -159,7 +159,7 @@ ai-daily init                       Create the schema directly (Docker uses Alem
 ai-daily seed                       Seed sources from config.json (or config.example.json)
 ai-daily run {gmail|github|crawlers|rss|all}
                                     Run ETL for one source type, or all
-ai-daily run-daily                  ETL, then newsletter, then briefing, in one process
+ai-daily run-daily                  Same as `orchestrator trigger all` (ETL, newsletter + briefing, GitHub)
 ai-daily status                     Job runs from the last 24 hours
 ai-daily search <query>             Keyword search over titles and content
 ai-daily serve [--host] [--port] [--reload]
@@ -296,7 +296,8 @@ Read from the environment and `.env` by `ai_daily/config.py` unless noted.
 ## Local development
 
 ```bash
-uv sync                                  # Python deps, including pytest and ruff
+uv sync --all-extras                     # Python deps incl. pytest, ruff and the optional extras
+# Extras: `leaderboards` (Playwright + Chromium) and `tts` (Pocket TTS); plain `uv sync` skips both
 docker compose up -d postgres            # Postgres + pgvector on localhost:5432
 cp .env.example .env                     # point DB_* at localhost
 uv run alembic upgrade head              # migrations live in ai_daily/db/migrations

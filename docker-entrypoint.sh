@@ -30,13 +30,23 @@ echo "[$(date -Iseconds)] Database migrations completed successfully"
 echo "[$(date -Iseconds)] Seeding database..."
 ai-daily seed || echo "[$(date -Iseconds)] Seeding skipped (may already be seeded)"
 
-# Start orchestrator in background
+# Run the scheduler and the API side by side; if either dies the container exits so
+# Docker's restart policy brings both back instead of leaving a half-alive service.
 echo "[$(date -Iseconds)] Starting orchestrator..."
 ai-daily orchestrator start &
+ORCHESTRATOR_PID=$!
 
-echo "=== AI Daily Summary - Container ready ==="
-echo "[$(date -Iseconds)] Orchestrator running in background with scheduled tasks"
 echo "[$(date -Iseconds)] API server starting on port 8000..."
+uvicorn ai_daily.api.server:app --host 0.0.0.0 --port 8000 &
+API_PID=$!
 
-# Start API server (keeps container running)
-exec uvicorn ai_daily.api.server:app --host 0.0.0.0 --port 8000
+trap 'kill "$ORCHESTRATOR_PID" "$API_PID" 2>/dev/null' TERM INT
+echo "=== AI Daily Summary - Container ready ==="
+
+set +e
+wait -n "$ORCHESTRATOR_PID" "$API_PID"
+STATUS=$?
+echo "[$(date -Iseconds)] A service exited with status $STATUS; stopping container"
+kill "$ORCHESTRATOR_PID" "$API_PID" 2>/dev/null
+wait
+exit "$STATUS"
