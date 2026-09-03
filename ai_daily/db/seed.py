@@ -32,22 +32,20 @@ def seed_sources():
         logger.error("Invalid JSON in config file %s: %s", config_file, e)
         return
 
-    whitelist = data.get("whitelist", [])
-
     with get_session() as session:
         # Check if newsletter source exists
         existing = session.query(Source).filter(Source.type == "newsletter").first()
 
         if not existing:
-            # Create newsletter source with whitelist
+            # The sender whitelist stays in the config file so dashboard edits apply.
             newsletter_source = Source(
                 type="newsletter",
                 name="Email Newsletters",
-                config={"whitelist": whitelist, "days_back": 2},
+                config={"days_back": 2},
                 enabled=True,
             )
             session.add(newsletter_source)
-            logger.info("Created newsletter source with %d whitelisted senders", len(whitelist))
+            logger.info("Created newsletter source (whitelist read from %s)", config_file)
 
         # Check if GitHub source exists
         existing_github = session.query(Source).filter(Source.type == "github").first()

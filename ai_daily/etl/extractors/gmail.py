@@ -64,14 +64,20 @@ class GmailExtractor(BaseExtractor):
         return build("gmail", "v1", credentials=creds)
 
     def _load_whitelist(self, source: Source) -> set[str]:
-        """Load whitelist from source config or config file."""
+        """Sender whitelist: the config file (editable from the dashboard) wins.
+
+        A whitelist stored on the source row is only used as a fallback for
+        databases seeded before the file became the single source of truth.
+        """
+        config_path = config.resolve_config_file()
+        if config_path.exists():
+            with open(config_path) as f:
+                data = json.load(f)
+            if "whitelist" in data:
+                return set(data["whitelist"])
+
         if source.config and "whitelist" in source.config:
             return set(source.config["whitelist"])
-
-        if config.config_file.exists():
-            with open(config.config_file) as f:
-                data = json.load(f)
-                return set(data.get("whitelist", []))
 
         return set()
 

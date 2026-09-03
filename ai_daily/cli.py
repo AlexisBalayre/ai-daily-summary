@@ -176,6 +176,23 @@ def run_daily():
 
 
 @main.group()
+def gmail():
+    """Gmail account setup."""
+    pass
+
+
+@gmail.command("auth")
+def gmail_auth():
+    """Run the one-time Google OAuth consent flow and store the refresh token."""
+    from ai_daily.config import config
+    from ai_daily.etl.extractors.gmail import GmailExtractor
+
+    console.print("[cyan]Opening the Google consent screen in your browser...[/cyan]")
+    GmailExtractor()
+    console.print(f"[green]Gmail authorised. Token saved to {config.gmail.token_path}[/green]")
+
+
+@main.group()
 def source():
     """Manage sources."""
     pass
