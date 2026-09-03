@@ -1,7 +1,7 @@
 # AI Daily Summary
 
 AI-powered news aggregation + newsletter platform. Collects content from Gmail newsletters, GitHub
-trending, RSS feeds, and web crawlers; enriches it with LLMs (Google Gemini / Ollama) and pgvector
+trending, RSS feeds, and web crawlers; enriches it with Google Gemini and pgvector
 embeddings; and produces a daily email newsletter, an audio briefing, and a REST API + React dashboard.
 
 ## Role
@@ -25,7 +25,7 @@ their patterns exactly.
 | `ai_daily/orchestrator/` | Cron-scheduled jobs with retries + failure notifications |
 | `ai_daily/cli.py` | `ai-daily` CLI entrypoint (click + rich) |
 | `frontend/` | React + Tailwind dashboard; builds to `ai_daily/static/` |
-| `alembic/` | Database migrations |
+| `ai_daily/db/migrations/` | Alembic migrations (`env.py` + `versions/`) |
 
 ## Conventions
 
@@ -47,7 +47,7 @@ and in `outputs/` consume the enriched `summary`/`category` fields rather than r
 | Command | Purpose |
 | :------ | :------ |
 | `uv sync` | Install dependencies (incl. dev: pytest, ruff) |
-| `uv run ai-daily api` | Start API server (port 8000) |
+| `uv run ai-daily serve` | Start API server (port 8000) |
 | `uv run ai-daily run all` | Full ETL pipeline (all sources + inline enrichment) |
 | `uv run ai-daily run gmail\|rss\|github` | Single-source ETL |
 | `uv run ai-daily orchestrator start\|status\|trigger etl` | Scheduled jobs |
@@ -64,3 +64,6 @@ Don't run it manually or hand-format.
 - `migration-reviewer` — after editing `ai_daily/db/models.py` or generating an Alembic migration.
 - `security-reviewer` — after editing API routes, Gmail/OAuth handling, or anything touching `.env`/`token.json`.
 - `architecture-explainer` — for *why*/*how* questions about the ETL → enrichment → outputs flow.
+
+The `review-*` agents (correctness, security, conventions, context, maintainability, docs, validator) are
+not invoked directly; the `/pr-ci-review` skill dispatches them.

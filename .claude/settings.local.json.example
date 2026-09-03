@@ -1,19 +1,16 @@
 {
-  "_comment": "Personal, machine-local overrides. Copy to settings.local.json (gitignored). These extend settings.json — they never replace it. Put anything personal here: extra permissions, machine-specific tools, and which project .mcp.json servers you opt into.",
   "permissions": {
     "allow": [
-      "Bash(docker build:*)",
-      "Bash(docker compose:*)",
-      "Bash(python3:*)",
-      "Bash(node -e:*)",
+      "Bash(docker compose *)",
+      "Bash(uv run --script scripts/aidaily_mcp.py*)",
       "WebSearch",
-      "WebFetch(domain:docs.example.com)",
-      "Skill(superpowers:writing-plans)",
-      "Skill(superpowers:subagent-driven-development)"
+      "mcp__aidaily__*"
     ]
   },
-  "enabledMcpjsonServers": [
-    "your-issue-tracker",
-    "your-static-analysis"
-  ]
+  "mcpServers": {
+    "aidaily": {
+      "type": "http",
+      "url": "http://127.0.0.1:8765/mcp"
+    }
+  }
 }

@@ -1,7 +1,7 @@
 ---
 name: pr-ci-review
 disable-model-invocation: true
-allowed-tools: Bash(git *), Bash(gh *), Bash(pnpm *), Bash(turbo *), Read, Edit, Write, Grep, Glob, Agent, mcp__github_inline_comment__create_inline_comment
+allowed-tools: Bash(git *), Bash(gh *), Bash(uv *), Bash(npm *), Read, Edit, Write, Grep, Glob, Agent, mcp__github_inline_comment__create_inline_comment
 description: Cost-optimal multi-agent code review of local changes or a PR, across six relevance-gated, model-tiered areas, with a deterministic pre-flight, record-all reporting, and high-signal posting.
 argument-hint: "[pr [<number>]] [--fix | --comment]"
 ---
@@ -14,7 +14,8 @@ The governing rule is **spend only where it buys recall**. Deterministic tooling
 
 > **Setup:** the CI paths (`--json-schema`, the `review-metrics` record) assume your own CI
 > wiring — a workflow that invokes `/pr-ci-review` on PRs and appends each run's record to a
-> `ci/review-metrics` orphan branch. This template ships no workflow; without one, the local
+> `ci/review-metrics` orphan branch. This repo's `.github/workflows/ci.yml` only runs ruff, pytest,
+> and the frontend lint/build; it does not invoke this skill. Without such a workflow, the local
 > `report` / `--fix` and manual `pr --comment` paths work unchanged.
 
 ## Review Constraints
@@ -22,7 +23,7 @@ The governing rule is **spend only where it buys recall**. Deterministic tooling
 - **Grounded, not speculative:** every finding is grounded in the actual changed code. No speculation; a false positive erodes trust.
 - **Tag by severity, not by whether to post:** tag each finding `important` (fix before merge), `nit` (real but minor), or `pre-existing` (predates this diff).
 - **Record-all, post-high-signal:** the structured record captures every confirmed finding (`important`, `nit`, and `pre-existing`) plus the refuted ones; a PR receives inline comments for `important` findings only. `nit` and `pre-existing` are recorded, never posted.
-- **Leave linters alone:** do not raise anything Biome or tsc already catches; that is noise, not a finding.
+- **Leave linters alone:** do not raise anything ruff already catches; that is noise, not a finding.
 
 ## 1. Parse arguments -> source + action
 
@@ -32,19 +33,19 @@ The governing rule is **spend only where it buys recall**. Deterministic tooling
 
 Define **the change** once and reuse it everywhere below:
 
-- **local**: the working-tree diff against the merge-base with `main` (committed + staged + unstaged).
+- **local**: the working-tree diff against the merge-base with `master` (committed + staged + unstaged).
 - **pr `<n>`**: the diff of PR #`<n>`.
 
 ## 2. Gate the run before spending anything
 
 - **PR freshness** (pr source): before spawning, assert the working tree *is* the PR's current head: `git rev-parse HEAD` must equal `gh pr view <n> --json headRefOid -q .headRefOid`. If they differ, the tree is stale (CI checks out the head, but GitHub can serve a lagging `refs/pull/N/merge`): re-checkout the head with `gh pr checkout <n>`, or stop and say so. A stale tree produces findings that are false on the real head and silently skips the surface the head added. Also assert the tree is **clean** (`git status --porcelain` empty): the SHA match alone passes even when uncommitted edits sit on top of the right HEAD, and those edits make `Read` serve content that disagrees with `gh pr diff`, so reviewers cite code that is not in the PR. If it is dirty, restore it (`git checkout -- .` / `git reset --hard HEAD`) or stop.
-- **Pre-flight** (local source): run `turbo run lint typecheck test` **scoped to the affected packages** (a `--filter` per touched workspace; the full suite is slow and cascade-cancels). If it fails, **stop**: report the failures and ask the user to return once the tree is green. Reviewers assume the deterministic layer is clean; spawning them on a red tree pays opus to rediscover what tooling already flagged. Integration tests are infra-gated and stay CI's job. For a pr source running under CI, skip the pre-flight: the build workflow already gates the tree.
+- **Pre-flight** (local source): run `uv run ruff check . && uv run ruff format --check . && uv run pytest -q`, plus `cd frontend && npm run lint` when any file under `frontend/` changed. If it fails, **stop**: report the failures and ask the user to return once the tree is green. Reviewers assume the deterministic layer is clean; spawning them on a red tree pays opus to rediscover what tooling already flagged. Anything needing a live PostgreSQL, Gmail, or LLM stays out of the pre-flight (the suite mocks them). For a pr source running under CI, skip the pre-flight: the build workflow already gates the tree.
 
 ## 3. Steer (yourself, no agent)
 
 Gate and brief on the change's *shape* and *intent*, both free to read. Do not spawn a helper for this.
 
-- **Shape**: the changed files, their line counts, and the workspaces they span (`apps` / `services` / `packages`), from `git diff --stat` against the merge-base (local) or `gh pr diff <n>` plus `gh pr view <n> --json files` (pr).
+- **Shape**: the changed files, their line counts, and the areas they span (`ai_daily/api`, `ai_daily/etl`, `ai_daily/db`, `ai_daily/outputs`, `ai_daily/orchestrator`, `frontend/`, `tests/`), from `git diff --stat` against the merge-base (local) or `gh pr diff <n>` plus `gh pr view <n> --json files` (pr).
 - **Intent**: read it from the commit messages and, for a PR, the title and body. The author already wrote the intent; do not pay an agent to re-derive it from the diff. Only if the messages are junk (`wip`, `fix`) do you skim the diff yourself.
 - **Steering brief** (pr): the unresolved comment threads (each with its concern) and what the author declared intentional or out-of-scope.
 
@@ -57,9 +58,9 @@ Spawn a reviewer (via the **Agent** tool, by its `subagent_type`) **only when it
 | Reviewer (`subagent_type`) | Default model | Spawn when |
 | :--- | :--- | :--- |
 | `review-correctness` | opus | code with real logic changed; owns behavioral regressions on the surface tests do not cover |
-| `review-security` | opus | a trust boundary is touched (auth, routes, WS handlers, input handling, secrets, config) |
-| `review-context` | sonnet | spec/protocol/infra surfaces touched (CORS, HTTP, docker, CI, settings) |
-| `review-conventions` | sonnet | almost always: `docs/conventions/*`, `docs/adr/*`, and `CLAUDE.md` govern the rules |
+| `review-security` | opus | a trust boundary is touched (API routes, RSS/crawler fetching, Gmail/OAuth, HTML email templating, secrets, config) |
+| `review-context` | sonnet | spec/protocol/infra surfaces touched (CORS, HTTP status codes, cron schedules, docker, CI, settings) |
+| `review-conventions` | sonnet | almost always: `docs/conventions/*.md` and `CLAUDE.md` govern the rules |
 | `review-maintainability` | sonnet | code with real logic changed |
 | `review-docs` | sonnet | the change adds or edits prose (docstrings, comments, markdown, copy) |
 
@@ -67,7 +68,7 @@ There is no `requirements` reviewer: this setup deliberately keeps the issue tra
 
 **Model dials (asymmetric by stakes).** `correctness` and `security` always run on opus, never downgraded: a miss there is expensive. `maintainability` runs on sonnet for a normal diff and on **opus** once the diff is large (override the model at spawn time). `conventions` and `docs` run on sonnet.
 
-**Instance scaling.** Default every area to **one** instance. Scale only `correctness` / `security` / `maintainability`, and only past a size gate: **> ~400 changed lines OR > ~8 files spanning >= 2 of `apps`/`services`/`packages`** -> 2 instances; a markedly larger diff -> 3; **hard cap 3**. Send each instance in a complementary direction (by subsystem, layer, or risk concentration), never overlapping. Other areas stay single-instance. This is parallel breadth, not repeated passes: review the changed surface well once, do not loop.
+**Instance scaling.** Default every area to **one** instance. Scale only `correctness` / `security` / `maintainability`, and only past a size gate: **> ~400 changed lines OR > ~8 files spanning >= 2 of the areas above** -> 2 instances; a markedly larger diff -> 3; **hard cap 3**. Send each instance in a complementary direction (by subsystem, layer, or risk concentration), never overlapping. Other areas stay single-instance. This is parallel breadth, not repeated passes: review the changed surface well once, do not loop.
 
 ## 5. Brief and spawn in parallel
 
@@ -78,7 +79,7 @@ Each subagent's manifest defines its expertise; your brief supplies everything e
 - The steering context that concerns it: unresolved threads (do not re-raise their concerns; look harder where they point) and what the author declared intentional or out-of-scope.
 - The contract every finding meets: `{file, line (or range), area, confidence (high/medium), tag, description}` with the quote or citation its focus requires.
 - An instruction to surface, separately, any impediment that degraded its review. No impediments is the normal case.
-- **Under CI (a schema was requested), the review is static**: the checkout has no `node_modules`, and test/build spikes, dependency installs, `git fetch`, and shell redirection to temp files are all off-limits even where the Bash tool itself would accept more than `gh`. Tell the reviewer to confirm from `gh pr diff` and the checked-out tree by static reasoning; a claim about a dependency's internals rests on pinned-version knowledge and caps at `medium` confidence. None of this is an impediment worth logging: it is the CI path's normal shape.
+- **Under CI (a schema was requested), the review is static**: the checkout may have no `.venv` or `node_modules`, and test/build spikes, dependency installs, `git fetch`, and shell redirection to temp files are all off-limits even where the Bash tool itself would accept more than `gh`. Tell the reviewer to confirm from `gh pr diff` and the checked-out tree by static reasoning; a claim about a dependency's internals rests on pinned-version knowledge and caps at `medium` confidence. None of this is an impediment worth logging: it is the CI path's normal shape.
 - A reminder that its final message *is* the deliverable for the next stage, not a human-facing report.
 
 ## 6. Consolidate (yourself, inline)
@@ -86,7 +87,7 @@ Each subagent's manifest defines its expertise; your brief supplies everything e
 You hold every finding and have the only cross-area view, so dedup inline; do not spawn a separate consolidator.
 
 - **Deduplicate across areas.** The same root issue often surfaces from several reviewers (a low-value comment trips `conventions`, `docs`, and `maintainability` at once). Merge into one finding, keeping the clearest description and the most severe tag.
-- **Assign one area, citation-first.** A real defect is `correctness` or `security`. Anything citing a written `CLAUDE.md` / `docs/conventions` / ADR rule is `conventions`. Remaining judgment calls are `docs` or `maintainability`.
+- **Assign one area, citation-first.** A real defect is `correctness` or `security`. Anything citing a written `CLAUDE.md` / `docs/conventions` rule is `conventions`. Remaining judgment calls are `docs` or `maintainability`.
 - **Respect declared scope.** Drop anything the author marked intentional or out-of-scope.
 - **Doubt resolves to keep.** A verified mechanism with no currently-reachable trigger stays as a `nit`; only drop a finding whose mechanism is unproven.
 - **The tag must match the body.** A finding whose own description concedes there is no reachable break ("no contract violation", "no practical consequence", a provably-equivalent behavior) consolidates as a `nit` regardless of the tag the reviewer chose. Do not forward a self-contradicting `important` to validation; the downgrade is yours to make.
@@ -106,7 +107,7 @@ Validation buys precision, never recall, so it is a cost tax justified only wher
 **fix** (local, `--fix`): apply each confirmed finding.
 
 - **Scope discipline**: each fix targets only the flagged issue. Do not refactor adjacent code, touch unrelated docstrings, or remove ticket TODOs.
-- **Post-verify**: after editing, re-run `turbo run typecheck test` on the affected packages to prove no regression was introduced. Report the result.
+- **Post-verify**: after editing, re-run `uv run pytest -q` (and `cd frontend && npm run lint` if frontend files were touched) to prove no regression was introduced; ruff runs on the Stop hook. Report the result.
 - Summarize what changed (file, line, fix). List anything you noticed but did not touch under "Tangential (not applied)" and ask before editing those.
 
 **comment** (pr, `--comment`): post the confirmed `important` findings as inline comments.
@@ -119,7 +120,7 @@ Validation buys precision, never recall, so it is a cost tax justified only wher
   > No issues found. Checked correctness, security, conventions, context, maintainability, and docs.
 - **If important findings exist:**
   1. Build a private list of unique comments to prevent duplicates.
-  2. Post inline comments via `mcp__github_inline_comment__create_inline_comment`.
+  2. Post inline comments via `mcp__github_inline_comment__create_inline_comment` when that MCP server is configured. It is optional: without it, fall back to `gh pr comment` with one consolidated comment that names each finding's file, line, and concern (or `gh api repos/{owner}/{repo}/pulls/{n}/comments` for true inline anchoring).
   3. **Anchor outside the diff:** an inline comment attaches only to a line inside the PR's diff hunks. When an `important` finding's true line is outside them (a context line, or an unchanged file), anchor to the nearest changed line in the same file and name the true location in the body. When the finding's file has **no** changed line at all (a stale reference or dead link in a file the PR never touches), no inline anchor exists: it **must** go into a single consolidated `gh pr comment` (naming each finding's file, line, and concern), never be dropped. A finding silently lost this way is a false negative on an `important` finding, the worst outcome the review can produce.
   4. **Format:** brief description + cite/link to the specific rule or the underlying concern.
   5. **Suggestions:** committable blocks only for small, self-contained fixes that resolve the issue entirely.
@@ -140,7 +141,7 @@ If the harness runs this skill with a `--json-schema`, your **final message** mu
 ## Todo List
 
 - [ ] Parse arguments into source + action; reject invalid combinations.
-- [ ] Gate the run: PR freshness (pr) or pre-flight `turbo` suite (local).
+- [ ] Gate the run: PR freshness (pr) or pre-flight ruff + pytest (+ `npm run lint`) suite (local).
 - [ ] Steer: read the change shape and intent yourself.
 - [ ] Gate and spawn only the touched areas, tiered and instance-capped.
 - [ ] Consolidate inline: dedup and assign one area citation-first.

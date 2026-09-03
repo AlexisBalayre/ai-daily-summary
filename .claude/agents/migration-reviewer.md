@@ -1,6 +1,6 @@
 ---
 name: migration-reviewer
-description: Use PROACTIVELY after any change to `ai_daily/db/models.py` or newly generated Alembic migrations under `alembic/versions/**`. MUST BE USED before committing schema or migration changes. Reviews for safety, backwards compatibility, and convention compliance against `docs/conventions/database.md`.
+description: Use PROACTIVELY after any change to `ai_daily/db/models.py` or newly generated Alembic migrations under `ai_daily/db/migrations/versions/**`. MUST BE USED before committing schema or migration changes. Reviews for safety, backwards compatibility, and convention compliance against `docs/conventions/database.md`.
 tools: Read, Glob, Grep
 model: sonnet
 ---

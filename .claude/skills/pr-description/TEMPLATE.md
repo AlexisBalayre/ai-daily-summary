@@ -1,37 +1,39 @@
 # House-style PR body
 
-Adaptive: always include `## What`; add other sections only when the section-selection table in SKILL.md says so. Lead with user-visible change, then implementation, then reviewer-critical info (migrations, edge cases, deferred work).
+Adaptive: always include `## Summary`; add other sections only when the section-selection table in SKILL.md says so. Lead with user-visible change, then implementation, then reviewer-critical info (migrations, edge cases, testing, deferred work).
 
 ## Annotated skeleton
 
 ```md
-## What
+## Summary
 
-<One sentence: what this PR does + slice/epic context, e.g. "Nth slice of the …
-surface (PROJ-XXXX, under the PROJ-YYYY epic).">
+<One sentence: what this PR does and why.>
 
 - <Concrete change, user- or API-visible first.>
-- <`METHOD /path` for new routes; name the component/hook for FE; etc.>
+- <`METHOD /path` for new routes; the CLI command for new CLI surface; the component for frontend.>
 
-## How
+## Changes            <!-- only if the approach is non-obvious -->
 
-<Approach + notable decisions. Reference files plainly (`service.ts`); don't
+<Approach + notable decisions. Reference files plainly (`enrichment.py`); don't
 narrate every file.>
 
-## Migration            <!-- only if schema/migration changed -->
+## Migration          <!-- only if models.py or a migration changed -->
 
-`NNNN_name.sql`: <additive nullable column / index / etc.> (<no default,
-backfill rule>). <Backwards-compat verdict.>
+`<revision>_<slug>.py`: <additive nullable column / index / etc.> (<default or
+backfill rule>). <Backwards-compat verdict.> `downgrade()` <implemented / not feasible because …>.
 
-## Behaviour            <!-- only if rules/edge cases worth flagging -->
+## Behaviour          <!-- only if rules/edge cases worth flagging -->
 
-- <Gate, default, or edge case a reviewer should verify.>
+- <Gate, default, schedule, or edge case a reviewer should verify.>
 
-## Notes                <!-- optional asides -->
+## Testing
 
-- <docs-only / no code change / pre-commit green / follow-up deferred.>
+- `uv run pytest`: <what the new/updated tests cover>.
+- <Manual check, if any: a real `uv run ai-daily run rss`, a rendered email, the dashboard.>
 
-Closes PROJ-XXXX. Part of the PROJ-YYYY epic. Remaining: **PROJ-ZZZZ** (…).   <!-- Closes is the slice ticket from the title; auto-transitions to Done on merge. Omit when the PR has no tracker id. -->
+## Notes              <!-- optional asides -->
+
+- <docs-only / no code change / follow-up deferred.>
 ```
 
 ## Example: code PR with a migration
@@ -39,67 +41,60 @@ Closes PROJ-XXXX. Part of the PROJ-YYYY epic. Remaining: **PROJ-ZZZZ** (…).   
 Title:
 
 ```
-feat(admin): super_admin rename and soft-archive an organization (PROJ-2509)
+feat(db): store model-release flag on articles for the release radar
 ```
 
 Body:
 
 ```md
-## What
+## Summary
 
-Third slice of the super_admin org-administration surface (PROJ-2509, under the
-PROJ-2497 epic). Adds **rename** and **soft-archive** for any organization, plus
-the gate that stops archived orgs from starting new sessions.
+Lets the newsletter's Release Radar section and the instant-alert email select
+model-release articles from a stored flag instead of re-scanning tags at render time.
 
-- **`PATCH /admin/organizations/{id}`** (super_admin-only): partial update
-  `{ name?, archived? }`.
-- Org detail page gains **Rename** and **Archive/Unarchive** actions and an
-  archived badge.
-- Org list gains a **"Show archived"** toggle (archived excluded by default).
+- `articles.is_model_release` (boolean, default false) set by `EnrichmentProcessor`
+  from the LLM classification.
+- `newsletter.py` and `summary_generator.py` filter on the column; the tag scan is removed.
 
 ## Migration
 
-`0056_mute_shape.sql`: additive nullable `organizations.archived_at timestamptz`
-(no default, no backfill; null = not archived). Backwards-compatible.
+`a1b2c3d4e5f6_add_is_model_release.py`: additive `articles.is_model_release boolean
+NOT NULL DEFAULT false`, backfilled from the existing `model-release` tag in the same
+revision. Backwards-compatible. `downgrade()` drops the column.
 
 ## Behaviour
 
-- **Soft-archive**, not delete: sessions/messages/usage/billing are retained;
-  unarchive clears the flag.
-- **New-session gate**: `sessions.service.create()` refuses an archived org on
-  both capped and uncapped paths. Existing-session writes still allowed.
+- Only the model builder announcing a new model counts; platform availability
+  ("X now on Bedrock") stays false, matching the enrichment prompt.
 
-Closes PROJ-2509. Part of the PROJ-2497 epic. Remaining: **PROJ-2510** (usage/billing panel).
+## Testing
+
+- `uv run pytest`: enrichment sets the flag from the JSON response; newsletter groups
+  flagged articles under Release Radar; backfill covered by a migration test with the
+  SQLite fixture.
+- Ran `uv run ai-daily run rss` against two feeds and checked the rendered email by hand.
 ```
 
-## Example: docs / ADR PR
+## Example: docs-only PR
 
 Title:
 
 ```
-docs: add ADR-0014 per-org delivery policies + Delivery Policy glossary term
+docs: describe inline enrichment in the ETL conventions
 ```
 
 Body:
 
 ```md
-## What
+## Summary
 
-Docs-only. Records the decision behind Epic
-[PROJ-2517](https://linear.app/acme/issue/PROJ-2517) (per-organization delivery
-policies):
-
-- **`docs/adr/0014-per-org-delivery-policies.md`** (status `proposed`).
-- **`docs/glossary.md`** adds the **Delivery Policy** glossary term.
-- **`docs/adr/README.md`** index entry.
-
-## Why now
-
-Implementation is sliced into PROJ-2519 → 2523; landing the ADR + glossary first
-gives those slices a shared, reviewed vocabulary.
+Docs-only. `docs/conventions/etl.md` now explains that enrichment runs inline during
+ETL (classify, summarize, semantic dedup) and which Article fields it writes, so the
+outputs conventions have something to point at.
 
 ## Notes
 
-- No code changes; pre-commit green.
-- ADR is `proposed`, flips to `accepted` once the system reflects it.
+- No code changes.
+- `docs/design/2026-02-07-article-enrichment.md` still describes the original
+  separate-job design; left as historical record, not updated.
 ```

@@ -1,4 +1,6 @@
-# CONTEXT.md Format
+# Glossary entry format
+
+This repo keeps its glossary in `docs/conventions/general.md` (a Naming/Glossary section), not in a parallel `CONTEXT.md`. The discipline below is what a good entry looks like; apply it there.
 
 ## Structure
 
@@ -9,17 +11,25 @@
 
 ## Language
 
-**Order**:
-{A one or two sentence description of the term}
-_Avoid_: Purchase, transaction
+**Source**:
+A configured place articles come from (a Gmail newsletter sender, an RSS feed, GitHub trending, a crawled site). Rows in `sources`; each has a `type` that selects its extractor.
+_Avoid_: feed (that is only the RSS kind), provider, channel
 
-**Invoice**:
-A request for payment sent to a customer after delivery.
-_Avoid_: Bill, payment request
+**Article**:
+One normalized, deduplicated item stored in `articles`, carrying its enrichment (`summary`, `category`, `is_ai_related`, embedding).
+_Avoid_: item, entry, post
 
-**Customer**:
-A person or organization that places orders.
-_Avoid_: Client, buyer, account
+**RawContent**:
+What an extractor returns before transformation: unstored, unenriched, may still be a duplicate.
+_Avoid_: article (an Article exists only after storage)
+
+**DailySummary**:
+The cached per-day digest generated from enriched Articles; regenerated only when newer articles exist.
+_Avoid_: newsletter (the newsletter is the email built from it), briefing
+
+**JobRun**:
+One recorded execution of an orchestrator job (`etl`, `newsletter`, `tts`) with start, status, and error.
+_Avoid_: task, run (bare)
 ```
 
 ## Rules
@@ -28,36 +38,10 @@ _Avoid_: Client, buyer, account
 - **Flag conflicts explicitly.** If a term is used ambiguously, call it out in "Flagged ambiguities" with a clear resolution.
 - **Keep definitions tight.** One or two sentences max. Define what it IS, not what it does.
 - **Show relationships.** Use bold term names and express cardinality where obvious.
-- **Only include terms specific to this project's context.** General programming concepts (timeouts, error types, utility patterns) don't belong even if the project uses them extensively. Before adding a term, ask: is this a concept unique to this context, or a general programming concept? Only the former belongs.
+- **Only include terms specific to this project's context.** General programming concepts (timeouts, error types, utility patterns) don't belong even if the project uses them extensively. `Extractor`, `enrichment`, `newsletter`, and `briefing` belong; `retry` and `session` do not. Before adding a term, ask: is this a concept unique to this context, or a general programming concept? Only the former belongs.
 - **Group terms under subheadings** when natural clusters emerge. If all terms belong to a single cohesive area, a flat list is fine.
 - **Write an example dialogue.** A conversation between a dev and a domain expert that demonstrates how the terms interact naturally and clarifies boundaries between related concepts.
 
-## Single vs multi-context repos
+## Where entries go in this repo
 
-**Single context (most repos):** One `CONTEXT.md` at the repo root.
-
-**Multiple contexts:** A `CONTEXT-MAP.md` at the repo root lists the contexts, where they live, and how they relate to each other:
-
-```md
-# Context Map
-
-## Contexts
-
-- [Ordering](./src/ordering/CONTEXT.md): receives and tracks customer orders
-- [Billing](./src/billing/CONTEXT.md): generates invoices and processes payments
-- [Fulfillment](./src/fulfillment/CONTEXT.md): manages warehouse picking and shipping
-
-## Relationships
-
-- **Ordering → Fulfillment**: Ordering emits `OrderPlaced` events; Fulfillment consumes them to start picking
-- **Fulfillment → Billing**: Fulfillment emits `ShipmentDispatched` events; Billing consumes them to generate invoices
-- **Ordering ↔ Billing**: Shared types for `CustomerId` and `Money`
-```
-
-The skill infers which structure applies:
-
-- If `CONTEXT-MAP.md` exists, read it to find contexts
-- If only a root `CONTEXT.md` exists, single context
-- If neither exists, create a root `CONTEXT.md` lazily when the first term is resolved
-
-When multiple contexts exist, infer which one the current topic relates to. If unclear, ask.
+This is a single-context repo: one glossary, in `docs/conventions/general.md`. Add the Glossary section there the first time a cross-cutting term is pinned down (it does not exist yet). Area-specific vocabulary that only matters inside one package (for example the transformer names in `ai_daily/etl/transformers/`) belongs in that area's `docs/conventions/<area>.md`, not the glossary. Never create a `CONTEXT.md` or `CONTEXT-MAP.md`.

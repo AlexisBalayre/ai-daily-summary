@@ -1,4 +1,4 @@
-# Database Conventions (`ai_daily/db/`, `alembic/`)
+# Database Conventions (`ai_daily/db/`, `ai_daily/db/migrations/`)
 
 PostgreSQL + pgvector, SQLAlchemy 2.0 (async), Alembic migrations.
 
