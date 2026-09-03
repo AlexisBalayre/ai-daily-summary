@@ -182,7 +182,7 @@ def gmail():
 
 
 @gmail.command("auth")
-def gmail_auth():
+def gmail_auth() -> None:
     """Run the one-time Google OAuth consent flow and store the refresh token."""
     from ai_daily.config import config
     from ai_daily.etl.extractors.gmail import GmailExtractor

@@ -394,12 +394,15 @@ class TestEnrichmentProcessor:
         assert result[2].title == "Old Article"
 
     def test_enrichment_processor_has_embedder_property(self):
-        """Test that EnrichmentProcessor has embedder property."""
+        """The embedder is built lazily, on first access, from the Embedder class."""
         from ai_daily.etl.enrichment import EnrichmentProcessor
 
         processor = EnrichmentProcessor()
-        assert hasattr(processor, "embedder")
-        assert hasattr(processor, "_embedder")
+        assert processor._embedder is None
+        with patch("ai_daily.etl.enrichment.Embedder") as embedder_cls:
+            assert processor.embedder is embedder_cls.return_value
+            assert processor.embedder is embedder_cls.return_value
+        embedder_cls.assert_called_once_with()
 
     def test_enrichment_processor_has_generate_embedding_method(self):
         """Test that EnrichmentProcessor has generate_embedding method."""
