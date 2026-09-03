@@ -37,7 +37,9 @@ class Article(Base):
     is_ai_related: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     enriched_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     is_duplicate: Mapped[bool] = mapped_column(Boolean, default=False)
-    duplicate_of_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("articles.id"), nullable=True)
+    duplicate_of_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("articles.id"), nullable=True
+    )
 
     # Existing but now actively used
     tags: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
@@ -107,14 +109,17 @@ Two-layer deduplication:
 
 ```python
 def find_duplicate(article: Article, embedding: List[float]) -> Optional[Article]:
-    stmt = select(Article).where(
-        Article.enriched_at >= datetime.utcnow() - timedelta(days=LOOKBACK_DAYS),
-        Article.embedding.isnot(None),
-        Article.id != article.id,
-        Article.is_duplicate == False,
-    ).order_by(
-        Article.embedding.cosine_distance(embedding)
-    ).limit(1)
+    stmt = (
+        select(Article)
+        .where(
+            Article.enriched_at >= datetime.utcnow() - timedelta(days=LOOKBACK_DAYS),
+            Article.embedding.isnot(None),
+            Article.id != article.id,
+            Article.is_duplicate == False,
+        )
+        .order_by(Article.embedding.cosine_distance(embedding))
+        .limit(1)
+    )
 
     match = db.execute(stmt).scalar_one_or_none()
 

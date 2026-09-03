@@ -57,9 +57,12 @@ def test_add_source_inserts_row(session):
     row = session.execute(text("SELECT * FROM sources WHERE name = 'Tech News'")).first()
     assert row is not None
 
+
 # GOOD: Verifies through interface
 def test_added_source_is_listed(session):
-    source = add_source(session, name="Tech News", type="rss", config={"url": "https://example.com/feed"})
+    source = add_source(
+        session, name="Tech News", type="rss", config={"url": "https://example.com/feed"}
+    )
     assert source.id in [s.id for s in list_sources(session)]
 ```
 
@@ -71,22 +74,29 @@ def test_content_hash_is_md5_of_title_and_content_prefix():
     expected = hashlib.md5(f"{title}{content[:200]}".encode()).hexdigest()
     assert compute_content_hash(title, content) == expected
 
+
 # GOOD: Expected value is an independent, known literal
 def test_content_hash_is_stable_for_known_input():
     assert compute_content_hash("Hello", "World") == "68e109f0f40ca72a15e05cc22786f8e6"
 
+
 # BAD: a test that never disagrees with the code
 async def test_llm_enrich_returns_whatever_the_model_said():
     with patch("ai_daily.etl.enrichment.genai") as mock_genai:
-        mock_genai.Client.return_value.aio.models.generate_content = AsyncMock(return_value=response)
+        mock_genai.Client.return_value.aio.models.generate_content = AsyncMock(
+            return_value=response
+        )
         result = await processor.llm_enrich("t", "c")
     assert result == json.loads(response.text)
+
 
 # GOOD: asserts a contract the parser must uphold on a hostile input
 async def test_llm_enrich_rejects_a_response_with_no_json_object():
     response = MagicMock(text="Sure! Here is the analysis: category=ai")
     with patch("ai_daily.etl.enrichment.genai") as mock_genai:
-        mock_genai.Client.return_value.aio.models.generate_content = AsyncMock(return_value=response)
+        mock_genai.Client.return_value.aio.models.generate_content = AsyncMock(
+            return_value=response
+        )
         with pytest.raises(ValueError, match="Could not parse LLM response"):
             await processor.llm_enrich("t", "c")
 ```

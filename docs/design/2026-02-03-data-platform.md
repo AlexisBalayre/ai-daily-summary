@@ -267,6 +267,7 @@ lib/outputs/
 ```python
 from pocket_tts import TTSModel
 
+
 def generate_briefing(date: date) -> Path:
     summary = get_daily_summary(date)
     script = llm_generate_spoken_script(summary)  # conversational

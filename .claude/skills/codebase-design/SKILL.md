@@ -85,6 +85,7 @@ Good interfaces make testing natural:
    # Testable: the LLM client crosses the seam as a parameter
    async def enrich_article(article: Article, llm: LLMClient) -> Enrichment: ...
 
+
    # Hard to test: the module reaches for the network itself
    async def enrich_article(article: Article) -> Enrichment:
        client = genai.Client(api_key=config.llm.google_api_key)
@@ -98,6 +99,7 @@ Good interfaces make testing natural:
    ```python
    # Testable: BaseExtractor.extract() returns RawContent and touches nothing
    async def extract(self, source: Source) -> list[RawContent]: ...
+
 
    # Hard to test: the extractor also writes rows and calls the LLM
    async def extract_and_store(self, source: Source, session: Session) -> None: ...

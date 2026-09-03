@@ -20,7 +20,7 @@ Source(
     type="rss",
     name="Wired AI",
     config={"url": "https://www.wired.com/feed/tag/ai/latest/rss"},
-    enabled=True
+    enabled=True,
 )
 ```
 
@@ -46,9 +46,9 @@ ai_daily/etl/extractors/
 
 ```python
 class RSSExtractor(BaseExtractor):
-    FETCH_DELAY = 0.5          # Seconds between article fetches
+    FETCH_DELAY = 0.5  # Seconds between article fetches
     MAX_ARTICLES_PER_FEED = 25  # Cap per feed per run
-    FETCH_TIMEOUT = 15          # Article fetch timeout
+    FETCH_TIMEOUT = 15  # Article fetch timeout
 
     @property
     def supported_types(self) -> List[str]:
@@ -62,7 +62,7 @@ class RSSExtractor(BaseExtractor):
 
         # 2. Process each entry
         results = []
-        for entry in feed.entries[:self.MAX_ARTICLES_PER_FEED]:
+        for entry in feed.entries[: self.MAX_ARTICLES_PER_FEED]:
             title = entry.get("title", "")
             link = entry.get("link", "")
             published = entry.get("published_parsed")
@@ -75,15 +75,17 @@ class RSSExtractor(BaseExtractor):
             if not content:
                 content = entry.get("summary", title)
 
-            results.append(RawContent(
-                external_id=md5(link),
-                title=title,
-                content=content,
-                url=link,
-                author=author,
-                published_at=published,
-                source_name=source.name,
-            ))
+            results.append(
+                RawContent(
+                    external_id=md5(link),
+                    title=title,
+                    content=content,
+                    url=link,
+                    author=author,
+                    published_at=published,
+                    source_name=source.name,
+                )
+            )
 
             await asyncio.sleep(self.FETCH_DELAY)
 

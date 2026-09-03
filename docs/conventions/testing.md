@@ -16,6 +16,7 @@ functions run without a per-test marker.
   ```python
   from unittest.mock import AsyncMock, MagicMock, patch
 
+
   async def test_generate_embedding_uses_embedder():
       with patch("ai_daily.etl.enrichment.Embedder") as MockEmbedder:
           MockEmbedder.return_value.embed = AsyncMock(return_value=[0.1] * 768)
