@@ -47,6 +47,7 @@ Pass external dependencies in rather than creating them internally:
 async def summarize(article: Article, llm: LLMClient) -> str:
     return await llm.complete(SUMMARY_PROMPT.format(title=article.title, content=article.content))
 
+
 # Hard to mock: the function builds its own client from config
 async def summarize(article: Article) -> str:
     client = genai.Client(api_key=config.llm.google_api_key)
@@ -66,6 +67,7 @@ class GitHubClient:
     async def trending(self, language: str | None = None) -> list[Repo]: ...
     async def repo(self, full_name: str) -> Repo: ...
     async def readme(self, full_name: str) -> str: ...
+
 
 # BAD: Mocking requires conditional logic inside the mock
 class GitHubClient:
