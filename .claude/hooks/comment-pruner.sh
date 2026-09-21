@@ -25,10 +25,13 @@ MODE="${1:-check}"
 # Generated files and vendored/build dirs carry comments the agent must never
 # touch; the agent re-applies this filter, but excluding here avoids dispatching
 # for them at all.
-EXCLUDE='(/(\.venv|__pycache__|migrations|versions|node_modules)/|\.pyc$)'
+[ -f .claude/project.env ] && . .claude/project.env
+EXT_RE=$(printf '%s' "${SOURCE_EXTENSIONS:-}" | tr -s ' ' '|')
+[ -z "$EXT_RE" ] && exit 0
+EXCLUDE="(^|/)(node_modules|vendor|dist|build|target|\.venv|archive|migrations)/${GENERATED_PATHS_REGEX:+|$GENERATED_PATHS_REGEX}"
 
-TRACKED=$(git diff HEAD --name-only -- '*.py' 2>/dev/null | grep -vE "$EXCLUDE" || true)
-UNTRACKED=$(git ls-files --others --exclude-standard -- '*.py' 2>/dev/null | grep -vE "$EXCLUDE" || true)
+TRACKED=$(git diff HEAD --name-only 2>/dev/null | grep -E "\.($EXT_RE)$" | grep -vE "$EXCLUDE" || true)
+UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null | grep -E "\.($EXT_RE)$" | grep -vE "$EXCLUDE" || true)
 
 # Source lines added versus HEAD: diff-added lines for tracked files, whole
 # content for untracked files (a new file's comments are all newly written).
@@ -43,20 +46,30 @@ added_source() {
 }
 
 # Hash the comment text on each line so a new comment dispatches the pruner.
-# Covers Python `#` comments — full-line and trailing. A shebang (`#!` on line 1)
-# is skipped. URLs are stripped first so a `#fragment` in an `https://…` literal
-# is not read as a comment. The naive scan also matches a `#` inside a string
-# literal; accepted on purpose, because the only cost is one spurious dispatch
-# bounded by the memo and stop_hook_active. Hashing the comment text, not the
-# whole line, means editing surrounding code does not re-trigger.
+# Covers: full-line and trailing `// ...`, full-line and trailing/mid-line
+# `/* ... */` block comments, `*` doc-continuation lines, and `# ...` comments
+# (hash + space, so `#include`, `#[attr]` and `#private` fields don't count). The earliest of
+# `//` and `/*` on a line wins so a trailing block comment is not missed. URLs
+# are stripped first so `https://` is not read as a `//`. The naive scan also
+# matches `/*` inside a string literal (e.g. a `**/*.ts` glob); accepted on
+# purpose, because the only cost is one spurious dispatch bounded by the memo and
+# stop_hook_active, whereas a guard precise enough to skip it would also start
+# missing real no-space trailing block comments. Hashing the comment text, not
+# the whole line, means editing surrounding code does not re-trigger.
 extract_hashes() {
   awk '
-    NR==1 && $0 ~ /^#!/ { next }
     {
       c=""
-      tmp=$0; gsub(/[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^[:space:]]*/,"",tmp)
-      h=index(tmp,"#")
-      if (h>0) c=substr(tmp,h)
+      if ($0 ~ /^[[:space:]]*(\/\*|\*|#( |$))/) { c=$0 }
+      else {
+        tmp=$0; gsub(/[a-zA-Z][a-zA-Z0-9+.-]*:\/\//,"",tmp)
+        s=index(tmp,"//"); b=index(tmp,"/*"); h=match(tmp,/[[:space:]]#( |$)/); if (h>0) h++
+        m=0
+        if (s>0) m=s
+        if (b>0 && (m==0 || b<m)) m=b
+        if (h>0 && (m==0 || h<m)) m=h
+        if (m>0) c=substr(tmp,m)
+      }
       gsub(/^[[:space:]]+/,"",c); gsub(/[[:space:]]+$/,"",c)
       if (c!="") print c
     }

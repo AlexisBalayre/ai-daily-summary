@@ -40,7 +40,7 @@ At system boundaries, design interfaces that are easy to mock:
 
 **1. Use dependency injection**
 
-Pass external dependencies in rather than creating them internally:
+Pass external dependencies in rather than creating them internally (illustrative pseudo-code):
 
 ```python
 # Easy to mock: the client crosses the seam as a parameter
@@ -59,7 +59,7 @@ The second shape is what `EnrichmentProcessor` does today (a lazily built `Embed
 
 **2. Prefer SDK-style interfaces over generic fetchers**
 
-Create specific functions for each external operation instead of one generic function with conditional logic:
+Create specific functions for each external operation instead of one generic function with conditional logic (illustrative pseudo-code):
 
 ```python
 # GOOD: Each function is independently mockable

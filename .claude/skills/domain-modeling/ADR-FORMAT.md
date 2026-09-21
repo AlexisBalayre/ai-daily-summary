@@ -1,8 +1,8 @@
 # ADR Format
 
-ADRs live in `docs/adr/` and use sequential numbering: `0001-slug.md`, `0002-slug.md`, etc.
+ADRs live in `docs/adr/` and use sequential numbering: `0001-slug.md`, `0002-slug.md`, etc. `docs/adr/README.md` holds the repo's how-to and template; it wins over this file where they differ.
 
-This repo has no `docs/adr/` directory yet; it is created on the first ADR. Until then, design rationale lives in the dated design docs under `docs/design/`. Check those before opening an ADR that would restate one, and notice when a doc has been overtaken (`docs/design/2026-02-07-article-enrichment.md` still describes a separate enrichment job; enrichment now runs inline per `docs/conventions/etl.md`, and that reversal is exactly the kind of decision an ADR would capture).
+Older design rationale lives in the dated design docs under `docs/design/`. Check those before opening an ADR that would restate one, and notice when a doc has been overtaken (`docs/design/2026-02-07-article-enrichment.md` still describes a separate enrichment job; enrichment now runs inline per `docs/conventions/etl.md`, and that reversal is exactly the kind of decision an ADR would capture).
 
 ## Template
 
@@ -24,7 +24,7 @@ Only include these when they add genuine value. Most ADRs won't need them.
 
 ## Numbering
 
-Scan `docs/adr/` on `origin/master` (`git ls-tree origin/master docs/adr/` after a fetch) for the highest existing number and increment by one; if the directory does not exist yet, start at `0001`. The local listing goes stale and concurrent merges claim numbers.
+Scan `docs/adr/` on the remote trunk (`git ls-tree origin/master docs/adr/` after a fetch; the trunk is `GIT_TRUNK` in `.claude/project.env`) for the highest existing number and increment by one. The local listing goes stale and concurrent merges claim numbers.
 
 ## When to offer an ADR
 
@@ -34,7 +34,7 @@ All three of these must be true:
 2. **Surprising without context**: a future reader will look at the code and wonder "why on earth did they do it this way?"
 3. **The result of a real trade-off**: there were genuine alternatives and you picked one for specific reasons
 
-If a decision is easy to reverse, skip it; you'll just reverse it. If it's not surprising, nobody will wonder why. If there was no real alternative, there's nothing to record beyond "we did the obvious thing."
+If a decision is easy to reverse, skip it: you'll just reverse it. If it's not surprising, nobody will wonder why. If there was no real alternative, there's nothing to record beyond "we did the obvious thing."
 
 ### What qualifies
 

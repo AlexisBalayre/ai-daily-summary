@@ -1,6 +1,6 @@
 # Deepening
 
-How to deepen a cluster of shallow modules safely, given its dependencies. Assumes the vocabulary in [SKILL.md](SKILL.md) — **module**, **interface**, **seam**, **adapter**.
+How to deepen a cluster of shallow modules safely, given its dependencies. Assumes the vocabulary in [SKILL.md](SKILL.md): **module**, **interface**, **seam**, **adapter**.
 
 ## Dependency categories
 
@@ -8,7 +8,7 @@ When assessing a candidate for deepening, classify its dependencies. The categor
 
 ### 1. In-process
 
-Pure computation, in-memory state, no I/O. Always deepenable — merge the modules and test through the new interface directly. No adapter needed.
+Pure computation, in-memory state, no I/O. Always deepenable: merge the modules and test through the new interface directly. No adapter needed.
 
 ### 2. Local-substitutable
 
@@ -18,7 +18,7 @@ Dependencies that have local test stand-ins (the SQLite-backed session fixture i
 
 Your own processes across a network boundary. In this repo that is the FastAPI server as seen from the React dashboard and from `scripts/aidaily_mcp.py`. Define a **port** (interface) at the seam. The deep module owns the logic; the transport is injected as an **adapter**. Tests use an in-memory adapter. Production uses an HTTP adapter.
 
-Recommendation shape: _"Define a port at the seam, implement an HTTP adapter for production and an in-memory adapter for testing, so the logic sits in one deep module even though it's called across a network."_
+Recommendation shape: *"Define a port at the seam, implement an HTTP adapter for production and an in-memory adapter for testing, so the logic sits in one deep module even though it's called across a network."*
 
 ### 4. True external (Mock)
 
@@ -31,7 +31,7 @@ Third-party services you don't control: Gemini (LLM + embeddings), the Gmail API
 
 ## Testing strategy: replace, don't layer
 
-- Old unit tests on shallow modules become waste once tests at the deepened module's interface exist — delete them.
+- Old unit tests on shallow modules become waste once tests at the deepened module's interface exist; delete them.
 - Write new tests at the deepened module's interface. The **interface is the test surface**.
 - Tests assert on observable outcomes through the interface, not internal state.
-- Tests should survive internal refactors — they describe behaviour, not implementation. If a test has to change when the implementation changes, it's testing past the interface.
+- Tests should survive internal refactors, since they describe behaviour, not implementation. If a test has to change when the implementation changes, it's testing past the interface.

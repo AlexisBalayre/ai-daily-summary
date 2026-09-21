@@ -1,48 +1,54 @@
 #!/bin/bash
-# Quality checks: ruff lint + format on the session's dirty Python files.
+# Quality checks: format/lint the session's dirty source files + repo typecheck.
 # Runs on Claude Code Stop event — after every response that modifies files.
-# Tests are NOT run here (too slow for every turn; run `uv run pytest` explicitly).
-# Whole-repo lint is deliberately avoided so unrelated red on master can't block
-# an unrelated session — only files this session touched are checked.
+# Commands come from .claude/project.env; an empty command is skipped, so an
+# unadapted template no-ops. Tests are NOT run here: scripts/pre-commit runs
+# TEST_CMD, and whole-repo lint is deliberately avoided so unrelated red on the
+# trunk can't block an unrelated session.
 
 set -o pipefail
 
 cd "$CLAUDE_PROJECT_DIR" || exit 1
+[ -f .claude/project.env ] && . .claude/project.env
 
-# uv lives in ~/.local/bin, which isn't on the non-interactive PATH.
-export PATH="$HOME/.local/bin:$PATH"
+[ -z "${FORMAT_FIX_CMD}${LINT_CMD}${TYPECHECK_CMD}" ] && exit 0
 
-# Only .py files trigger the suite; markdown/YAML/JSON/HTML edits skip it.
+EXT_RE=$(printf '%s' "${SOURCE_EXTENSIONS:-}" | tr -s ' ' '|')
+[ -z "$EXT_RE" ] && exit 0
+
 # Includes untracked files (Write-created files aren't staged yet).
-DIRTY_PY=$(
+DIRTY=$(
   {
     git diff --name-only 2>/dev/null
     git diff --cached --name-only 2>/dev/null
     git ls-files --others --exclude-standard 2>/dev/null
-  } | grep -E '\.py$' | sort -u | while read -r f; do [ -f "$f" ] && echo "$f"; done
+  } | grep -E "\.($EXT_RE)$" | sort -u | while read -r f; do [ -f "$f" ] && echo "$f"; done
 )
 
-if [ -z "$DIRTY_PY" ]; then
-  exit 0
-fi
-
-if ! command -v uv >/dev/null 2>&1; then
-  echo "quality-checks: uv not found on PATH; skipping ruff." >&2
-  exit 0
-fi
+[ -z "$DIRTY" ] && exit 0
 
 echo "Running quality checks..." >&2
 
-# 1. Auto-fix lint issues + format the dirty files only.
-echo "-> Ruff lint (auto-fix) + format on dirty files..." >&2
-echo "$DIRTY_PY" | xargs uv run ruff check --fix 1>&2 2>&1
-echo "$DIRTY_PY" | xargs uv run ruff format 1>&2 2>&1
+if [ -n "${FORMAT_FIX_CMD:-}" ]; then
+  echo "-> Format/fix dirty files: $FORMAT_FIX_CMD" >&2
+  printf '%s\n' "$DIRTY" | tr '\n' '\0' | xargs -0 sh -c "$FORMAT_FIX_CMD \"\$@\"" _ 1>&2
+fi
 
-# 2. Verify no lint issues remain after auto-fix.
-echo "-> Verifying lint..." >&2
-if ! echo "$DIRTY_PY" | xargs uv run ruff check 1>&2; then
-  echo "Ruff found issues it could not auto-fix on the files this session touched. Fix them above." >&2
-  exit 2
+if [ -n "${LINT_CMD:-}" ]; then
+  echo "-> Lint dirty files: $LINT_CMD" >&2
+  if ! printf '%s\n' "$DIRTY" | tr '\n' '\0' | xargs -0 sh -c "$LINT_CMD \"\$@\"" _ 1>&2; then
+    echo "Lint failed on the files this session touched. Fix the remaining issues above." >&2
+    exit 2
+  fi
+fi
+
+# Whole repo: type errors cross file boundaries.
+if [ -n "${TYPECHECK_CMD:-}" ]; then
+  echo "-> Typecheck: $TYPECHECK_CMD" >&2
+  if ! bash -c "$TYPECHECK_CMD" 1>&2; then
+    echo "Typecheck failed. Fix the type errors above." >&2
+    exit 2
+  fi
 fi
 
 echo "All quality checks passed!" >&2

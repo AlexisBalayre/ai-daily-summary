@@ -1,4 +1,5 @@
 {
+  "_comment": "Personal, machine-local overrides. Copy to settings.local.json (gitignored). These extend settings.json; they never replace it. Opt into the project's .mcp.json servers here: aidaily needs `uv run --script scripts/aidaily_mcp.py` running against a local API.",
   "permissions": {
     "allow": [
       "Bash(docker compose *)",
@@ -7,10 +8,8 @@
       "mcp__aidaily__*"
     ]
   },
-  "mcpServers": {
-    "aidaily": {
-      "type": "http",
-      "url": "http://127.0.0.1:8765/mcp"
-    }
-  }
+  "enabledMcpjsonServers": [
+    "codegraph",
+    "aidaily"
+  ]
 }
