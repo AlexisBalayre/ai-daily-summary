@@ -32,6 +32,12 @@ htmlcov/
 *.swp
 .claude/settings.local.json
 
+# Dependencies for tools/review (the CI review tooling)
+node_modules/
+
+# CodeGraph index (built by `codegraph init`, per checkout)
+.codegraph/
+
 # Project (runtime output and per-user settings, never commit)
 config.json
 logs/

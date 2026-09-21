@@ -1,50 +1,32 @@
 #!/usr/bin/env bash
-# PreToolUse(Write) hook — blocks new Python modules with non-PEP8 names.
-# Python modules are snake_case: lowercase letters, digits, underscores only.
+# PreToolUse(Write) hook — blocks new files whose name breaks the project's naming
+# convention (FILE_NAMING_* in .claude/project.env; unset = no check).
 # Exit 0 = allow, Exit 2 = block with message.
 set -euo pipefail
 
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+[ -z "$FILE_PATH" ] && exit 0
 
-# No file path — skip.
-if [ -z "$FILE_PATH" ]; then
-  exit 0
-fi
+# Hooks are per-session, keyed on the directory the session started in, so a session launched here
+# and working in a sibling repo would otherwise hold that repo to this convention. Only paths under
+# this checkout are ours.
+[ -z "${CLAUDE_PROJECT_DIR:-}" ] && exit 0
+[[ "$FILE_PATH" != "$CLAUDE_PROJECT_DIR"/* ]] && exit 0
 
-# Only check .py files.
-if [[ ! "$FILE_PATH" =~ \.py$ ]]; then
-  exit 0
-fi
+[ -f "$CLAUDE_PROJECT_DIR/.claude/project.env" ] && . "$CLAUDE_PROJECT_DIR/.claude/project.env"
+[ -z "${FILE_NAMING_SCOPE_REGEX:-}" ] || [ -z "${FILE_NAMING_REGEX:-}" ] && exit 0
 
-# Only check project source + tests; skip migrations, venv, build artefacts.
-# Anchor with (^|/) so both absolute (/Users/.../ai_daily/…) and repo-relative
-# (ai_daily/…) paths match.
-if [[ ! "$FILE_PATH" =~ (^|/)(ai_daily|tests)/ ]]; then
-  exit 0
-fi
-if [[ "$FILE_PATH" =~ /(\.venv|migrations|versions|__pycache__)/ ]]; then
-  exit 0
-fi
+# Overwriting an existing file doesn't choose a name, so legacy names stay writable.
+[ -e "$FILE_PATH" ] && exit 0
+
+REL_PATH="${FILE_PATH#"$CLAUDE_PROJECT_DIR"/}"
+[[ "$REL_PATH" =~ $FILE_NAMING_SCOPE_REGEX ]] || exit 0
 
 FILENAME=$(basename "$FILE_PATH")
+[[ "$FILENAME" =~ $FILE_NAMING_REGEX ]] && exit 0
 
-# Dunder modules are always allowed (__init__.py, __main__.py, conftest.py).
-if [[ "$FILENAME" =~ ^__[a-z0-9_]+__\.py$ ]] || [[ "$FILENAME" == "conftest.py" ]]; then
-  exit 0
-fi
-
-# snake_case module: starts with a lowercase letter or underscore, then
-# lowercase letters / digits / underscores. No hyphens, no camelCase, no caps.
-if [[ "$FILENAME" =~ ^[a-z_][a-z0-9_]*\.py$ ]]; then
-  exit 0
-fi
-
-echo "BLOCKED: Python module '$FILENAME' is not snake_case." >&2
-echo "" >&2
-echo "Modules must be lowercase with underscores: lowercase letters, digits, and '_' only." >&2
-echo "  DO:    gmail_extractor.py, summary_generator.py, test_enrichment.py" >&2
-echo "  DON'T: GmailExtractor.py (PascalCase), summaryGenerator.py (camelCase), summary-generator.py (hyphens)" >&2
-echo "" >&2
-echo "Allowed exceptions: __init__.py, __main__.py, conftest.py" >&2
+echo "BLOCKED: file name '$FILENAME' does not match the project naming convention ($FILE_NAMING_REGEX)." >&2
+[ -n "${FILE_NAMING_HINT:-}" ] && echo "$FILE_NAMING_HINT" >&2
+echo "Full naming rules: docs/conventions/core.md §Naming" >&2
 exit 2

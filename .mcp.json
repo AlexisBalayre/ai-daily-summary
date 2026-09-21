@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "codegraph": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@colbymchenry/codegraph@1.6.0", "serve", "--mcp"],
+      "env": {
+        "CODEGRAPH_TELEMETRY": "0"
+      }
+    },
+    "aidaily": {
+      "type": "http",
+      "url": "http://127.0.0.1:8765/mcp"
+    }
+  }
+}

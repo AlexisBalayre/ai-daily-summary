@@ -1,18 +1,31 @@
-# Testing Conventions (`tests/`)
+# Testing
 
-pytest + pytest-asyncio. `asyncio_mode = "auto"` is set in `pyproject.toml`, so `async def test_*`
-functions run without a per-test marker.
+**Genre contract:** obligations only.
 
-## Layout & naming
+## Principles
+
+- Test behaviour through public interfaces, not implementation details; a refactor that keeps behaviour must not break tests. Given input articles, assert the newsletter HTML contains the enriched summary; given an LLM failure, assert the visible fallback is recorded.
+- Mock only at system boundaries (LLMs, embeddings, Gmail, the network, the clock), never the module under test or its internal collaborators.
+- One reason to fail per test; name tests by the behaviour they pin down.
+- A bug fix lands with a regression test that fails without the fix.
+- Cover the failure and degradation paths (empty response, JSON parse error, zero recipients): these are where regressions hurt most in this codebase.
+
+## Framework and commands
+
+pytest + pytest-asyncio. `asyncio_mode = "auto"` is set in `pyproject.toml`, so `async def test_*` functions run without a per-test marker.
+
+- All: `uv run pytest` (also `TEST_CMD`, run by `scripts/pre-commit`)
+- One file: `uv run pytest tests/test_enrichment.py -v`
+- One test: `uv run pytest tests/test_enrichment.py::TestEnrichmentProcessor::test_x -v`
+
+## Layout
 
 - Tests live under `tests/`, files named `test_*.py`, test functions `test_*`.
-- Shared fixtures go in `tests/conftest.py`. The suite uses a SQLite-backed session fixture for DB
-  tests — reuse it rather than standing up Postgres.
+- Shared fixtures go in `tests/conftest.py`. DB tests use its SQLite-backed session fixture; reuse it rather than standing up Postgres.
 
-## Mock external services
+## Setup and mocks
 
-- **Never call real LLMs, embeddings, Gmail, or the network in a unit test.** Mock them with
-  `unittest.mock` (the suite does not use `pytest-mock`):
+- **Never call real LLMs, embeddings, Gmail, or the network in a unit test.** Mock them with `unittest.mock` (the suite does not use `pytest-mock`):
   ```python
   from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -24,23 +37,7 @@ functions run without a per-test marker.
           result = await processor.generate_embedding("some article text")
       assert len(result) == 768
   ```
-  Use `AsyncMock` for `async def` collaborators and `MagicMock(spec=Source)` for ORM rows the
-  code only reads. `@patch("ai_daily.cli.get_session")` as a decorator is fine for CLI tests.
-- For environment or config values prefer pytest's `monkeypatch` fixture
-  (`monkeypatch.setenv("GOOGLE_API_KEY", "test")`, `monkeypatch.setattr(config.llm, "model", "x")`)
-  so the change is undone automatically at test end.
+  Use `AsyncMock` for `async def` collaborators and `MagicMock(spec=Source)` for ORM rows the code only reads. `@patch("ai_daily.cli.get_session")` as a decorator is fine for CLI tests.
 - Patch at the point of use (`ai_daily.<module>.<name>`), not at the definition site.
-
-## What to test
-
-- Test **behaviour and contracts**, not private internals: given input articles, assert the newsletter
-  HTML contains the enriched summary; given an LLM failure, assert the visible fallback is recorded.
-- Cover the failure/degradation paths (empty response, JSON parse error, zero recipients) — these are
-  where regressions hurt most in this codebase.
-- Deterministic time: inject/patch the clock rather than asserting on wall-clock `now()`.
-
-## Running
-
-- All: `uv run pytest`
-- One file: `uv run pytest tests/test_enrichment.py -v`
-- One test: `uv run pytest tests/test_enrichment.py::TestEnrichmentProcessor::test_x -v`
+- For environment or config values use pytest's `monkeypatch` fixture (`monkeypatch.setenv("GOOGLE_API_KEY", "test")`, `monkeypatch.setattr(config.llm, "model", "x")`) so the change is undone at test end.
+- Deterministic time: inject or patch the clock rather than asserting on wall-clock `now()`.

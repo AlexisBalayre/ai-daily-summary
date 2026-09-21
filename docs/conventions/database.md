@@ -1,6 +1,6 @@
 # Database Conventions (`ai_daily/db/`, `ai_daily/db/migrations/`)
 
-PostgreSQL + pgvector, SQLAlchemy 2.0 (async), Alembic migrations.
+PostgreSQL + pgvector, SQLAlchemy 2.0 (sync `SessionLocal` and async `AsyncSessionLocal`), Alembic migrations.
 
 ## Models (`ai_daily/db/models.py`)
 
@@ -11,7 +11,7 @@ PostgreSQL + pgvector, SQLAlchemy 2.0 (async), Alembic migrations.
 - `articles` carries the 768-dim pgvector `embedding` plus enrichment fields (`summary`, `category`,
   `is_ai_related`, `is_duplicate`). If an output needs a value, it should be a column here, computed at
   enrichment time — not recomputed downstream.
-- Columns are `snake_case`. Timestamps are timezone-aware (see general.md — no `utcnow()`).
+- Columns are `snake_case`. Timestamps are timezone-aware (see core.md §Datetimes: no `utcnow()`).
 
 ## Migrations (Alembic)
 

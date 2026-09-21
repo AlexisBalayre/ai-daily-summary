@@ -12,8 +12,9 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
-# Trunk branch is configurable via env (this repo's trunk is `master`).
-TRUNK="${GIT_TRUNK:-master}"
+# Trunk branch is configurable via .claude/project.env (defaults to main).
+[ -f "${CLAUDE_PROJECT_DIR:-.}/.claude/project.env" ] && . "${CLAUDE_PROJECT_DIR:-.}/.claude/project.env"
+TRUNK="${GIT_TRUNK:-main}"
 
 # --- Destructive shell / SQL patterns -----------------------------------------
 
@@ -39,12 +40,12 @@ fi
 if echo "$COMMAND" | grep -qE 'git[[:space:]]+checkout[[:space:]]+-b\b'; then
   CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
   if [ "$CURRENT_BRANCH" = "$TRUNK" ]; then
-    echo "BLOCKED: do not branch off $TRUNK with 'git checkout -b'. Create a worktree: git worktree add .worktrees/<name> -b feat/<name>" >&2
+    echo "BLOCKED: do not use 'git checkout -b' on $TRUNK. Use 'scripts/worktree-create.sh <name>' instead." >&2
     exit 2
   fi
 fi
 
-# Anchor on the refspec, not the substring: branch names like feat/fix-master-red
+# Anchor on the refspec, not the substring: branch names like feature/fix-main-red
 # and tag pushes must pass; only an actual trunk destination (`$TRUNK`, `src:$TRUNK`,
 # `refs/heads/$TRUNK`, `:$TRUNK` deletion) is blocked. Argument tokens exclude
 # command separators so a chained `&& gh pr create --base $TRUNK` can't match.
