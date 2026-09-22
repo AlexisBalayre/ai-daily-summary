@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-09-22T07:50:53.282Z",
+  "repository": "AlexisBalayre/ai-daily-summary",
+  "run_id": "35701369092",
+  "run_url": "https://github.com/AlexisBalayre/ai-daily-summary/actions/runs/35701369092",
+  "actor": "AlexisBalayre",
+  "commit_sha": "d991e3beb11e4413026f5a731e77c95e4d908e90",
+  "source": "pr",
+  "pr_number": 40,
+  "action": "review",
+  "reviewers_spawned": [],
+  "reviewers_skipped": [],
+  "review_mode": "full",
+  "incremental_from_sha": null,
+  "prior_importants": null,
+  "findings": null,
+  "refuted_findings": null,
+  "process_issues": null,
+  "comments_posted_actual": 0,
+  "is_error": true,
+  "cost_usd": 1.3961489500000002,
+  "duration_ms": 169682,
+  "num_turns": 19,
+  "tokens": {
+    "input": 24,
+    "output": 16096,
+    "cache_read": 719747,
+    "cache_creation": 79235,
+    "total": 815102
+  }
+}
